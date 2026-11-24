@@ -2492,8 +2492,8 @@ void CMenus::RenderNeonBackground()
 	// dark gradient
 	Graphics()->TextureClear();
 	Graphics()->QuadsBegin();
-	Graphics()->SetColor4(ColorRGBA(0.06f, 0.01f, 0.13f, 1.0f), ColorRGBA(0.01f, 0.02f, 0.10f, 1.0f),
-		ColorRGBA(0.01f, 0.0f, 0.03f, 1.0f), ColorRGBA(0.03f, 0.0f, 0.06f, 1.0f));
+	Graphics()->SetColor4(ColorRGBA(0.025f, 0.005f, 0.06f, 1.0f), ColorRGBA(0.005f, 0.01f, 0.045f, 1.0f),
+		ColorRGBA(0.004f, 0.0f, 0.012f, 1.0f), ColorRGBA(0.012f, 0.0f, 0.025f, 1.0f));
 	const IGraphics::CQuadItem Bg(0, 0, ScreenWidth, ScreenHeight);
 	Graphics()->QuadsDrawTL(&Bg, 1);
 	Graphics()->QuadsEnd();
@@ -2509,7 +2509,7 @@ void CMenus::RenderNeonBackground()
 		const float Radius = 70.0f + 25.0f * i;
 		for(int Ring = 10; Ring >= 1; Ring--)
 		{
-			Graphics()->SetColor(NeonColor(i, 0.018f));
+			Graphics()->SetColor(NeonColor(i, 0.008f));
 			Graphics()->DrawCircle(Px, Py, Radius * Ring / 10.0f, 32);
 		}
 	}
@@ -2523,7 +2523,7 @@ void CMenus::RenderNeonBackground()
 	{
 		const float Depth = (i + GridScroll) / 12.0f; // 0 = horizon, 1 = bottom
 		const float Y = Horizon + (ScreenHeight - Horizon) * Depth * Depth;
-		Graphics()->SetColor(1.0f, 0.15f, 0.85f, 0.05f + 0.25f * Depth);
+		Graphics()->SetColor(1.0f, 0.15f, 0.85f, 0.03f + 0.17f * Depth);
 		const IGraphics::CQuadItem Line(0, Y, ScreenWidth, 0.4f + 0.6f * Depth);
 		Graphics()->QuadsDrawTL(&Line, 1);
 	}
@@ -2532,7 +2532,7 @@ void CMenus::RenderNeonBackground()
 	for(int i = -14; i <= 14; i++)
 	{
 		const float BottomX = ScreenWidth / 2 + i * ScreenWidth / 10.0f;
-		Graphics()->SetColor(0.0f, 0.95f, 1.0f, 0.18f);
+		Graphics()->SetColor(0.0f, 0.95f, 1.0f, 0.11f);
 		const IGraphics::CLineItem Line(ScreenWidth / 2 + i * 6.0f, Horizon, BottomX, ScreenHeight);
 		Graphics()->LinesDraw(&Line, 1);
 	}
@@ -2578,7 +2578,7 @@ void CMenus::RenderNeonBackground()
 	// darken the borders a bit
 	Graphics()->TextureSet(m_TextureBlob);
 	Graphics()->QuadsBegin();
-	Graphics()->SetColor(0.0f, 0.0f, 0.0f, 0.6f);
+	Graphics()->SetColor(0.0f, 0.0f, 0.0f, 0.85f);
 	const IGraphics::CQuadItem BlobQuadItem(-100, -100, ScreenWidth + 200, ScreenHeight + 200);
 	Graphics()->QuadsDrawTL(&BlobQuadItem, 1);
 	Graphics()->QuadsEnd();

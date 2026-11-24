@@ -1654,6 +1654,7 @@ set(EXPECTED_DATA
   editor/tune.png
   emoticons.png
   extras.png
+  fonts/DejaVuSans-Bold.ttf
   fonts/DejaVuSans.ttf
   fonts/Font_Awesome_6_Free-Solid-900.otf
   fonts/GlowSansJ-Compressed-Book.otf

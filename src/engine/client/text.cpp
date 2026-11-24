@@ -327,6 +327,7 @@ private:
 	// Font faces
 	FT_Face m_DefaultFace = nullptr;
 	FT_Face m_IconFace = nullptr;
+	FT_Face m_TitleFace = nullptr;
 	FT_Face m_VariantFace = nullptr;
 	FT_Face m_SelectedFace = nullptr;
 	std::vector<FT_Face> m_vFallbackFaces;
@@ -648,6 +649,17 @@ public:
 		return true;
 	}
 
+	bool SetTitleFaceByName(const char *pFamilyName)
+	{
+		m_TitleFace = GetFaceByName(pFamilyName);
+		if(!m_TitleFace)
+		{
+			log_error("textrender", "The title font face '%s' could not be found", pFamilyName);
+			return false;
+		}
+		return true;
+	}
+
 	bool AddFallbackFaceByName(const char *pFamilyName)
 	{
 		FT_Face Face = GetFaceByName(pFamilyName);
@@ -690,6 +702,9 @@ public:
 			break;
 		case EFontPreset::ICON_FONT:
 			m_SelectedFace = m_IconFace;
+			break;
+		case EFontPreset::TITLE_FONT:
+			m_SelectedFace = m_TitleFace; // falls back to the default font if missing
 			break;
 		}
 	}
@@ -1325,6 +1340,13 @@ public:
 		{
 			log_error("textrender", "Font index malformed: 'icon' must be a string");
 			Success = false;
+		}
+
+		// optional bold title font
+		const json_value &TitleFace = (*pJsonData)["title"];
+		if(TitleFace.type == json_string)
+		{
+			m_pGlyphMap->SetTitleFaceByName(TitleFace.u.string.ptr);
 		}
 
 		json_value_free(pJsonData);

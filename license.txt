@@ -24,8 +24,8 @@ All content under 'data' except the assets, font, language & skin files,
 (which have their own licenses) are released under
 CC-BY-SA 3.0 (https://creativecommons.org/licenses/by-sa/3.0/).
 
-DejaVuSans.ttf:
----------------
+DejaVuSans.ttf, DejaVuSans-Bold.ttf:
+------------------------------------
 
 Fonts are (c) Bitstream (see below). DejaVu changes are in public domain.
 Glyphs imported from Arev fonts are (c) Tavmjong Bah (see below)

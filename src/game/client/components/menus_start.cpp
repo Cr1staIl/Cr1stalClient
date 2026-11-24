@@ -30,7 +30,10 @@ void CMenusStart::RenderNeonTitle(float CenterX, float Y)
 		return ColorRGBA(A.r + (B.r - A.r) * T, A.g + (B.g - A.g) * T, A.b + (B.b - A.b) * T, A.a + (B.a - A.a) * T);
 	};
 	static const char *const s_pTitle = "Cr\xe2\x99\xb1stal Client";
-	constexpr float FontSize = 54.0f;
+	constexpr int CrossCodepoint = 0x2671;
+	constexpr float FontSize = 58.0f;
+	constexpr float CrossSize = FontSize * 1.45f; // the cross is drawn bigger than the letters
+	constexpr float LetterSpacing = 1.0f;
 	const float Time = Client()->GlobalTime();
 
 	const ColorRGBA aPalette[] = {
@@ -42,46 +45,68 @@ void CMenusStart::RenderNeonTitle(float CenterX, float Y)
 	const ColorRGBA OldColor = TextRender()->GetTextColor();
 	const ColorRGBA OldOutline = TextRender()->GetTextOutlineColor();
 	TextRender()->TextOutlineColor(0.0f, 0.0f, 0.0f, 0.0f);
+	TextRender()->SetFontPreset(EFontPreset::TITLE_FONT);
 
-	float X = CenterX - TextRender()->TextWidth(FontSize, s_pTitle) / 2.0f;
+	struct SChar
+	{
+		char m_aText[8];
+		float m_Size;
+		float m_Width;
+	};
+	SChar aChars[32];
+	int NumChars = 0;
+	float TotalWidth = 0.0f;
 	const char *pCur = s_pTitle;
-	int Index = 0;
-	while(*pCur)
+	while(*pCur && NumChars < (int)std::size(aChars))
 	{
 		const char *pStart = pCur;
-		if(str_utf8_decode(&pCur) <= 0)
+		const int Code = str_utf8_decode(&pCur);
+		if(Code <= 0)
 			break;
-		char aChar[8];
-		str_copy(aChar, pStart, std::min<int>(sizeof(aChar), pCur - pStart + 1));
+		SChar &Char = aChars[NumChars++];
+		str_copy(Char.m_aText, pStart, std::min<int>(sizeof(Char.m_aText), pCur - pStart + 1));
+		Char.m_Size = Code == CrossCodepoint ? CrossSize : FontSize;
+		Char.m_Width = TextRender()->TextWidth(Char.m_Size, Char.m_aText) + LetterSpacing;
+		TotalWidth += Char.m_Width;
+	}
+
+	float X = CenterX - TotalWidth / 2.0f;
+	for(int Index = 0; Index < NumChars; Index++)
+	{
+		const SChar &Char = aChars[Index];
+		const float CharY = Y - (Char.m_Size - FontSize) * 0.55f;
 
 		// colour wave running through the letters
-		float Wave = 0.5f + 0.5f * std::sin(Time * 1.6f - Index * 0.45f);
-		Wave *= 2.0f;
-		const int From = (int)Wave;
-		const ColorRGBA Color = From >= 2 ? aPalette[2] : LerpColor(aPalette[From], aPalette[From + 1], Wave - From);
+		float Wave = (0.5f + 0.5f * std::sin(Time * 1.6f - Index * 0.45f)) * 2.0f;
+		const int From = std::min((int)Wave, 1);
+		const ColorRGBA Color = LerpColor(aPalette[From], aPalette[From + 1], Wave - From);
 		const float Pulse = 0.75f + 0.25f * std::sin(Time * 2.3f + Index * 0.6f);
 
-		// glow
-		for(int i = 0; i < 8; i++)
+		// soft glow: two rings of offset copies
+		for(int Ring = 0; Ring < 2; Ring++)
 		{
-			const float Angle = i * pi / 4.0f;
-			const float Dist = 2.5f;
-			TextRender()->TextColor(Color.WithAlpha(0.13f * Pulse));
-			TextRender()->Text(X + std::cos(Angle) * Dist, Y + std::sin(Angle) * Dist, FontSize, aChar);
+			const float Dist = Ring == 0 ? 4.0f : 2.0f;
+			for(int i = 0; i < 12; i++)
+			{
+				const float Angle = i * pi / 6.0f;
+				TextRender()->TextColor(Color.WithAlpha((Ring == 0 ? 0.05f : 0.09f) * Pulse));
+				TextRender()->Text(X + std::cos(Angle) * Dist, CharY + std::sin(Angle) * Dist, Char.m_Size, Char.m_aText);
+			}
 		}
 		// core
-		TextRender()->TextColor(LerpColor(Color, ColorRGBA(1.0f, 1.0f, 1.0f, 1.0f), 0.3f));
-		TextRender()->Text(X, Y, FontSize, aChar);
+		TextRender()->TextColor(LerpColor(Color, ColorRGBA(1.0f, 1.0f, 1.0f, 1.0f), 0.25f));
+		TextRender()->Text(X, CharY, Char.m_Size, Char.m_aText);
 
-		X += TextRender()->TextWidth(FontSize, aChar);
-		Index++;
+		X += Char.m_Width;
 	}
+
+	TextRender()->SetFontPreset(EFontPreset::DEFAULT_FONT);
 
 	// keep credit to the project this client is based on
 	constexpr float SubSize = 11.0f;
 	const char *pSub = "based on DDNet";
-	TextRender()->TextColor(0.8f, 0.8f, 1.0f, 0.45f);
-	TextRender()->Text(CenterX - TextRender()->TextWidth(SubSize, pSub) / 2.0f, Y + FontSize + 6.0f, SubSize, pSub);
+	TextRender()->TextColor(0.8f, 0.8f, 1.0f, 0.4f);
+	TextRender()->Text(CenterX - TextRender()->TextWidth(SubSize, pSub) / 2.0f, Y + FontSize + 10.0f, SubSize, pSub);
 
 	TextRender()->TextColor(OldColor);
 	TextRender()->TextOutlineColor(OldOutline);
@@ -92,7 +117,7 @@ void CMenusStart::RenderStartMenu(CUIRect MainView)
 	GameClient()->m_MenuBackground.ChangePosition(CMenuBackground::POS_START);
 
 	// render the neon "Cr♱stal Client" title
-	RenderNeonTitle(MainView.w / 2, 75.0f);
+	RenderNeonTitle(MainView.w / 2, 70.0f);
 
 	const float Rounding = 10.0f;
 	const float VMargin = MainView.w / 2 - 190.0f;

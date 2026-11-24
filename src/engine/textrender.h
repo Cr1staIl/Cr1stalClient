@@ -61,6 +61,7 @@ enum class EFontPreset
 {
 	DEFAULT_FONT,
 	ICON_FONT,
+	TITLE_FONT, // bold font for big titles (Cr1stal Client)
 };
 
 enum ETextCursorSelectionMode

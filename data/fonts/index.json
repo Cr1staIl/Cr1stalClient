@@ -1,6 +1,7 @@
 {
     "font files": [
         "DejaVuSans.ttf",
+        "DejaVuSans-Bold.ttf",
         "Font_Awesome_6_Free-Solid-900.otf",
         "GlowSansJ-Compressed-Book.otf",
         "SourceHanSans.ttc"
@@ -15,5 +16,6 @@
     "fallbacks": [
         "Source Han Sans"
     ],
-    "icon": "Font Awesome 6 Free"
+    "icon": "Font Awesome 6 Free",
+    "title": "DejaVu Sans Bold"
 }
