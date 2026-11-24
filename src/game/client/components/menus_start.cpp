@@ -71,39 +71,56 @@ void CMenusStart::RenderNeonTitle(float CenterX, float Y)
 	}
 
 	float X = CenterX - TotalWidth / 2.0f;
+	const ColorRGBA NoOutline(0.0f, 0.0f, 0.0f, 0.0f);
 	for(int Index = 0; Index < NumChars; Index++)
 	{
 		const SChar &Char = aChars[Index];
-		const float CharY = Y - (Char.m_Size - FontSize) * 0.55f;
 
-		// colour wave running through the letters
-		float Wave = (0.5f + 0.5f * std::sin(Time * 1.6f - Index * 0.45f)) * 2.0f;
-		const int From = std::min((int)Wave, 1);
-		const ColorRGBA Color = LerpColor(aPalette[From], aPalette[From + 1], Wave - From);
-		const float Pulse = 0.75f + 0.25f * std::sin(Time * 2.3f + Index * 0.6f);
+		// fixed colour gradient through the title: cyan -> violet -> magenta
+		const float T = NumChars > 1 ? Index / (float)(NumChars - 1) : 0.0f;
+		const ColorRGBA Color = T < 0.5f ? LerpColor(aPalette[0], aPalette[1], T * 2.0f) : LerpColor(aPalette[1], aPalette[2], (T - 0.5f) * 2.0f);
 
-		// one text container per letter, drawn many times: soft glow rings plus the core, without the default black outline
+		// every letter floats gently up/down and sways a little, each with its own rhythm
+		const float BobY = std::sin(Time * 1.3f + Index * 0.55f) * 3.0f;
+		const float SwayX = std::sin(Time * 0.7f + Index * 1.1f) * 1.2f;
+		const float CharX = X + SwayX;
+		const float CharY = Y - (Char.m_Size - FontSize) * 0.55f + BobY;
+
+		// soft halo behind the letter: many faint circles make a smooth falloff
+		if(Char.m_aText[0] != ' ')
+		{
+			const vec2 HaloCenter(CharX + Char.m_Width / 2.0f, CharY + Char.m_Size * 0.55f);
+			Graphics()->TextureClear();
+			Graphics()->BlendAdditive();
+			Graphics()->QuadsBegin();
+			for(int Ring = 14; Ring >= 1; Ring--)
+			{
+				Graphics()->SetColor(Color.WithAlpha(0.012f));
+				Graphics()->DrawCircle(HaloCenter.x, HaloCenter.y, Char.m_Size * 0.62f * Ring / 14.0f, 32);
+			}
+			Graphics()->QuadsEnd();
+			Graphics()->BlendNormal();
+		}
+
+		// one text container per letter, drawn several times: a tight smooth glow plus the core
 		CTextCursor Cursor;
-		Cursor.SetPosition(vec2(X, CharY));
+		Cursor.SetPosition(vec2(CharX, CharY));
 		Cursor.m_FontSize = Char.m_Size;
 		STextContainerIndex Container;
 		TextRender()->CreateTextContainer(Container, &Cursor, Char.m_aText);
 		if(Container.Valid())
 		{
-			const ColorRGBA NoOutline(0.0f, 0.0f, 0.0f, 0.0f);
-			for(int Ring = 0; Ring < 3; Ring++)
+			const float aDist[] = {0.6f, 1.2f, 1.9f, 2.7f};
+			const float aAlpha[] = {0.16f, 0.09f, 0.05f, 0.025f};
+			for(int Ring = 0; Ring < 4; Ring++)
 			{
-				const float Dist = 1.5f + Ring * 2.0f;
-				const float GlowAlpha = (Ring == 0 ? 0.10f : Ring == 1 ? 0.05f :
-											 0.025f) *
-							Pulse;
-				for(int i = 0; i < 16; i++)
+				for(int i = 0; i < 12; i++)
 				{
-					const float Angle = i * pi / 8.0f;
-					TextRender()->RenderTextContainer(Container, Color.WithAlpha(GlowAlpha), NoOutline, std::cos(Angle) * Dist, std::sin(Angle) * Dist);
+					const float Angle = i * pi / 6.0f + Ring * 0.26f;
+					TextRender()->RenderTextContainer(Container, Color.WithAlpha(aAlpha[Ring]), NoOutline, std::cos(Angle) * aDist[Ring], std::sin(Angle) * aDist[Ring]);
 				}
 			}
-			TextRender()->RenderTextContainer(Container, LerpColor(Color, ColorRGBA(1.0f, 1.0f, 1.0f, 1.0f), 0.2f), NoOutline, 0.0f, 0.0f);
+			TextRender()->RenderTextContainer(Container, LerpColor(Color, ColorRGBA(1.0f, 1.0f, 1.0f, 1.0f), 0.35f), NoOutline, 0.0f, 0.0f);
 			TextRender()->DeleteTextContainer(Container);
 		}
 
