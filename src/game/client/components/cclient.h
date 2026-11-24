@@ -9,6 +9,7 @@
 #include <engine/shared/protocol.h>
 
 #include <game/client/component.h>
+#include <game/client/components/cclient_media.h>
 
 #include <memory>
 
@@ -71,6 +72,18 @@ public:
 	void OnShutdown() override;
 	static const char *SaveName(int Save);
 
+	// glowing picture behind your tee (cc_aura 1..NUM_AURAS)
+	static constexpr int NUM_AURAS = 4;
+	void RenderAura(vec2 Pos);
+
+	// music island at the top of the screen (called by the HUD, HUD coordinates)
+	void RenderMusicIsland(float ScreenWidth);
+
+	// fonts for all text
+	static constexpr int NUM_FONTS = 11;
+	static const char *FontFamily(int Font);
+	static const char *FontDisplayName(int Font);
+
 private:
 	struct SMarker
 	{
@@ -83,6 +96,18 @@ private:
 	static constexpr float SAVE_LIFETIME = 5.0f;
 
 	IGraphics::CTextureHandle m_aSaveTextures[NUM_SAVES];
+	IGraphics::CTextureHandle m_aAuraTextures[NUM_AURAS];
+	int m_AppliedFont = -1;
+
+	CMediaWatcher m_Media;
+	CMediaWatcher::SInfo m_MediaInfo;
+	IGraphics::CTextureHandle m_CoverTexture;
+	int m_CoverVersion = -1;
+	float m_NextMediaPoll = 0.0f;
+	float m_IslandWidth = 0.0f; // animated
+	float m_IslandVisible = 0.0f; // animated 0..1
+	void UpdateMedia();
+	void ApplyFont();
 
 	bool m_WheelActive = false;
 	vec2 m_SelectorMouse = vec2(0.0f, 0.0f);
@@ -113,6 +138,14 @@ private:
 
 	void RenderWorld();
 	void RenderWheel();
+};
+
+// Outlines around freeze, wall, unfreeze and death tiles (drawn above the map, below the tees)
+class CCOutlines : public CComponent
+{
+public:
+	int Sizeof() const override { return sizeof(*this); }
+	void OnRender() override;
 };
 
 #endif

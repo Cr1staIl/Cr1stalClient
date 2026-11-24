@@ -1337,7 +1337,20 @@ CUi::EPopupMenuFunctionResult CScoreboard::CScoreboardPopupContext::Render(void 
 	constexpr float FontSize = 12.0f;
 	constexpr float ButtonSize = 17.5f;
 
+	// C-Client: soft dark popup
+	View.Draw(ColorRGBA(0.07f, 0.03f, 0.13f, 0.97f), IGraphics::CORNER_ALL, 8.0f);
 	View.Margin(Margin, &View);
+
+	auto SoftColor = [pUi](const CButtonContainer *pButton, bool Checked = false) {
+		if(pUi->HotItem() == pButton)
+			return ColorRGBA(0.45f, 0.25f, 0.75f, 0.95f);
+		return Checked ? ColorRGBA(0.32f, 0.16f, 0.55f, 0.9f) : ColorRGBA(0.18f, 0.10f, 0.30f, 0.9f);
+	};
+	auto SoftButton = [pUi, &SoftColor](CButtonContainer *pButton, const char *pText, const CUIRect *pRect, float Size, bool Checked = false) {
+		pRect->Draw(SoftColor(pButton, Checked), IGraphics::CORNER_ALL, 6.0f);
+		pUi->DoLabel(pRect, pText, Size, TEXTALIGN_MC);
+		return pUi->DoButtonLogic(pButton, 0, pRect, BUTTONFLAG_LEFT);
+	};
 
 	CUIRect Label, Container, Action;
 
@@ -1356,8 +1369,7 @@ CUi::EPopupMenuFunctionResult CScoreboard::CScoreboardPopupContext::Render(void 
 
 		Container.VSplitLeft(ActionSize, &Action, &Container);
 
-		ColorRGBA FriendActionColor = Client.m_Friend ? ColorRGBA(0.95f, 0.3f, 0.3f, 0.85f * pUi->ButtonColorMul(&pPopupContext->m_FriendAction)) :
-								ColorRGBA(1.0f, 1.0f, 1.0f, 0.5f * pUi->ButtonColorMul(&pPopupContext->m_FriendAction));
+		ColorRGBA FriendActionColor = Client.m_Friend ? ColorRGBA(0.85f, 0.2f, 0.45f, 0.9f) : SoftColor(&pPopupContext->m_FriendAction);
 		const char *pFriendActionIcon = pUi->HotItem() == &pPopupContext->m_FriendAction && Client.m_Friend ? FontIcon::HEART_CRACK : FontIcon::HEART;
 		if(pUi->DoButton_FontIcon(&pPopupContext->m_FriendAction, pFriendActionIcon, Client.m_Friend, &Action, BUTTONFLAG_LEFT, ActionCorners, true, FriendActionColor))
 		{
@@ -1376,7 +1388,7 @@ CUi::EPopupMenuFunctionResult CScoreboard::CScoreboardPopupContext::Render(void 
 		Container.VSplitLeft(ActionSpacing, nullptr, &Container);
 		Container.VSplitLeft(ActionSize, &Action, &Container);
 
-		if(pUi->DoButton_FontIcon(&pPopupContext->m_MuteAction, FontIcon::BAN, Client.m_ChatIgnore, &Action, BUTTONFLAG_LEFT, ActionCorners))
+		if(pUi->DoButton_FontIcon(&pPopupContext->m_MuteAction, FontIcon::BAN, Client.m_ChatIgnore, &Action, BUTTONFLAG_LEFT, ActionCorners, true, SoftColor(&pPopupContext->m_MuteAction, Client.m_ChatIgnore)))
 		{
 			Client.m_ChatIgnore ^= 1;
 		}
@@ -1386,7 +1398,7 @@ CUi::EPopupMenuFunctionResult CScoreboard::CScoreboardPopupContext::Render(void 
 		Container.VSplitLeft(ActionSize, &Action, &Container);
 
 		const char *EmoticonActionIcon = Client.m_EmoticonIgnore ? FontIcon::COMMENT_SLASH : FontIcon::COMMENT;
-		if(pUi->DoButton_FontIcon(&pPopupContext->m_EmoticonAction, EmoticonActionIcon, Client.m_EmoticonIgnore, &Action, BUTTONFLAG_LEFT, ActionCorners))
+		if(pUi->DoButton_FontIcon(&pPopupContext->m_EmoticonAction, EmoticonActionIcon, Client.m_EmoticonIgnore, &Action, BUTTONFLAG_LEFT, ActionCorners, true, SoftColor(&pPopupContext->m_EmoticonAction, Client.m_EmoticonIgnore)))
 		{
 			Client.m_EmoticonIgnore ^= 1;
 		}
@@ -1400,7 +1412,7 @@ CUi::EPopupMenuFunctionResult CScoreboard::CScoreboardPopupContext::Render(void 
 		View.HSplitTop(ActionSize, &Container, &View);
 
 		Container.VSplitLeft(ActionSize, &Action, &Container);
-		if(pUi->DoButton_FontIcon(&pPopupContext->m_WhisperAction, FontIcon::PEN_TO_SQUARE, 0, &Action, BUTTONFLAG_LEFT, ActionCorners))
+		if(pUi->DoButton_FontIcon(&pPopupContext->m_WhisperAction, FontIcon::PEN_TO_SQUARE, 0, &Action, BUTTONFLAG_LEFT, ActionCorners, true, SoftColor(&pPopupContext->m_WhisperAction, false)))
 		{
 			char aQuoted[2 * MAX_NAME_LENGTH + 8];
 			QuoteForCommand(Client.m_aName, aQuoted, sizeof(aQuoted));
@@ -1413,7 +1425,7 @@ CUi::EPopupMenuFunctionResult CScoreboard::CScoreboardPopupContext::Render(void 
 
 		Container.VSplitLeft(Action2Spacing, nullptr, &Container);
 		Container.VSplitLeft(ActionSize, &Action, &Container);
-		if(pUi->DoButton_FontIcon(&pPopupContext->m_CopyNameAction, FontIcon::FILE, 0, &Action, BUTTONFLAG_LEFT, ActionCorners))
+		if(pUi->DoButton_FontIcon(&pPopupContext->m_CopyNameAction, FontIcon::FILE, 0, &Action, BUTTONFLAG_LEFT, ActionCorners, true, SoftColor(&pPopupContext->m_CopyNameAction, false)))
 		{
 			pScoreboard->Input()->SetClipboardText(Client.m_aName);
 		}
@@ -1421,7 +1433,7 @@ CUi::EPopupMenuFunctionResult CScoreboard::CScoreboardPopupContext::Render(void 
 
 		Container.VSplitLeft(Action2Spacing, nullptr, &Container);
 		Container.VSplitLeft(ActionSize, &Action, &Container);
-		if(pUi->DoButton_FontIcon(&pPopupContext->m_CopySkinAction, FontIcon::BRUSH, 0, &Action, BUTTONFLAG_LEFT, ActionCorners))
+		if(pUi->DoButton_FontIcon(&pPopupContext->m_CopySkinAction, FontIcon::BRUSH, 0, &Action, BUTTONFLAG_LEFT, ActionCorners, true, SoftColor(&pPopupContext->m_CopySkinAction, false)))
 		{
 			// copied as console commands, so it can be pasted into F1 to wear the same skin
 			char aQuoted[2 * MAX_SKIN_LENGTH + 8];
@@ -1435,7 +1447,7 @@ CUi::EPopupMenuFunctionResult CScoreboard::CScoreboardPopupContext::Render(void 
 
 		Container.VSplitLeft(Action2Spacing, nullptr, &Container);
 		Container.VSplitLeft(ActionSize, &Action, &Container);
-		if(pUi->DoButton_FontIcon(&pPopupContext->m_ProfileAction, FontIcon::EARTH_AMERICAS, 0, &Action, BUTTONFLAG_LEFT, ActionCorners))
+		if(pUi->DoButton_FontIcon(&pPopupContext->m_ProfileAction, FontIcon::EARTH_AMERICAS, 0, &Action, BUTTONFLAG_LEFT, ActionCorners, true, SoftColor(&pPopupContext->m_ProfileAction, false)))
 		{
 			char aUrl[512];
 			DDNetPlayerUrl(Client.m_aName, aUrl, sizeof(aUrl));
@@ -1448,7 +1460,7 @@ CUi::EPopupMenuFunctionResult CScoreboard::CScoreboardPopupContext::Render(void 
 		{
 			View.HSplitTop(ItemSpacing * 2, nullptr, &View);
 			View.HSplitTop(ButtonSize, &Container, &View);
-			if(pUi->DoButton_PopupMenu(&pPopupContext->m_InviteButton, Localize("Invite to team"), &Container, FontSize, TEXTALIGN_MC))
+			if(SoftButton(&pPopupContext->m_InviteButton, Localize("Invite to team"), &Container, FontSize))
 			{
 				char aCmd[MAX_NAME_LENGTH + 32];
 				str_format(aCmd, sizeof(aCmd), "/invite %s", Client.m_aName);
@@ -1463,7 +1475,7 @@ CUi::EPopupMenuFunctionResult CScoreboard::CScoreboardPopupContext::Render(void 
 			const int Team = pScoreboard->JoinableTeamOf(pPopupContext->m_ClientId);
 			char aLabel[64];
 			str_format(aLabel, sizeof(aLabel), Localize("Join team %d"), Team);
-			if(pUi->DoButton_PopupMenu(&pPopupContext->m_JoinTeamButton, aLabel, &Container, FontSize, TEXTALIGN_MC) && Team >= 0)
+			if(SoftButton(&pPopupContext->m_JoinTeamButton, aLabel, &Container, FontSize) && Team >= 0)
 			{
 				char aCmd[32];
 				str_format(aCmd, sizeof(aCmd), "/team %d", Team);
@@ -1474,7 +1486,7 @@ CUi::EPopupMenuFunctionResult CScoreboard::CScoreboardPopupContext::Render(void 
 
 		View.HSplitTop(ItemSpacing * 2, nullptr, &View);
 		View.HSplitTop(ButtonSize, &Container, &View);
-		if(pUi->DoButton_PopupMenu(&pPopupContext->m_VoteKickButton, Localize("Vote kick"), &Container, FontSize, TEXTALIGN_MC))
+		if(SoftButton(&pPopupContext->m_VoteKickButton, Localize("Vote kick"), &Container, FontSize))
 		{
 			pScoreboard->GameClient()->m_Voting.CallvoteKick(pPopupContext->m_ClientId, "");
 			pUi->ClosePopupMenus();
@@ -1485,10 +1497,9 @@ CUi::EPopupMenuFunctionResult CScoreboard::CScoreboardPopupContext::Render(void 
 	View.HSplitTop(ButtonSize, &Container, &View);
 
 	bool IsSpectating = pScoreboard->GameClient()->m_Snap.m_SpecInfo.m_Active && pScoreboard->GameClient()->m_Snap.m_SpecInfo.m_SpectatorId == pPopupContext->m_ClientId;
-	ColorRGBA SpectateButtonColor = ColorRGBA(1.0f, 1.0f, 1.0f, (IsSpectating ? 0.25f : 0.5f) * pUi->ButtonColorMul(&pPopupContext->m_SpectateButton));
 	if(!pPopupContext->m_IsSpectating)
 	{
-		if(pUi->DoButton_PopupMenu(&pPopupContext->m_SpectateButton, Localize("Spectate"), &Container, FontSize, TEXTALIGN_MC, 0.0f, false, true, SpectateButtonColor))
+		if(SoftButton(&pPopupContext->m_SpectateButton, Localize("Spectate"), &Container, FontSize, IsSpectating))
 		{
 			if(IsSpectating)
 			{

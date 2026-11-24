@@ -1831,6 +1831,7 @@ void CHud::OnRender()
 		RenderTextInfo();
 		RenderCClientTeamHud();
 		RenderCClientOverlay();
+		GameClient()->m_CClient.RenderMusicIsland(m_Width);
 		RenderLocalTime((m_Width / 7) * 3);
 		if(Client()->State() != IClient::STATE_DEMOPLAYBACK)
 			RenderConnectionWarning();

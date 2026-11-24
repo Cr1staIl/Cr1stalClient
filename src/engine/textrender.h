@@ -197,6 +197,8 @@ class ITextRender : public IInterface
 public:
 	virtual bool LoadFonts() = 0;
 	virtual void SetFontPreset(EFontPreset FontPreset) = 0;
+	// Cr1stal Client: use another loaded font family for all text, nullptr or "" for the default
+	virtual void SetCustomDefaultFont(const char *pFamilyName) = 0;
 	virtual void SetFontLanguageVariant(const char *pLanguageFile) = 0;
 
 	virtual void SetRenderFlags(unsigned Flags) = 0;

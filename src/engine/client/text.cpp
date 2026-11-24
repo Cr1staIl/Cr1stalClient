@@ -978,6 +978,7 @@ class CTextRender : public IEngineTextRender
 	std::vector<void *> m_vpFontData;
 
 	std::vector<SFontLanguageVariant> m_vVariants;
+	char m_aDefaultFaceName[128] = "";
 
 	unsigned m_RenderFlags;
 
@@ -1265,6 +1266,7 @@ public:
 		const json_value &DefaultFace = (*pJsonData)["default"];
 		if(DefaultFace.type == json_string)
 		{
+			str_copy(m_aDefaultFaceName, DefaultFace.u.string.ptr);
 			if(!m_pGlyphMap->SetDefaultFaceByName(DefaultFace.u.string.ptr))
 			{
 				Success = false;
@@ -1356,6 +1358,13 @@ public:
 	void SetFontPreset(EFontPreset FontPreset) override
 	{
 		m_pGlyphMap->SetFontPreset(FontPreset);
+	}
+
+	void SetCustomDefaultFont(const char *pFamilyName) override
+	{
+		const char *pName = pFamilyName != nullptr && pFamilyName[0] != '\0' ? pFamilyName : m_aDefaultFaceName;
+		if(!m_pGlyphMap->SetDefaultFaceByName(pName))
+			m_pGlyphMap->SetDefaultFaceByName(m_aDefaultFaceName);
 	}
 
 	void SetFontLanguageVariant(const char *pLanguageFile) override

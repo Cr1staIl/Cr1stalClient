@@ -2997,5 +2997,95 @@ Update failed, try again
 Update Cr1stal Client
 == Обновить Cr1stal Client
 
+Customization
+== Кастомизация
+
+Font
+== Шрифт
+
+The font changes all text in the game right away
+== Шрифт сразу меняет весь текст в игре
+
+Normal
+== Обычный
+
+Follows cursor
+== За курсором
+
+Like a gun
+== Как пистолет
+
+Off
+== Выкл
+
+Picture behind tee
+== Картинка за ти
+
+Picture size
+== Размер картинки
+
+Picture opacity
+== Прозрачность картинки
+
+Picture rotation
+== Вращение картинки
+
+Texture packs of other players: coming later
+== Текстурпаки других игроков: будет позже
+
+Tile outlines
+== Обводка тайлов
+
+Outline special tiles
+== Обводить особые тайлы
+
+Outline width
+== Толщина обводки
+
+Freeze
+== Фриз
+
+Freeze color
+== Цвет фриза
+
+Death tiles
+== Смертельные тайлы
+
+Death tile color
+== Цвет смертельных тайлов
+
+Unfreeze
+== Анфриз
+
+Unfreeze color
+== Цвет анфриза
+
+Walls
+== Стены
+
+Wall color
+== Цвет стен
+
+Music island
+== Музыкальный остров
+
+Show the music that is playing (Windows)
+== Показывать играющую музыку (Windows)
+
+Shows what plays in YouTube, Spotify and other players, like the iPhone Dynamic Island
+== Показывает, что играет в YouTube, Spotify и других плеерах, как Dynamic Island на iPhone
+
+Show title and artist
+== Название и исполнитель
+
+Show cover picture
+== Обложка
+
+Island size
+== Размер острова
+
+Distance from the top
+== Отступ сверху
+
 Virtual joystick which only aims and moves the mouse pointer relatively.
 == 

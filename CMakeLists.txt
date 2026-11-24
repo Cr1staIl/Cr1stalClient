@@ -1355,6 +1355,10 @@ set(EXPECTED_DATA
   autoexec_server.cfg
   background_noise.png
   blob.png
+  cclient/aura_cross.png
+  cclient/aura_cross_ring.png
+  cclient/aura_gothic.png
+  cclient/aura_holy.png
   cclient/save_hammer.png
   cclient/save_hook_down.png
   cclient/save_hook_left.png
@@ -1662,11 +1666,21 @@ set(EXPECTED_DATA
   editor/tune.png
   emoticons.png
   extras.png
+  fonts/Comfortaa.ttf
   fonts/DejaVuSans-Bold.ttf
   fonts/DejaVuSans.ttf
+  fonts/Exo2.ttf
   fonts/Font_Awesome_6_Free-Solid-900.otf
   fonts/GlowSansJ-Compressed-Book.otf
+  fonts/Jura.ttf
+  fonts/Lobster.ttf
+  fonts/Montserrat.ttf
+  fonts/Play.ttf
+  fonts/PressStart2P.ttf
+  fonts/Rubik.ttf
+  fonts/RussoOne.ttf
   fonts/SourceHanSans.ttc
+  fonts/Unbounded.ttf
   fonts/index.json
   game.png
   gui_buttons.png
@@ -2670,6 +2684,8 @@ if(CLIENT)
     components/camera.h
     components/cclient.cpp
     components/cclient.h
+    components/cclient_media.cpp
+    components/cclient_media.h
     components/censor.cpp
     components/censor.h
     components/chat.cpp
@@ -3043,6 +3059,9 @@ if(CLIENT)
       PROPERTY OUTPUT_NAME ${CLIENT_EXECUTABLE}
   )
   target_link_libraries(game-client ${LIBS_CLIENT})
+  if(MSVC)
+    target_link_libraries(game-client windowsapp) # Cr1stal Client: now playing music (WinRT)
+  endif()
 
   if(TARGET_OS STREQUAL "ios")
     set(IOS_INFO_PLIST "${PROJECT_BINARY_DIR}/ios-Info.plist")

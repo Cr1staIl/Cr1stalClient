@@ -7,6 +7,7 @@
 
 #include <engine/graphics.h>
 #include <engine/http.h>
+#include <engine/image.h>
 #include <engine/keys.h>
 #include <engine/shared/config.h>
 #include <engine/shared/json.h>
@@ -18,8 +19,11 @@
 #include <game/client/cclient_version.h>
 #include <game/client/gameclient.h>
 #include <game/client/ui.h>
+#include <game/collision.h>
 #include <game/localization.h>
+#include <game/mapitems.h>
 
+#include <algorithm>
 #include <cmath>
 
 static const char *const s_apSaveFiles[CCClient::NUM_SAVES] = {
@@ -32,6 +36,69 @@ static const char *const s_apSaveFiles[CCClient::NUM_SAVES] = {
 	"cclient/save_wait.png",
 	"cclient/save_thanks.png",
 };
+
+static const char *const s_apAuraFiles[CCClient::NUM_AURAS] = {
+	"cclient/aura_cross.png",
+	"cclient/aura_cross_ring.png",
+	"cclient/aura_holy.png",
+	"cclient/aura_gothic.png",
+};
+
+// family name as stored in the font file, and the name shown in the settings
+static const char *const s_aapFonts[CCClient::NUM_FONTS][2] = {
+	{"", "DejaVu Sans"},
+	{"Montserrat", "Montserrat"},
+	{"Rubik", "Rubik"},
+	{"Comfortaa", "Comfortaa"},
+	{"Exo 2", "Exo 2"},
+	{"Russo One", "Russo One"},
+	{"Press Start 2P", "Press Start 2P"},
+	{"Unbounded", "Unbounded"},
+	{"Play", "Play"},
+	{"Jura", "Jura"},
+	{"Lobster", "Lobster"},
+};
+
+const char *CCClient::FontFamily(int Font)
+{
+	return s_aapFonts[std::clamp(Font, 0, NUM_FONTS - 1)][0];
+}
+
+const char *CCClient::FontDisplayName(int Font)
+{
+	return s_aapFonts[std::clamp(Font, 0, NUM_FONTS - 1)][1];
+}
+
+void CCClient::ApplyFont()
+{
+	if(m_AppliedFont == g_Config.m_CcFont)
+		return;
+	const bool FirstTime = m_AppliedFont == -1;
+	m_AppliedFont = g_Config.m_CcFont;
+	TextRender()->SetCustomDefaultFont(FontFamily(g_Config.m_CcFont));
+	// cached texts everywhere have to be laid out again with the new font
+	// (not during start-up, nothing is cached yet and not every component is ready)
+	if(!FirstTime)
+		GameClient()->OnWindowResize();
+}
+
+void CCClient::RenderAura(vec2 Pos)
+{
+	const int Aura = std::clamp(g_Config.m_CcAura, 1, NUM_AURAS) - 1;
+	const float Size = (float)g_Config.m_CcAuraSize;
+	const float Time = Client()->GlobalTime();
+	const float Pulse = 0.85f + 0.15f * std::sin(Time * 2.0f);
+	Graphics()->BlendAdditive();
+	Graphics()->TextureSet(m_aAuraTextures[Aura]);
+	Graphics()->QuadsBegin();
+	Graphics()->SetColor(1.0f, 1.0f, 1.0f, g_Config.m_CcAuraAlpha / 100.0f * Pulse);
+	Graphics()->QuadsSetRotation(Time * g_Config.m_CcAuraSpin / 100.0f);
+	IGraphics::CQuadItem Quad(Pos.x, Pos.y, Size, Size);
+	Graphics()->QuadsDraw(&Quad, 1);
+	Graphics()->QuadsSetRotation(0.0f);
+	Graphics()->QuadsEnd();
+	Graphics()->BlendNormal();
+}
 
 CCClient::CCClient()
 {
@@ -68,6 +135,10 @@ void CCClient::OnInit()
 {
 	for(int i = 0; i < NUM_SAVES; i++)
 		m_aSaveTextures[i] = Graphics()->LoadTexture(s_apSaveFiles[i], IStorage::TYPE_ALL);
+	for(int i = 0; i < NUM_AURAS; i++)
+		m_aAuraTextures[i] = Graphics()->LoadTexture(s_apAuraFiles[i], IStorage::TYPE_ALL);
+	ApplyFont();
+	m_Media.Start();
 
 	if(g_Config.m_CcUpdateCheck)
 		CheckForUpdate();
@@ -454,6 +525,9 @@ float CCClient::UpdateProgress() const
 
 void CCClient::OnUpdate()
 {
+	ApplyFont();
+	UpdateMedia();
+
 	if(m_UpdateState == EUpdateState::CHECKING && m_pVersionRequest && m_pVersionRequest->Done())
 	{
 		m_UpdateState = EUpdateState::FAILED;
@@ -505,8 +579,242 @@ void CCClient::FinishUpdate()
 
 void CCClient::OnShutdown()
 {
+	m_Media.Stop();
 	if(m_pVersionRequest)
 		m_pVersionRequest->Abort();
 	if(m_pSetupRequest && m_UpdateState == EUpdateState::DOWNLOADING)
 		m_pSetupRequest->Abort();
+}
+
+// ---------------------------------------------------------------- tile outlines
+
+enum
+{
+	OUTLINE_NONE = 0,
+	OUTLINE_SOLID,
+	OUTLINE_FREEZE,
+	OUTLINE_UNFREEZE,
+	OUTLINE_DEATH,
+	NUM_OUTLINE_KINDS,
+};
+
+static int OutlineKind(const CCollision *pCollision, int Index)
+{
+	const int Game = pCollision->GetTileIndex(Index);
+	const int Front = pCollision->GetFrontTileIndex(Index);
+	if(Game == TILE_SOLID || Game == TILE_NOHOOK)
+		return OUTLINE_SOLID;
+	if(Game == TILE_DEATH || Front == TILE_DEATH)
+		return OUTLINE_DEATH;
+	auto IsFreeze = [](int Tile) { return Tile == TILE_FREEZE || Tile == TILE_DFREEZE || Tile == TILE_LFREEZE; };
+	auto IsUnfreeze = [](int Tile) { return Tile == TILE_UNFREEZE || Tile == TILE_DUNFREEZE || Tile == TILE_LUNFREEZE; };
+	if(IsFreeze(Game) || IsFreeze(Front))
+		return OUTLINE_FREEZE;
+	if(IsUnfreeze(Game) || IsUnfreeze(Front))
+		return OUTLINE_UNFREEZE;
+	return OUTLINE_NONE;
+}
+
+void CCOutlines::OnRender()
+{
+	if(!g_Config.m_CcOutline)
+		return;
+	if(Client()->State() != IClient::STATE_ONLINE && Client()->State() != IClient::STATE_DEMOPLAYBACK)
+		return;
+	const CCollision *pCollision = Collision();
+	const int Width = pCollision->GetWidth();
+	const int Height = pCollision->GetHeight();
+	if(Width <= 0 || Height <= 0)
+		return;
+
+	const bool aEnabled[NUM_OUTLINE_KINDS] = {false, (bool)g_Config.m_CcOutlineSolid, (bool)g_Config.m_CcOutlineFreeze, (bool)g_Config.m_CcOutlineUnfreeze, (bool)g_Config.m_CcOutlineDeath};
+	const ColorRGBA aColors[NUM_OUTLINE_KINDS] = {
+		ColorRGBA(0, 0, 0, 0),
+		color_cast<ColorRGBA>(ColorHSLA(g_Config.m_CcOutlineColorSolid, true)),
+		color_cast<ColorRGBA>(ColorHSLA(g_Config.m_CcOutlineColorFreeze, true)),
+		color_cast<ColorRGBA>(ColorHSLA(g_Config.m_CcOutlineColorUnfreeze, true)),
+		color_cast<ColorRGBA>(ColorHSLA(g_Config.m_CcOutlineColorDeath, true)),
+	};
+
+	const CScreenRect OldScreen = Graphics()->GetScreen();
+	const vec2 Center = GameClient()->m_Camera.m_Center;
+	const CScreenRect ScreenRect = Graphics()->MapScreenToWorld(Center.x, Center.y, 100.0f, 100.0f, 100.0f, 0, 0, Graphics()->ScreenAspect(), GameClient()->m_Camera.m_Zoom);
+	Graphics()->MapScreen(ScreenRect);
+
+	const int StartX = std::clamp((int)std::floor(ScreenRect.m_TopLeft.x / 32.0f) - 1, 0, Width - 1);
+	const int StartY = std::clamp((int)std::floor(ScreenRect.m_TopLeft.y / 32.0f) - 1, 0, Height - 1);
+	const int EndX = std::clamp((int)std::ceil(ScreenRect.m_BottomRight.x / 32.0f) + 1, 0, Width - 1);
+	const int EndY = std::clamp((int)std::ceil(ScreenRect.m_BottomRight.y / 32.0f) + 1, 0, Height - 1);
+	const float W = (float)g_Config.m_CcOutlineWidth;
+
+	Graphics()->TextureClear();
+	Graphics()->QuadsBegin();
+	for(int Kind = OUTLINE_SOLID; Kind < NUM_OUTLINE_KINDS; Kind++)
+	{
+		if(!aEnabled[Kind])
+			continue;
+		Graphics()->SetColor(aColors[Kind]);
+		IGraphics::CQuadItem aQuads[64];
+		int NumQuads = 0;
+		auto Push = [&](float X, float Y, float QW, float QH) {
+			aQuads[NumQuads++] = IGraphics::CQuadItem(X, Y, QW, QH);
+			if(NumQuads == (int)std::size(aQuads))
+			{
+				Graphics()->QuadsDrawTL(aQuads, NumQuads);
+				NumQuads = 0;
+			}
+		};
+		for(int y = StartY; y <= EndY; y++)
+		{
+			for(int x = StartX; x <= EndX; x++)
+			{
+				if(OutlineKind(pCollision, y * Width + x) != Kind)
+					continue;
+				const float X = x * 32.0f, Y = y * 32.0f;
+				// draw the edges that border a different kind of tile, on the inside of this tile
+				if(x == 0 || OutlineKind(pCollision, y * Width + x - 1) != Kind)
+					Push(X, Y, W, 32.0f);
+				if(x == Width - 1 || OutlineKind(pCollision, y * Width + x + 1) != Kind)
+					Push(X + 32.0f - W, Y, W, 32.0f);
+				if(y == 0 || OutlineKind(pCollision, (y - 1) * Width + x) != Kind)
+					Push(X, Y, 32.0f, W);
+				if(y == Height - 1 || OutlineKind(pCollision, (y + 1) * Width + x) != Kind)
+					Push(X, Y + 32.0f - W, 32.0f, W);
+			}
+		}
+		if(NumQuads > 0)
+			Graphics()->QuadsDrawTL(aQuads, NumQuads);
+	}
+	Graphics()->QuadsEnd();
+
+	Graphics()->MapScreen(OldScreen);
+}
+
+// ---------------------------------------------------------------- music island
+
+void CCClient::UpdateMedia()
+{
+	if(!g_Config.m_CcMusicIsland)
+		return;
+	const float Now = Client()->GlobalTime();
+	if(Now < m_NextMediaPoll)
+		return;
+	m_NextMediaPoll = Now + 0.5f;
+	m_MediaInfo = m_Media.Get();
+
+	if(m_MediaInfo.m_Version != m_CoverVersion)
+	{
+		m_CoverVersion = m_MediaInfo.m_Version;
+		if(m_CoverTexture.IsValid())
+			Graphics()->UnloadTexture(&m_CoverTexture);
+		if(!m_MediaInfo.m_vCover.empty() && m_MediaInfo.m_CoverWidth > 0 &&
+			m_MediaInfo.m_vCover.size() >= (size_t)m_MediaInfo.m_CoverWidth * m_MediaInfo.m_CoverHeight * 4)
+		{
+			CImageInfo Image;
+			Image.m_Width = m_MediaInfo.m_CoverWidth;
+			Image.m_Height = m_MediaInfo.m_CoverHeight;
+			Image.m_Format = CImageInfo::FORMAT_RGBA;
+			Image.m_pData = m_MediaInfo.m_vCover.data();
+			m_CoverTexture = Graphics()->LoadTextureRaw(Image, 0, "cclient_cover");
+		}
+		m_IslandWidth = 0.0f; // grow again for the new track
+	}
+}
+
+void CCClient::RenderMusicIsland(float ScreenWidth)
+{
+	const bool Show = g_Config.m_CcMusicIsland && m_MediaInfo.m_Valid;
+	const float Delta = std::clamp(Client()->RenderFrameTime(), 0.0f, 0.1f);
+	m_IslandVisible = std::clamp(m_IslandVisible + (Show ? Delta : -Delta) * 4.0f, 0.0f, 1.0f);
+	if(m_IslandVisible <= 0.0f)
+		return;
+
+	const float Scale = g_Config.m_CcMusicIslandSize / 100.0f;
+	const float Height = 18.0f * Scale;
+	const float Pad = 2.5f * Scale;
+	const float CoverSize = Height - Pad * 2.0f;
+	const bool Cover = g_Config.m_CcMusicIslandCover && m_CoverTexture.IsValid();
+	const bool Text = g_Config.m_CcMusicIslandText;
+	const float TitleSize = 6.0f * Scale;
+	const float ArtistSize = 4.8f * Scale;
+	const float TextMax = 90.0f * Scale;
+
+	float TextWidth = 0.0f;
+	if(Text)
+		TextWidth = std::min(TextMax, std::max(TextRender()->TextWidth(TitleSize, m_MediaInfo.m_Title.c_str()), TextRender()->TextWidth(ArtistSize, m_MediaInfo.m_Artist.c_str())));
+	const float BarsWidth = 10.0f * Scale;
+	float TargetWidth = Pad * 2.0f + BarsWidth + (Cover ? CoverSize + Pad * 1.5f : 0.0f) + (Text ? TextWidth + Pad * 1.5f : Pad);
+	TargetWidth = std::max(TargetWidth, Height * 2.0f);
+
+	// smooth "growing" like the iPhone island
+	if(m_IslandWidth <= 0.0f)
+		m_IslandWidth = Height;
+	m_IslandWidth += (TargetWidth - m_IslandWidth) * std::min(1.0f, Delta * 8.0f);
+	const float Width = m_IslandWidth;
+	const float X = ScreenWidth / 2.0f - Width / 2.0f;
+	const float Y = (float)g_Config.m_CcMusicIslandY;
+	const float Alpha = m_IslandVisible;
+
+	// pill
+	CUIRect Pill;
+	Pill.x = X;
+	Pill.y = Y;
+	Pill.w = Width;
+	Pill.h = Height;
+	Pill.Draw(ColorRGBA(0.02f, 0.01f, 0.04f, 0.92f * Alpha), IGraphics::CORNER_ALL, Height / 2.0f);
+
+	// content appears once the pill is wide enough
+	const float ContentAlpha = Alpha * std::clamp((Width - Height * 1.5f) / std::max(1.0f, TargetWidth - Height * 1.5f), 0.0f, 1.0f);
+	float CursorX = X + Pad * 1.6f;
+	if(Cover)
+	{
+		Graphics()->TextureSet(m_CoverTexture);
+		Graphics()->QuadsBegin();
+		Graphics()->SetColor(1.0f, 1.0f, 1.0f, ContentAlpha);
+		IGraphics::CQuadItem CoverQuad(CursorX, Y + Pad, CoverSize, CoverSize);
+		Graphics()->QuadsDrawTL(&CoverQuad, 1);
+		Graphics()->QuadsEnd();
+		CursorX += CoverSize + Pad * 1.5f;
+	}
+	if(Text && ContentAlpha > 0.01f)
+	{
+		const float MaxW = std::max(1.0f, Width - (CursorX - X) - BarsWidth - Pad * 2.0f);
+		CTextCursor Cursor;
+		Cursor.SetPosition(vec2(CursorX, Y + Pad * 0.6f));
+		Cursor.m_FontSize = TitleSize;
+		Cursor.m_LineWidth = MaxW;
+		Cursor.m_MaxLines = 1;
+		Cursor.m_Flags = TEXTFLAG_RENDER | TEXTFLAG_ELLIPSIS_AT_END;
+		TextRender()->TextColor(1.0f, 1.0f, 1.0f, ContentAlpha);
+		TextRender()->TextEx(&Cursor, m_MediaInfo.m_Title.c_str());
+
+		CTextCursor ArtistCursor;
+		ArtistCursor.SetPosition(vec2(CursorX, Y + Pad * 0.6f + TitleSize + 0.6f * Scale));
+		ArtistCursor.m_FontSize = ArtistSize;
+		ArtistCursor.m_LineWidth = MaxW;
+		ArtistCursor.m_MaxLines = 1;
+		ArtistCursor.m_Flags = TEXTFLAG_RENDER | TEXTFLAG_ELLIPSIS_AT_END;
+		TextRender()->TextColor(0.75f, 0.8f, 0.95f, ContentAlpha * 0.85f);
+		TextRender()->TextEx(&ArtistCursor, m_MediaInfo.m_Artist.c_str());
+		TextRender()->TextColor(TextRender()->DefaultTextColor());
+	}
+
+	// little equalizer on the right, moving while the music plays
+	{
+		const float Time = Client()->GlobalTime();
+		const float BarW = 1.4f * Scale;
+		const float BaseX = X + Width - Pad * 1.6f - BarsWidth + BarW;
+		Graphics()->TextureClear();
+		Graphics()->QuadsBegin();
+		for(int i = 0; i < 4; i++)
+		{
+			const float Level = m_MediaInfo.m_Playing ? 0.35f + 0.65f * std::fabs(std::sin(Time * (5.0f + i * 1.7f) + i * 1.3f)) : 0.2f;
+			const float BarH = (Height - Pad * 3.0f) * Level;
+			const ColorRGBA Color = i % 2 == 0 ? ColorRGBA(0.0f, 0.95f, 1.0f, ContentAlpha) : ColorRGBA(1.0f, 0.2f, 0.85f, ContentAlpha);
+			Graphics()->SetColor(Color);
+			IGraphics::CQuadItem Bar(BaseX + i * BarW * 1.9f, Y + Height / 2.0f - BarH / 2.0f, BarW, BarH);
+			Graphics()->QuadsDrawTL(&Bar, 1);
+		}
+		Graphics()->QuadsEnd();
+	}
 }

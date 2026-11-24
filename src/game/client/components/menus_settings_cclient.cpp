@@ -76,6 +76,34 @@ public:
 		m_pUi->DoScrollbarOption(pValue, pValue, &Button, pText, Min, Max, &CUi::ms_LinearScrollbarScale, 0u, pSuffix);
 	}
 
+	void Color(const char *pText, unsigned *pValue, unsigned DefaultValue)
+	{
+		static CButtonContainer s_aResetButtons[16];
+		static int s_NextReset = 0;
+		CButtonContainer *pReset = &s_aResetButtons[s_NextReset++ % 16];
+		m_pMenus->DoLine_ColorPicker(pReset, CC_LINE, 12.0f, 3.0f, &m_Rect, pText, pValue, color_cast<ColorRGBA>(ColorHSLA(DefaultValue, true)), false, nullptr, true);
+	}
+
+	// row of buttons, one of them selected
+	void Choice(int *pValue, const char *pLabel, const char *const *ppOptions, int NumOptions, CButtonContainer *pButtons)
+	{
+		CUIRect Row = Line();
+		CUIRect Label;
+		Row.VSplitLeft(110.0f, &Label, &Row);
+		m_pUi->DoLabel(&Label, pLabel, 12.0f, TEXTALIGN_ML);
+		const float ButtonW = Row.w / NumOptions;
+		for(int i = 0; i < NumOptions; i++)
+		{
+			CUIRect Button;
+			Row.VSplitLeft(ButtonW, &Button, &Row);
+			Button.VMargin(1.0f, &Button);
+			const int Corners = i == 0 ? IGraphics::CORNER_L : (i == NumOptions - 1 ? IGraphics::CORNER_R : IGraphics::CORNER_NONE);
+			const ColorRGBA Color = *pValue == i ? ColorRGBA(0.45f, 0.25f, 0.75f, 0.9f) : ColorRGBA(0.15f, 0.08f, 0.25f, 0.8f);
+			if(m_pMenus->DoButton_Menu(&pButtons[i], ppOptions[i], 0, &Button, BUTTONFLAG_LEFT, nullptr, Corners, 5.0f, 0.0f, Color))
+				*pValue = i;
+		}
+	}
+
 	void Note(const char *pText, ColorRGBA Color = ColorRGBA(1.0f, 0.8f, 0.4f, 1.0f))
 	{
 		CUIRect Label = Line(16.0f);
@@ -182,6 +210,79 @@ void CMenus::RenderSettingsCClient(CUIRect MainView)
 		Left.Check(&g_Config.m_CcTrailRainbow, Localize("Rainbow trail"));
 		Left.Slider(&g_Config.m_CcTrailLength, Localize("Trail length"), 5, 120);
 		Left.Slider(&g_Config.m_CcTrailWidth, Localize("Trail width"), 2, 40);
+	}
+
+	Left.Gap();
+
+	// ---- customization ----
+	Left.Headline(Localize("Customization"));
+	{
+		// font for all text in the game
+		CUIRect Row = Left.Line();
+		CUIRect Label, Prev, Next, Name;
+		Row.VSplitLeft(110.0f, &Label, &Row);
+		Ui()->DoLabel(&Label, Localize("Font"), 12.0f, TEXTALIGN_ML);
+		Row.VSplitLeft(24.0f, &Prev, &Row);
+		Row.VSplitRight(24.0f, &Row, &Next);
+		Name = Row;
+		static CButtonContainer s_PrevFont, s_NextFont;
+		if(DoButton_Menu(&s_PrevFont, "<", 0, &Prev, BUTTONFLAG_LEFT, nullptr, IGraphics::CORNER_L))
+			g_Config.m_CcFont = (g_Config.m_CcFont + CCClient::NUM_FONTS - 1) % CCClient::NUM_FONTS;
+		if(DoButton_Menu(&s_NextFont, ">", 0, &Next, BUTTONFLAG_LEFT, nullptr, IGraphics::CORNER_R))
+			g_Config.m_CcFont = (g_Config.m_CcFont + 1) % CCClient::NUM_FONTS;
+		Name.Draw(ColorRGBA(0.15f, 0.08f, 0.25f, 0.8f), IGraphics::CORNER_NONE, 0.0f);
+		Ui()->DoLabel(&Name, CCClient::FontDisplayName(g_Config.m_CcFont), 12.0f, TEXTALIGN_MC);
+		Left.Note(Localize("The font changes all text in the game right away"), ColorRGBA(0.75f, 0.75f, 0.9f, 1.0f));
+	}
+	{
+		static CButtonContainer s_aHammerButtons[3];
+		const char *apHammer[] = {Localize("Normal"), Localize("Follows cursor"), Localize("Like a gun")};
+		Left.Choice(&g_Config.m_CcHammerMode, Localize("Hammer"), apHammer, 3, s_aHammerButtons);
+	}
+	{
+		static CButtonContainer s_aAuraButtons[CCClient::NUM_AURAS + 1];
+		const char *apAura[] = {Localize("Off"), "1", "2", "3", "4"};
+		Left.Choice(&g_Config.m_CcAura, Localize("Picture behind tee"), apAura, CCClient::NUM_AURAS + 1, s_aAuraButtons);
+		if(g_Config.m_CcAura)
+		{
+			Left.Slider(&g_Config.m_CcAuraSize, Localize("Picture size"), 80, 600);
+			Left.Slider(&g_Config.m_CcAuraAlpha, Localize("Picture opacity"), 5, 100, "%");
+			Left.Slider(&g_Config.m_CcAuraSpin, Localize("Picture rotation"), 0, 300);
+		}
+	}
+	Left.Note(Localize("Texture packs of other players: coming later"), ColorRGBA(0.6f, 0.6f, 0.75f, 1.0f));
+	Left.Gap();
+
+	// ---- tile outlines ----
+	Left.Headline(Localize("Tile outlines"));
+	Left.Check(&g_Config.m_CcOutline, Localize("Outline special tiles"));
+	if(g_Config.m_CcOutline)
+	{
+		Left.Slider(&g_Config.m_CcOutlineWidth, Localize("Outline width"), 1, 10);
+		Left.Check(&g_Config.m_CcOutlineFreeze, Localize("Freeze"));
+		if(g_Config.m_CcOutlineFreeze)
+			Left.Color(Localize("Freeze color"), &g_Config.m_CcOutlineColorFreeze, 0xFF80FFAA);
+		Left.Check(&g_Config.m_CcOutlineDeath, Localize("Death tiles"));
+		if(g_Config.m_CcOutlineDeath)
+			Left.Color(Localize("Death tile color"), &g_Config.m_CcOutlineColorDeath, 0xFFE6FFAA);
+		Left.Check(&g_Config.m_CcOutlineUnfreeze, Localize("Unfreeze"));
+		if(g_Config.m_CcOutlineUnfreeze)
+			Left.Color(Localize("Unfreeze color"), &g_Config.m_CcOutlineColorUnfreeze, 0xFF55FFAA);
+		Left.Check(&g_Config.m_CcOutlineSolid, Localize("Walls"));
+		if(g_Config.m_CcOutlineSolid)
+			Left.Color(Localize("Wall color"), &g_Config.m_CcOutlineColorSolid, 0xFFBFC8AA);
+	}
+	Left.Gap();
+
+	// ---- music island ----
+	Left.Headline(Localize("Music island"));
+	Left.Check(&g_Config.m_CcMusicIsland, Localize("Show the music that is playing (Windows)"), Localize("Shows what plays in YouTube, Spotify and other players, like the iPhone Dynamic Island"));
+	if(g_Config.m_CcMusicIsland)
+	{
+		Left.Check(&g_Config.m_CcMusicIslandText, Localize("Show title and artist"));
+		Left.Check(&g_Config.m_CcMusicIslandCover, Localize("Show cover picture"));
+		Left.Slider(&g_Config.m_CcMusicIslandSize, Localize("Island size"), 50, 200, "%");
+		Left.Slider(&g_Config.m_CcMusicIslandY, Localize("Distance from the top"), 0, 250);
 	}
 
 	// ================= right column =================

@@ -709,7 +709,37 @@ void CPlayers::RenderPlayer(
 			vec2 WeaponPosition;
 			bool IsSit = Inactive && !InAir && Stationary;
 
-			if(Player.m_Weapon == WEAPON_HAMMER)
+			if(Player.m_Weapon == WEAPON_HAMMER && g_Config.m_CcHammerMode == 1)
+			{
+				// C-Client: hammer turns towards the cursor, still swinging when it hits
+				WeaponPosition = Position + vec2(State.GetAttach()->m_X, State.GetAttach()->m_Y);
+				WeaponPosition.y += g_pData->m_Weapons.m_aId[CurrentWeapon].m_Offsety;
+				if(Direction.x < 0.0f)
+					WeaponPosition.x -= g_pData->m_Weapons.m_aId[CurrentWeapon].m_Offsetx;
+				if(IsSit)
+					WeaponPosition.y += 3.0f;
+				float HammerRotation = -pi / 2.0f + State.GetAttach()->m_Angle * (Direction.x < 0.0f ? -1.0f : 1.0f) * pi * 2.0f + Angle;
+				if(Direction.x < 0.0f)
+					HammerRotation += pi;
+				Graphics()->QuadsSetRotation(HammerRotation);
+				Graphics()->RenderQuadContainerAsSprite(m_WeaponEmoteQuadContainerIndex, QuadOffset, WeaponPosition.x, WeaponPosition.y);
+			}
+			else if(Player.m_Weapon == WEAPON_HAMMER && g_Config.m_CcHammerMode == 2)
+			{
+				// C-Client: hammer held in front like a gun, short push when it hits
+				Recoil = 0.0f;
+				const float HitProgress = AttackTicksPassed / 5.0f;
+				if(HitProgress < 1.0f)
+					Recoil = std::sin(HitProgress * pi);
+				WeaponPosition = Position - Direction * (Recoil * 10.0f - 5.0f);
+				if(IsSit)
+					WeaponPosition.y += 3.0f;
+				Graphics()->QuadsSetRotation(Angle + 2.0f * pi);
+				Graphics()->RenderQuadContainerAsSprite(m_WeaponEmoteQuadContainerIndex, QuadOffset, WeaponPosition.x, WeaponPosition.y);
+				RenderHand(&RenderInfo, Position + Direction * g_pData->m_Weapons.m_aId[WEAPON_GUN].m_Offsetx - Direction * Recoil * 10.0f + vec2(0.0f, g_pData->m_Weapons.m_aId[WEAPON_GUN].m_Offsety),
+					Direction, -3.0f * pi / 4.0f, vec2(-15.0f, 4.0f), Alpha);
+			}
+			else if(Player.m_Weapon == WEAPON_HAMMER)
 			{
 				// static position for hammer
 				WeaponPosition = Position + vec2(State.GetAttach()->m_X, State.GetAttach()->m_Y);
@@ -1020,6 +1050,11 @@ void CPlayers::OnRender()
 
 	// render everyone else's hook, then our own
 	const int LocalClientId = GameClient()->m_Snap.m_LocalClientId;
+
+	// C-Client: glowing picture behind your tee
+	if(g_Config.m_CcAura > 0 && LocalClientId >= 0 && IsPlayerInfoAvailable(LocalClientId) && GameClient()->m_Snap.m_aCharacters[LocalClientId].m_Active)
+		GameClient()->m_CClient.RenderAura(GameClient()->m_aClients[LocalClientId].m_RenderPos);
+
 	for(int ClientId = 0; ClientId < MAX_CLIENTS; ClientId++)
 	{
 		if(ClientId == LocalClientId || !IsPlayerInfoAvailable(ClientId))

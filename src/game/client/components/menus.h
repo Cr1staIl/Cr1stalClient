@@ -582,6 +582,7 @@ protected:
 	// found in menus_settings_ddnet.cpp
 	void RenderSettingsDDNet(CUIRect MainView);
 	void RenderSettingsCClient(CUIRect MainView);
+	friend class CCcColumn;
 
 	// found in menus_settings_general.cpp
 	void RenderSettingsGeneral(CUIRect MainView);

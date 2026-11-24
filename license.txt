@@ -30,6 +30,63 @@ DejaVuSans.ttf, DejaVuSans-Bold.ttf:
 Fonts are (c) Bitstream (see below). DejaVu changes are in public domain.
 Glyphs imported from Arev fonts are (c) Tavmjong Bah (see below)
 
+Comfortaa.ttf, Exo2.ttf, Jura.ttf, Lobster.ttf, Montserrat.ttf, Play.ttf,
+PressStart2P.ttf, Rubik.ttf, RussoOne.ttf, Unbounded.ttf (Cr1stal Client fonts):
+------------------------------------------------------------------------------
+
+Licensed under the SIL Open Font License, Version 1.1 (https://openfontlicense.org).
+Copyright notices of each font:
+
+======================================================================
+Comfortaa
+======================================================================
+Copyright 2011 The Comfortaa Project Authors (https://github.com/alexeiva/comfortaa), with Reserved Font Name "Comfortaa".
+
+======================================================================
+Exo 2
+======================================================================
+Copyright 2013 The Exo 2 Project Authors (https://github.com/googlefonts/Exo-2.0)
+
+======================================================================
+Jura
+======================================================================
+Copyright 2019 The Jura Project Authors (https://github.com/ossobuffo/jura)
+
+======================================================================
+Lobster
+======================================================================
+Copyright 2010 The Lobster Project Authors (https://github.com/impallari/The-Lobster-Font), with Reserved Font Name "Lobster".
+
+======================================================================
+Montserrat
+======================================================================
+Copyright 2024 The Montserrat.Git Project Authors (https://github.com/JulietaUla/Montserrat.git)
+
+======================================================================
+Play
+======================================================================
+Copyright (c) 2011, Jonas Hecksher, Playtypes, e-types AS (lasse@e-types.com), with Reserved Font Name 'Play', 'Playtype', 'Playtype Sans'.
+
+======================================================================
+Press Start 2P
+======================================================================
+Copyright 2012 The Press Start 2P Project Authors (cody@zone38.net), with Reserved Font Name "Press Start 2P".
+
+======================================================================
+Rubik
+======================================================================
+Copyright 2015 The Rubik Project Authors (https://github.com/googlefonts/rubik)
+
+======================================================================
+Russo One
+======================================================================
+Copyright (c) 2011-2012, Jovanny Lemonad (jovanny.ru), with Reserved Font Name "Russo"
+
+======================================================================
+Unbounded
+======================================================================
+Copyright 2022 The Unbounded Project Authors (https://github.com/googlefonts/unbounded)
+
 Font_Awesome_6_Free-Solid-900.otf:
 ----------------------------------
 

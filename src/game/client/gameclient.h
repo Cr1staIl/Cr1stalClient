@@ -177,6 +177,7 @@ public:
 	CSounds m_Sounds;
 	CEmoticon m_Emoticon;
 	CCClient m_CClient;
+	CCOutlines m_COutlines;
 	CDamageInd m_DamageInd;
 	CTouchControls m_TouchControls;
 	CVoting m_Voting;

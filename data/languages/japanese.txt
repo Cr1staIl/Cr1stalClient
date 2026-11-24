@@ -2575,6 +2575,96 @@ Trail length
 Trail width
 == 
 
+Customization
+== 
+
+Font
+== 
+
+The font changes all text in the game right away
+== 
+
+Normal
+== 
+
+Follows cursor
+== 
+
+Like a gun
+== 
+
+Off
+== 
+
+Picture behind tee
+== 
+
+Picture size
+== 
+
+Picture opacity
+== 
+
+Picture rotation
+== 
+
+Texture packs of other players: coming later
+== 
+
+Tile outlines
+== 
+
+Outline special tiles
+== 
+
+Outline width
+== 
+
+Freeze
+== 
+
+Freeze color
+== 
+
+Death tiles
+== 
+
+Death tile color
+== 
+
+Unfreeze
+== 
+
+Unfreeze color
+== 
+
+Walls
+== 
+
+Wall color
+== 
+
+Music island
+== 
+
+Show the music that is playing (Windows)
+== 
+
+Shows what plays in YouTube, Spotify and other players, like the iPhone Dynamic Island
+== 
+
+Show title and artist
+== 
+
+Show cover picture
+== 
+
+Island size
+== 
+
+Distance from the top
+== 
+
 Show team at the top (frozen tees darkened)
 == 
 
