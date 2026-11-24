@@ -102,12 +102,6 @@ void CMenusStart::RenderNeonTitle(float CenterX, float Y)
 
 	TextRender()->SetFontPreset(EFontPreset::DEFAULT_FONT);
 
-	// keep credit to the project this client is based on
-	constexpr float SubSize = 11.0f;
-	const char *pSub = "based on DDNet";
-	TextRender()->TextColor(0.8f, 0.8f, 1.0f, 0.4f);
-	TextRender()->Text(CenterX - TextRender()->TextWidth(SubSize, pSub) / 2.0f, Y + FontSize + 10.0f, SubSize, pSub);
-
 	TextRender()->TextColor(OldColor);
 	TextRender()->TextOutlineColor(OldOutline);
 }
@@ -250,7 +244,10 @@ void CMenusStart::RenderStartMenu(CUIRect MainView)
 	CurVersion.HSplitTop(20.0f, &ConsoleButton, &CurVersion);
 	CurVersion.HSplitTop(5.0f, nullptr, &CurVersion);
 	ConsoleButton.VSplitRight(40.0f, nullptr, &ConsoleButton);
-	Ui()->DoLabel(&CurVersion, GAME_RELEASE_VERSION, 14.0f, TEXTALIGN_MR);
+	// version in the corner, with a quiet credit to DDNet
+	SLabelProperties VersionLabelProps;
+	VersionLabelProps.SetColor(ColorRGBA(0.8f, 0.8f, 1.0f, 0.35f));
+	Ui()->DoLabel(&CurVersion, "based on DDNet " GAME_RELEASE_VERSION, 10.0f, TEXTALIGN_MR, VersionLabelProps);
 
 	static CButtonContainer s_ConsoleButton;
 	TextRender()->SetFontPreset(EFontPreset::ICON_FONT);
