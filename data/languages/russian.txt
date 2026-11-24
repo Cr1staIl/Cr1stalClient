@@ -2823,5 +2823,98 @@ Only while in a team
 Freeze bars under frozen tees
 == Полоски заморозки под ти
 
+You are the last one!
+== Ты последний!
+
+Lines through the screen center
+== Линии через центр экрана
+
+Tees
+== Ти
+
+Show real hitbox of tees
+== Настоящий хитбокс ти
+
+Tees of other teams
+== Ти других команд
+
+Ninja skin
+== Скин ниндзя
+
+Show emotes
+== Показывать эмоции
+
+Show pressed keys of all tees
+== Нажатые клавиши всех ти
+
+Own hook line
+== Своя линия хука
+
+Hook lines of others
+== Линии хука других
+
+Trail behind your tee
+== След за твоим ти
+
+Rainbow trail
+== Радужный след
+
+Trail length
+== Длина следа
+
+Trail width
+== Ширина следа
+
+Warn when you are the last one alive
+== Предупреждать, когда ты последний живой
+
+Show teammates that are off screen
+== Тиммейты за краем экрана
+
+Indicator distance
+== Дальность индикаторов
+
+Indicator size
+== Размер индикаторов
+
+Green: alive, blue: frozen
+== Зелёный: живой, синий: заморожен
+
+Status bar (FPS, ping, team, time)
+== Строка состояния (FPS, пинг, команда, время)
+
+Show prediction time
+== Время предсказания
+
+Always show local time
+== Всегда показывать время
+
+Show your position
+== Твоя позиция
+
+Show your speed
+== Твоя скорость
+
+Show your aim angle
+== Угол прицела
+
+Show jumps you have left
+== Оставшиеся прыжки
+
+Game tiles over the map
+== Игровые тайлы поверх карты
+
+Only show chat of friends
+== Чат только от друзей
+
+Names in team colors
+== Ники в цветах команды
+
+On join
+== При заходе
+
+Console command when you join a server
+== Команда консоли при заходе на сервер
+
 Virtual joystick which only aims and moves the mouse pointer relatively.
 == 

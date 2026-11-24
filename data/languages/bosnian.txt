@@ -1084,6 +1084,9 @@ Dummy is not connected
 Debug mode enabled. Press Ctrl+Shift+D to disable debug mode.
 == 
 
+You are the last one!
+== 
+
 Position:
 == 
 
@@ -2322,6 +2325,9 @@ Dynamic camera is on: it uses its own distance
 Cursor size
 == 
 
+Lines through the screen center
+== 
+
 Fast input
 == 
 
@@ -2332,18 +2338,6 @@ Your tee reacts to your keys right away, before the server tick. Only changes wh
 == 
 
 Amount
-== 
-
-Looks
-== 
-
-Neon menu background
-== 
-
-Rainbow tee (only you see it)
-== 
-
-Rainbow speed
 == 
 
 Antiping
@@ -2373,6 +2367,54 @@ Prediction strength
 Predict freeze
 == 
 
+Tees
+== 
+
+Show real hitbox of tees
+== 
+
+Tees of other teams
+== 
+
+Ninja skin
+== 
+
+Show emotes
+== 
+
+Show pressed keys of all tees
+== 
+
+Own hook line
+== 
+
+Hook lines of others
+== 
+
+Looks
+== 
+
+Neon menu background
+== 
+
+Rainbow tee (only you see it)
+== 
+
+Rainbow speed
+== 
+
+Trail behind your tee
+== 
+
+Rainbow trail
+== 
+
+Trail length
+== 
+
+Trail width
+== 
+
 Show team at the top (frozen tees darkened)
 == 
 
@@ -2385,7 +2427,61 @@ Show alive / total counter
 Only while in a team
 == 
 
+Warn when you are the last one alive
+== 
+
 Freeze bars under frozen tees
+== 
+
+Show teammates that are off screen
+== 
+
+Indicator distance
+== 
+
+Indicator size
+== 
+
+Green: alive, blue: frozen
+== 
+
+Status bar (FPS, ping, team, time)
+== 
+
+Show FPS
+== 
+
+Show prediction time
+== 
+
+Always show local time
+== 
+
+Show your position
+== 
+
+Show your speed
+== 
+
+Show your aim angle
+== 
+
+Show jumps you have left
+== 
+
+Game tiles over the map
+== 
+
+Only show chat of friends
+== 
+
+Names in team colors
+== 
+
+On join
+== 
+
+Console command when you join a server
 == 
 
 Chat command
@@ -2593,9 +2689,6 @@ Desktop fullscreen
 == 
 
 Allows maps to render with more detail
-== 
-
-Show FPS
 == 
 
 Renders your frame rate in the top right

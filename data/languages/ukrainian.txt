@@ -2792,6 +2792,99 @@ Only while in a team
 Freeze bars under frozen tees
 == Смужки заморозки під ті
 
+You are the last one!
+== Ти останній!
+
+Lines through the screen center
+== Лінії через центр екрана
+
+Tees
+== Ті
+
+Show real hitbox of tees
+== Справжній хітбокс ті
+
+Tees of other teams
+== Ті інших команд
+
+Ninja skin
+== Скін ніндзя
+
+Show emotes
+== Показувати емоції
+
+Show pressed keys of all tees
+== Натиснуті клавіші всіх ті
+
+Own hook line
+== Своя лінія хука
+
+Hook lines of others
+== Лінії хука інших
+
+Trail behind your tee
+== Слід за твоїм ті
+
+Rainbow trail
+== Райдужний слід
+
+Trail length
+== Довжина сліду
+
+Trail width
+== Ширина сліду
+
+Warn when you are the last one alive
+== Попереджати, коли ти останній живий
+
+Show teammates that are off screen
+== Тімейти за краєм екрана
+
+Indicator distance
+== Дальність індикаторів
+
+Indicator size
+== Розмір індикаторів
+
+Green: alive, blue: frozen
+== Зелений: живий, синій: заморожений
+
+Status bar (FPS, ping, team, time)
+== Рядок стану (FPS, пінг, команда, час)
+
+Show prediction time
+== Час передбачення
+
+Always show local time
+== Завжди показувати час
+
+Show your position
+== Твоя позиція
+
+Show your speed
+== Твоя швидкість
+
+Show your aim angle
+== Кут прицілу
+
+Show jumps you have left
+== Залишок стрибків
+
+Game tiles over the map
+== Ігрові тайли поверх мапи
+
+Only show chat of friends
+== Чат лише від друзів
+
+Names in team colors
+== Ніки в кольорах команди
+
+On join
+== При заході
+
+Console command when you join a server
+== Команда консолі при заході на сервер
+
 Hold Shift to be more precise.
 == 
 

@@ -731,6 +731,21 @@ void CHud::RenderCClientTeamHud()
 		}
 	}
 
+	// you are the only one left who is not frozen
+	if(g_Config.m_CcLastNotify && NumMembers > 1 && NumMembers - NumFrozen == 1)
+	{
+		const CGameClient::CClientData &Viewed = GameClient()->m_aClients[ViewedId];
+		if(Viewed.m_FreezeEnd <= 0 && !Viewed.m_DeepFrozen)
+		{
+			const char *pText = Localize("You are the last one!");
+			const float FontSize = 14.0f;
+			const float Pulse = 0.7f + 0.3f * std::sin(Client()->GlobalTime() * 6.0f);
+			TextRender()->TextColor(1.0f, 0.3f, 0.75f, Pulse);
+			TextRender()->Text(m_Width / 2.0f - TextRender()->TextWidth(FontSize, pText) / 2.0f, 40.0f, FontSize, pText);
+			TextRender()->TextColor(TextRender()->DefaultTextColor());
+		}
+	}
+
 	if(g_Config.m_CcFrozenText)
 	{
 		char aBuf[32];
@@ -1815,6 +1830,7 @@ void CHud::OnRender()
 		RenderWarmupTimer();
 		RenderTextInfo();
 		RenderCClientTeamHud();
+		RenderCClientOverlay();
 		RenderLocalTime((m_Width / 7) * 3);
 		if(Client()->State() != IClient::STATE_DEMOPLAYBACK)
 			RenderConnectionWarning();
@@ -1823,6 +1839,7 @@ void CHud::OnRender()
 		if(g_Config.m_ClShowRecord)
 			RenderRecord();
 	}
+	RenderCClientWorld();
 	RenderCursor();
 }
 
@@ -2007,5 +2024,159 @@ void CHud::RenderRecord()
 			str_format(aBuf, sizeof(aBuf), "%s%s", PlayerRecord > 3600 ? "" : "   ", aTime);
 			TextRender()->Text(53, 82, 6, aBuf, -1.0f);
 		}
+	}
+}
+
+// C-Client: things drawn in world coordinates (trail, hitboxes, teammate indicators)
+void CHud::RenderCClientWorld()
+{
+	const int LocalId = GameClient()->m_Snap.m_LocalClientId;
+	const bool HasLocal = LocalId >= 0 && GameClient()->m_Snap.m_aCharacters[LocalId].m_Active && !GameClient()->m_Snap.m_SpecInfo.m_Active;
+
+	// update the trail every frame, even while it is hidden, so it starts clean
+	if(HasLocal && g_Config.m_CcTrail)
+	{
+		const vec2 Pos = GameClient()->m_aClients[LocalId].m_RenderPos;
+		const vec2 Last = m_CcTrailCount > 0 ? m_aCcTrail[(m_CcTrailHead + CC_TRAIL_MAX - 1) % CC_TRAIL_MAX] : vec2(-99999.0f, -99999.0f);
+		if(distance(Pos, Last) > 600.0f)
+			m_CcTrailCount = 0; // teleported or respawned
+		if(m_CcTrailCount == 0 || distance(Pos, Last) > 3.0f)
+		{
+			m_aCcTrail[m_CcTrailHead] = Pos;
+			m_CcTrailHead = (m_CcTrailHead + 1) % CC_TRAIL_MAX;
+			m_CcTrailCount = std::min(m_CcTrailCount + 1, CC_TRAIL_MAX);
+		}
+	}
+	else
+	{
+		m_CcTrailCount = 0;
+	}
+
+	if(!g_Config.m_CcTrail && !g_Config.m_CcShowHitbox && !g_Config.m_CcPlayerIndicator)
+		return;
+
+	const vec2 Center = GameClient()->m_Camera.m_Center;
+	CScreenRect ScreenRect = Graphics()->MapScreenToWorld(Center.x, Center.y, 100.0f, 100.0f, 100.0f, 0, 0, Graphics()->ScreenAspect(), GameClient()->m_Camera.m_Zoom);
+	Graphics()->MapScreen(ScreenRect);
+	Graphics()->TextureClear();
+
+	// trail
+	if(g_Config.m_CcTrail && m_CcTrailCount > 1)
+	{
+		const int Count = std::min(m_CcTrailCount, g_Config.m_CcTrailLength);
+		const float Time = Client()->GlobalTime();
+		Graphics()->QuadsBegin();
+		for(int i = 0; i < Count; i++)
+		{
+			const int Index = (m_CcTrailHead + CC_TRAIL_MAX - 1 - i) % CC_TRAIL_MAX;
+			const float Age = i / (float)Count; // 0 = newest
+			const float Radius = g_Config.m_CcTrailWidth * 0.5f * (1.0f - Age * 0.7f);
+			ColorRGBA Color = g_Config.m_CcTrailRainbow ?
+						  color_cast<ColorRGBA>(ColorHSLA(std::fmod(Time * 0.2f + i * 0.02f, 1.0f), 0.9f, 0.6f, 1.0f)) :
+						  ColorRGBA(0.0f, 0.95f, 1.0f, 1.0f);
+			Graphics()->SetColor(Color.WithAlpha(0.55f * (1.0f - Age)));
+			Graphics()->DrawCircle(m_aCcTrail[Index].x, m_aCcTrail[Index].y, Radius, 12);
+		}
+		Graphics()->QuadsEnd();
+	}
+
+	// hitboxes: the real physical size of tees
+	if(g_Config.m_CcShowHitbox)
+	{
+		Graphics()->LinesBegin();
+		for(int i = 0; i < MAX_CLIENTS; i++)
+		{
+			if(!GameClient()->m_Snap.m_aCharacters[i].m_Active)
+				continue;
+			const vec2 Pos = GameClient()->m_aClients[i].m_RenderPos;
+			Graphics()->SetColor(i == LocalId ? ColorRGBA(0.0f, 0.95f, 1.0f, 0.8f) : ColorRGBA(1.0f, 0.3f, 0.85f, 0.6f));
+			constexpr int Segments = 24;
+			const float Radius = CCharacterCore::PhysicalSize() / 2.0f;
+			IGraphics::CLineItem aLines[Segments];
+			for(int s = 0; s < Segments; s++)
+			{
+				const float A0 = s * 2.0f * pi / Segments;
+				const float A1 = (s + 1) * 2.0f * pi / Segments;
+				aLines[s] = IGraphics::CLineItem(Pos.x + std::cos(A0) * Radius, Pos.y + std::sin(A0) * Radius, Pos.x + std::cos(A1) * Radius, Pos.y + std::sin(A1) * Radius);
+			}
+			Graphics()->LinesDraw(aLines, Segments);
+		}
+		Graphics()->LinesEnd();
+	}
+
+	// teammates that are off screen: a dot around your tee pointing at them
+	if(g_Config.m_CcPlayerIndicator && HasLocal)
+	{
+		const int Team = GameClient()->m_Teams.Team(LocalId);
+		const vec2 LocalPos = GameClient()->m_aClients[LocalId].m_RenderPos;
+		Graphics()->QuadsBegin();
+		for(int i = 0; i < MAX_CLIENTS; i++)
+		{
+			if(i == LocalId || !GameClient()->m_Snap.m_aCharacters[i].m_Active)
+				continue;
+			if(Team == TEAM_FLOCK || GameClient()->m_Teams.Team(i) != Team)
+				continue;
+			const vec2 Pos = GameClient()->m_aClients[i].m_RenderPos;
+			if(ScreenRect.Inside(Pos))
+				continue;
+			const CGameClient::CClientData &Data = GameClient()->m_aClients[i];
+			const bool Frozen = Data.m_FreezeEnd > 0 || Data.m_DeepFrozen;
+			const vec2 Dir = normalize(Pos - LocalPos);
+			const vec2 DotPos = LocalPos + Dir * (float)g_Config.m_CcIndicatorOffset;
+			const float Size = (float)g_Config.m_CcIndicatorSize;
+			const ColorRGBA Color = Frozen ? ColorRGBA(0.45f, 0.6f, 1.0f, 0.85f) : ColorRGBA(0.3f, 1.0f, 0.55f, 0.9f);
+			Graphics()->SetColor(Color.WithAlpha(0.2f));
+			Graphics()->DrawCircle(DotPos.x, DotPos.y, Size * 1.6f, 16);
+			Graphics()->SetColor(Color);
+			Graphics()->DrawCircle(DotPos.x, DotPos.y, Size, 16);
+		}
+		Graphics()->QuadsEnd();
+	}
+
+	Graphics()->MapScreenToSize(m_Width, m_Height);
+}
+
+// C-Client: center lines and status bar (HUD coordinates)
+void CHud::RenderCClientOverlay()
+{
+	if(g_Config.m_CcShowCenter)
+	{
+		Graphics()->TextureClear();
+		Graphics()->QuadsBegin();
+		Graphics()->SetColor(0.0f, 0.95f, 1.0f, 0.35f);
+		const IGraphics::CQuadItem Vertical(m_Width / 2.0f - 0.25f, 0.0f, 0.5f, m_Height);
+		Graphics()->QuadsDrawTL(&Vertical, 1);
+		const IGraphics::CQuadItem Horizontal(0.0f, m_Height / 2.0f - 0.25f, m_Width, 0.5f);
+		Graphics()->QuadsDrawTL(&Horizontal, 1);
+		Graphics()->QuadsEnd();
+	}
+
+	if(g_Config.m_CcStatusbar)
+	{
+		const float BarH = 9.0f;
+		Graphics()->DrawRect(0.0f, m_Height - BarH, m_Width, BarH, ColorRGBA(0.06f, 0.02f, 0.13f, 0.7f), IGraphics::CORNER_NONE, 0.0f);
+
+		char aTime[8];
+		str_timestamp_format(aTime, sizeof(aTime), "%H:%M");
+		const int Fps = round_to_int(1.0f / std::max(Client()->FrameTimeAverage(), 0.0001f));
+		int Ping = 0;
+		const int LocalId = GameClient()->m_Snap.m_LocalClientId;
+		if(LocalId >= 0 && GameClient()->m_Snap.m_apPlayerInfos[LocalId])
+			Ping = GameClient()->m_Snap.m_apPlayerInfos[LocalId]->m_Latency;
+		int TeamSize = 0;
+		if(LocalId >= 0)
+		{
+			const int Team = GameClient()->m_Teams.Team(LocalId);
+			for(int i = 0; i < MAX_CLIENTS; i++)
+				if(GameClient()->m_Snap.m_apPlayerInfos[i] && GameClient()->m_Teams.Team(i) == Team)
+					TeamSize++;
+		}
+
+		char aBuf[128];
+		str_format(aBuf, sizeof(aBuf), "FPS %d    %s %d    %s %d    %s", Fps, Localize("Ping"), Ping, Localize("Team"), TeamSize, aTime);
+		const float FontSize = 6.0f;
+		TextRender()->TextColor(0.75f, 0.9f, 1.0f, 0.95f);
+		TextRender()->Text(m_Width / 2.0f - TextRender()->TextWidth(FontSize, aBuf) / 2.0f, m_Height - BarH + (BarH - FontSize) / 2.0f - 0.5f, FontSize, aBuf);
+		TextRender()->TextColor(TextRender()->DefaultTextColor());
 	}
 }
