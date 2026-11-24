@@ -2723,3 +2723,24 @@ not bound
 
 Show cursor
 == 
+
+Whisper
+== Особисте повідомлення
+
+Copy name
+== Скопіювати нік
+
+Copy skin (paste into console)
+== Скопіювати скін (встав у консоль F1)
+
+Open profile on ddnet.org
+== Відкрити профіль на ddnet.org
+
+Invite to team
+== Запросити в команду
+
+Join team %d
+== Приєднатися до команди %d
+
+Vote kick
+== Голосувати за кік

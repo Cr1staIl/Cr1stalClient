@@ -556,6 +556,15 @@ void CChat::EnableMode(int Team)
 	}
 }
 
+void CChat::EnableModeWithText(int Team, const char *pText)
+{
+	EnableMode(Team);
+	if(m_Mode != MODE_NONE)
+	{
+		m_Input.Set(pText);
+	}
+}
+
 void CChat::DisableMode()
 {
 	if(m_Mode != MODE_NONE)

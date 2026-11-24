@@ -169,6 +169,7 @@ public:
 	bool IsActive() const { return m_Mode != MODE_NONE; }
 	void AddLine(int ClientId, int Team, const char *pLine);
 	void EnableMode(int Team);
+	void EnableModeWithText(int Team, const char *pText);
 	void DisableMode();
 	void RegisterCommand(const char *pName, const char *pParams, const char *pHelpText);
 	void UnregisterCommand(const char *pName);

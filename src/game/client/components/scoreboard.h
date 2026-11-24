@@ -44,6 +44,8 @@ class CScoreboard : public CComponent
 	bool m_MouseUnlocked = false;
 
 	void SetUiMousePos(vec2 Pos);
+	void OpenPlayerPopup(int ClientId, bool IsSpectating);
+	int JoinableTeamOf(int ClientId) const;
 	void LockMouse();
 
 	class CScoreboardPopupContext : public SPopupMenuId
@@ -56,9 +58,19 @@ class CScoreboard : public CComponent
 
 		CButtonContainer m_SpectateButton;
 
+		// player actions
+		CButtonContainer m_WhisperAction;
+		CButtonContainer m_CopyNameAction;
+		CButtonContainer m_CopySkinAction;
+		CButtonContainer m_ProfileAction;
+		CButtonContainer m_InviteButton;
+		CButtonContainer m_JoinTeamButton;
+		CButtonContainer m_VoteKickButton;
+
 		int m_ClientId;
 		bool m_IsLocal;
 		bool m_IsSpectating;
+		bool m_CanJoinTeam;
 
 		static CUi::EPopupMenuFunctionResult Render(void *pContext, CUIRect View, bool Active);
 	} m_ScoreboardPopupContext;

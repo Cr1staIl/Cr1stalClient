@@ -28,7 +28,7 @@ static constexpr float MARGIN = 10.0f;
 static constexpr float ROUNDING = 7.5f;
 static constexpr ColorRGBA BACKGROUND_COLOR(0.0f, 0.0f, 0.0f, 0.5f);
 
-static constexpr float POPUP_WIDTH = 110.0f;
+static constexpr float POPUP_WIDTH = 140.0f;
 
 static constexpr ColorRGBA TEAM_RED_TITLE_COLOR(0.975f, 0.17f, 0.17f);
 static constexpr ColorRGBA TEAM_BLUE_TITLE_COLOR(0.17f, 0.46f, 0.975f);
@@ -451,14 +451,7 @@ void CScoreboard::RenderSpectators(CUIRect Spectators)
 			}
 			if(ButtonResult != 0)
 			{
-				m_ScoreboardPopupContext.m_pScoreboard = this;
-				m_ScoreboardPopupContext.m_ClientId = pInfo->m_ClientId;
-				m_ScoreboardPopupContext.m_IsLocal = GameClient()->m_aLocalIds[0] == pInfo->m_ClientId ||
-								     (Client()->DummyConnected() && GameClient()->m_aLocalIds[1] == pInfo->m_ClientId);
-				m_ScoreboardPopupContext.m_IsSpectating = true;
-
-				Ui()->DoPopupMenu(&m_ScoreboardPopupContext, Ui()->MouseX(), Ui()->MouseY(), POPUP_WIDTH,
-					m_ScoreboardPopupContext.m_IsLocal ? 30.0f : 60.0f, &m_ScoreboardPopupContext, CScoreboardPopupContext::Render);
+				OpenPlayerPopup(pInfo->m_ClientId, true);
 			}
 
 			if(Ui()->HotItem() == &m_aPlayers[pInfo->m_ClientId].m_PlayerButtonId ||
@@ -725,14 +718,7 @@ void CScoreboard::RenderScoreboard(CUIRect Scoreboard, int Team, int CountStart,
 				const int ButtonResult = Ui()->DoButtonLogic(&Player.m_PlayerButtonId, 0, &Row, BUTTONFLAG_LEFT | BUTTONFLAG_RIGHT);
 				if(ButtonResult != 0)
 				{
-					m_ScoreboardPopupContext.m_pScoreboard = this;
-					m_ScoreboardPopupContext.m_ClientId = pInfo->m_ClientId;
-					m_ScoreboardPopupContext.m_IsLocal = GameClient()->m_aLocalIds[0] == pInfo->m_ClientId ||
-									     (Client()->DummyConnected() && GameClient()->m_aLocalIds[1] == pInfo->m_ClientId);
-					m_ScoreboardPopupContext.m_IsSpectating = false;
-
-					Ui()->DoPopupMenu(&m_ScoreboardPopupContext, Ui()->MouseX(), Ui()->MouseY(), POPUP_WIDTH,
-						m_ScoreboardPopupContext.m_IsLocal ? 58.5f : 87.5f, &m_ScoreboardPopupContext, CScoreboardPopupContext::Render);
+					OpenPlayerPopup(pInfo->m_ClientId, false);
 				}
 
 				if(Ui()->HotItem() == &Player.m_PlayerButtonId ||
@@ -1259,6 +1245,82 @@ const char *CScoreboard::GetTeamName(int Team) const
 		return nullptr;
 }
 
+// ---- player popup helpers ----
+
+static constexpr float POPUP_ACTION_ROW_HEIGHT = 2 * 2.0f + 25.0f; // ItemSpacing * 2 + ActionSize
+static constexpr float POPUP_BUTTON_ROW_HEIGHT = 2 * 2.0f + 17.5f; // ItemSpacing * 2 + ButtonSize
+
+int CScoreboard::JoinableTeamOf(int ClientId) const
+{
+	if(ClientId < 0 || ClientId >= MAX_CLIENTS)
+		return -1;
+	const int Team = GameClient()->m_Teams.Team(ClientId);
+	if(Team <= TEAM_FLOCK || Team >= TEAM_SUPER)
+		return -1;
+	const int LocalId = GameClient()->m_aLocalIds[g_Config.m_ClDummy];
+	if(LocalId >= 0 && GameClient()->m_Teams.Team(LocalId) == Team)
+		return -1;
+	return Team;
+}
+
+void CScoreboard::OpenPlayerPopup(int ClientId, bool IsSpectating)
+{
+	m_ScoreboardPopupContext.m_pScoreboard = this;
+	m_ScoreboardPopupContext.m_ClientId = ClientId;
+	m_ScoreboardPopupContext.m_IsLocal = GameClient()->m_aLocalIds[0] == ClientId ||
+					     (Client()->DummyConnected() && GameClient()->m_aLocalIds[1] == ClientId);
+	m_ScoreboardPopupContext.m_IsSpectating = IsSpectating;
+	m_ScoreboardPopupContext.m_CanJoinTeam = !IsSpectating && !m_ScoreboardPopupContext.m_IsLocal && JoinableTeamOf(ClientId) >= 0;
+
+	float Height;
+	if(IsSpectating)
+		Height = m_ScoreboardPopupContext.m_IsLocal ? 30.0f : 60.0f;
+	else
+		Height = m_ScoreboardPopupContext.m_IsLocal ? 58.5f : 87.5f;
+
+	if(!m_ScoreboardPopupContext.m_IsLocal)
+	{
+		Height += POPUP_ACTION_ROW_HEIGHT; // whisper / copy name / copy skin / profile
+		Height += POPUP_BUTTON_ROW_HEIGHT; // vote kick
+		if(!IsSpectating)
+			Height += POPUP_BUTTON_ROW_HEIGHT; // invite
+		if(m_ScoreboardPopupContext.m_CanJoinTeam)
+			Height += POPUP_BUTTON_ROW_HEIGHT; // join team
+	}
+
+	Ui()->DoPopupMenu(&m_ScoreboardPopupContext, Ui()->MouseX(), Ui()->MouseY(), POPUP_WIDTH,
+		Height, &m_ScoreboardPopupContext, CScoreboardPopupContext::Render);
+}
+
+// Name encoding used by ddnet.org player pages: ASCII letters and digits stay,
+// every other code point becomes "-<code point>-".
+static void DDNetPlayerUrl(const char *pName, char *pBuf, int BufSize)
+{
+	str_copy(pBuf, "https://ddnet.org/players/", BufSize);
+	const char *pCur = pName;
+	while(*pCur)
+	{
+		const int Code = str_utf8_decode(&pCur);
+		if(Code < 0)
+			break;
+		char aPart[16];
+		if((Code >= 'a' && Code <= 'z') || (Code >= 'A' && Code <= 'Z') || (Code >= '0' && Code <= '9'))
+			str_format(aPart, sizeof(aPart), "%c", (char)Code);
+		else
+			str_format(aPart, sizeof(aPart), "-%d-", Code);
+		str_append(pBuf, aPart, BufSize);
+	}
+	str_append(pBuf, "/", BufSize);
+}
+
+static void QuoteForCommand(const char *pText, char *pBuf, int BufSize)
+{
+	str_copy(pBuf, "\"", BufSize);
+	char *pDst = pBuf + str_length(pBuf);
+	str_escape(&pDst, pText, pBuf + BufSize - 1);
+	str_append(pBuf, "\"", BufSize);
+}
+
 CUi::EPopupMenuFunctionResult CScoreboard::CScoreboardPopupContext::Render(void *pContext, CUIRect View, bool Active)
 {
 	CScoreboardPopupContext *pPopupContext = static_cast<CScoreboardPopupContext *>(pContext);
@@ -1329,6 +1391,94 @@ CUi::EPopupMenuFunctionResult CScoreboard::CScoreboardPopupContext::Render(void 
 			Client.m_EmoticonIgnore ^= 1;
 		}
 		pScoreboard->Ui()->DoToolTip(&pPopupContext->m_EmoticonAction, &Action, Client.m_EmoticonIgnore ? Localize("Unmute emoticons") : Localize("Mute emoticons"));
+
+		// second row: whisper, copy name, copy skin, profile
+		constexpr int Actions2Num = 4;
+		const float Action2Spacing = (View.w - (Actions2Num * ActionSize)) / (Actions2Num - 1);
+
+		View.HSplitTop(ItemSpacing * 2, nullptr, &View);
+		View.HSplitTop(ActionSize, &Container, &View);
+
+		Container.VSplitLeft(ActionSize, &Action, &Container);
+		if(pUi->DoButton_FontIcon(&pPopupContext->m_WhisperAction, FontIcon::PEN_TO_SQUARE, 0, &Action, BUTTONFLAG_LEFT, ActionCorners))
+		{
+			char aQuoted[2 * MAX_NAME_LENGTH + 8];
+			QuoteForCommand(Client.m_aName, aQuoted, sizeof(aQuoted));
+			char aText[sizeof(aQuoted) + 8];
+			str_format(aText, sizeof(aText), "/w %s ", aQuoted);
+			pScoreboard->GameClient()->m_Chat.EnableModeWithText(0, aText);
+			pUi->ClosePopupMenus();
+		}
+		pScoreboard->Ui()->DoToolTip(&pPopupContext->m_WhisperAction, &Action, Localize("Whisper"));
+
+		Container.VSplitLeft(Action2Spacing, nullptr, &Container);
+		Container.VSplitLeft(ActionSize, &Action, &Container);
+		if(pUi->DoButton_FontIcon(&pPopupContext->m_CopyNameAction, FontIcon::FILE, 0, &Action, BUTTONFLAG_LEFT, ActionCorners))
+		{
+			pScoreboard->Input()->SetClipboardText(Client.m_aName);
+		}
+		pScoreboard->Ui()->DoToolTip(&pPopupContext->m_CopyNameAction, &Action, Localize("Copy name"));
+
+		Container.VSplitLeft(Action2Spacing, nullptr, &Container);
+		Container.VSplitLeft(ActionSize, &Action, &Container);
+		if(pUi->DoButton_FontIcon(&pPopupContext->m_CopySkinAction, FontIcon::BRUSH, 0, &Action, BUTTONFLAG_LEFT, ActionCorners))
+		{
+			// copied as console commands, so it can be pasted into F1 to wear the same skin
+			char aQuoted[2 * MAX_SKIN_LENGTH + 8];
+			QuoteForCommand(Client.m_aSkinName, aQuoted, sizeof(aQuoted));
+			char aSkin[256];
+			str_format(aSkin, sizeof(aSkin), "player_skin %s; player_use_custom_color %d; player_color_body %d; player_color_feet %d",
+				aQuoted, Client.m_UseCustomColor, Client.m_ColorBody, Client.m_ColorFeet);
+			pScoreboard->Input()->SetClipboardText(aSkin);
+		}
+		pScoreboard->Ui()->DoToolTip(&pPopupContext->m_CopySkinAction, &Action, Localize("Copy skin (paste into console)"));
+
+		Container.VSplitLeft(Action2Spacing, nullptr, &Container);
+		Container.VSplitLeft(ActionSize, &Action, &Container);
+		if(pUi->DoButton_FontIcon(&pPopupContext->m_ProfileAction, FontIcon::EARTH_AMERICAS, 0, &Action, BUTTONFLAG_LEFT, ActionCorners))
+		{
+			char aUrl[512];
+			DDNetPlayerUrl(Client.m_aName, aUrl, sizeof(aUrl));
+			pScoreboard->Client()->ViewLink(aUrl);
+		}
+		pScoreboard->Ui()->DoToolTip(&pPopupContext->m_ProfileAction, &Action, Localize("Open profile on ddnet.org"));
+
+		// team actions
+		if(!pPopupContext->m_IsSpectating)
+		{
+			View.HSplitTop(ItemSpacing * 2, nullptr, &View);
+			View.HSplitTop(ButtonSize, &Container, &View);
+			if(pUi->DoButton_PopupMenu(&pPopupContext->m_InviteButton, Localize("Invite to team"), &Container, FontSize, TEXTALIGN_MC))
+			{
+				char aCmd[MAX_NAME_LENGTH + 32];
+				str_format(aCmd, sizeof(aCmd), "/invite %s", Client.m_aName);
+				pScoreboard->GameClient()->m_Chat.SendChat(0, aCmd);
+			}
+		}
+
+		if(pPopupContext->m_CanJoinTeam)
+		{
+			View.HSplitTop(ItemSpacing * 2, nullptr, &View);
+			View.HSplitTop(ButtonSize, &Container, &View);
+			const int Team = pScoreboard->JoinableTeamOf(pPopupContext->m_ClientId);
+			char aLabel[64];
+			str_format(aLabel, sizeof(aLabel), Localize("Join team %d"), Team);
+			if(pUi->DoButton_PopupMenu(&pPopupContext->m_JoinTeamButton, aLabel, &Container, FontSize, TEXTALIGN_MC) && Team >= 0)
+			{
+				char aCmd[32];
+				str_format(aCmd, sizeof(aCmd), "/team %d", Team);
+				pScoreboard->GameClient()->m_Chat.SendChat(0, aCmd);
+				pUi->ClosePopupMenus();
+			}
+		}
+
+		View.HSplitTop(ItemSpacing * 2, nullptr, &View);
+		View.HSplitTop(ButtonSize, &Container, &View);
+		if(pUi->DoButton_PopupMenu(&pPopupContext->m_VoteKickButton, Localize("Vote kick"), &Container, FontSize, TEXTALIGN_MC))
+		{
+			pScoreboard->GameClient()->m_Voting.CallvoteKick(pPopupContext->m_ClientId, "");
+			pUi->ClosePopupMenus();
+		}
 	}
 
 	View.HSplitTop(ItemSpacing * 2, nullptr, &View);
