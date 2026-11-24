@@ -658,6 +658,8 @@ protected:
 
 public:
 	void RenderBackground();
+	void RenderNeonBackground();
+	bool RenderMenuBackgroundOrNeon();
 
 	CMenus();
 	int Sizeof() const override { return sizeof(*this); }

@@ -17,21 +17,82 @@
 #include <game/localization.h>
 #include <game/version.h>
 
+#include <algorithm>
+#include <cmath>
+
 #if defined(CONF_PLATFORM_ANDROID)
 #include <android/android_main.h>
 #endif
+
+void CMenusStart::RenderNeonTitle(float CenterX, float Y)
+{
+	auto LerpColor = [](const ColorRGBA &A, const ColorRGBA &B, float T) {
+		return ColorRGBA(A.r + (B.r - A.r) * T, A.g + (B.g - A.g) * T, A.b + (B.b - A.b) * T, A.a + (B.a - A.a) * T);
+	};
+	static const char *const s_pTitle = "Cr\xe2\x99\xb1stal Client";
+	constexpr float FontSize = 54.0f;
+	const float Time = Client()->GlobalTime();
+
+	const ColorRGBA aPalette[] = {
+		ColorRGBA(0.0f, 0.95f, 1.0f, 1.0f), // cyan
+		ColorRGBA(0.6f, 0.3f, 1.0f, 1.0f), // violet
+		ColorRGBA(1.0f, 0.15f, 0.85f, 1.0f), // magenta
+	};
+
+	const ColorRGBA OldColor = TextRender()->GetTextColor();
+	const ColorRGBA OldOutline = TextRender()->GetTextOutlineColor();
+	TextRender()->TextOutlineColor(0.0f, 0.0f, 0.0f, 0.0f);
+
+	float X = CenterX - TextRender()->TextWidth(FontSize, s_pTitle) / 2.0f;
+	const char *pCur = s_pTitle;
+	int Index = 0;
+	while(*pCur)
+	{
+		const char *pStart = pCur;
+		if(str_utf8_decode(&pCur) <= 0)
+			break;
+		char aChar[8];
+		str_copy(aChar, pStart, std::min<int>(sizeof(aChar), pCur - pStart + 1));
+
+		// colour wave running through the letters
+		float Wave = 0.5f + 0.5f * std::sin(Time * 1.6f - Index * 0.45f);
+		Wave *= 2.0f;
+		const int From = (int)Wave;
+		const ColorRGBA Color = From >= 2 ? aPalette[2] : LerpColor(aPalette[From], aPalette[From + 1], Wave - From);
+		const float Pulse = 0.75f + 0.25f * std::sin(Time * 2.3f + Index * 0.6f);
+
+		// glow
+		for(int i = 0; i < 8; i++)
+		{
+			const float Angle = i * pi / 4.0f;
+			const float Dist = 2.5f;
+			TextRender()->TextColor(Color.WithAlpha(0.13f * Pulse));
+			TextRender()->Text(X + std::cos(Angle) * Dist, Y + std::sin(Angle) * Dist, FontSize, aChar);
+		}
+		// core
+		TextRender()->TextColor(LerpColor(Color, ColorRGBA(1.0f, 1.0f, 1.0f, 1.0f), 0.3f));
+		TextRender()->Text(X, Y, FontSize, aChar);
+
+		X += TextRender()->TextWidth(FontSize, aChar);
+		Index++;
+	}
+
+	// keep credit to the project this client is based on
+	constexpr float SubSize = 11.0f;
+	const char *pSub = "based on DDNet";
+	TextRender()->TextColor(0.8f, 0.8f, 1.0f, 0.45f);
+	TextRender()->Text(CenterX - TextRender()->TextWidth(SubSize, pSub) / 2.0f, Y + FontSize + 6.0f, SubSize, pSub);
+
+	TextRender()->TextColor(OldColor);
+	TextRender()->TextOutlineColor(OldOutline);
+}
 
 void CMenusStart::RenderStartMenu(CUIRect MainView)
 {
 	GameClient()->m_MenuBackground.ChangePosition(CMenuBackground::POS_START);
 
-	// render logo
-	Graphics()->TextureSet(g_pData->m_aImages[IMAGE_BANNER].m_Id);
-	Graphics()->QuadsBegin();
-	Graphics()->SetColor(1, 1, 1, 1);
-	IGraphics::CQuadItem QuadItem(MainView.w / 2 - 170, 60, 360, 103);
-	Graphics()->QuadsDrawTL(&QuadItem, 1);
-	Graphics()->QuadsEnd();
+	// render the neon "Cr♱stal Client" title
+	RenderNeonTitle(MainView.w / 2, 75.0f);
 
 	const float Rounding = 10.0f;
 	const float VMargin = MainView.w / 2 - 190.0f;

@@ -13,6 +13,7 @@ public:
 
 private:
 	bool CheckHotKey(int Key) const;
+	void RenderNeonTitle(float CenterX, float Y);
 };
 
 #endif

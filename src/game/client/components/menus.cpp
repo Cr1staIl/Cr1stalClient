@@ -712,10 +712,7 @@ void CMenus::RenderLoadingDirect(const char *pCaption, const char *pContent, std
 		// the menu background is not loaded yet.
 		return;
 	}
-	if(!GameClient()->m_MenuBackground.Render())
-	{
-		RenderBackground();
-	}
+	RenderMenuBackgroundOrNeon();
 
 	m_LoadingState.m_LastRender = Now;
 
@@ -1024,10 +1021,7 @@ void CMenus::Render()
 	}
 	else
 	{
-		if(!GameClient()->m_MenuBackground.Render())
-		{
-			RenderBackground();
-		}
+		RenderMenuBackgroundOrNeon();
 		ms_ColorTabbarInactive = ms_ColorTabbarInactiveOutgame;
 		ms_ColorTabbarActive = ms_ColorTabbarActiveOutgame;
 		ms_ColorTabbarHover = ms_ColorTabbarHoverOutgame;
@@ -2453,6 +2447,143 @@ void CMenus::UpdateColors()
 		ms_GuiColor.a);
 
 	ms_ColorTabbarHoverIngame = ColorRGBA(1.0f, 1.0f, 1.0f, 0.75f);
+}
+
+bool CMenus::RenderMenuBackgroundOrNeon()
+{
+	if(g_Config.m_CrNeonBackground)
+	{
+		RenderNeonBackground();
+		return true;
+	}
+	if(!GameClient()->m_MenuBackground.Render())
+	{
+		RenderBackground();
+	}
+	return true;
+}
+
+// Cheap deterministic pseudo random number in [0, 1] so the particles need no state.
+static float NeonHash(int Index, int Salt)
+{
+	unsigned Hash = (unsigned)Index * 374761393u + (unsigned)Salt * 668265263u;
+	Hash = (Hash ^ (Hash >> 13)) * 1274126177u;
+	Hash ^= Hash >> 16;
+	return (Hash & 0xffffff) / (float)0xffffff;
+}
+
+static ColorRGBA NeonColor(int Index, float Alpha)
+{
+	switch(Index % 3)
+	{
+	case 0: return ColorRGBA(0.0f, 0.95f, 1.0f, Alpha); // cyan
+	case 1: return ColorRGBA(1.0f, 0.15f, 0.85f, Alpha); // magenta
+	default: return ColorRGBA(0.6f, 0.3f, 1.0f, Alpha); // violet
+	}
+}
+
+void CMenus::RenderNeonBackground()
+{
+	const float ScreenHeight = 300.0f;
+	const float ScreenWidth = ScreenHeight * Graphics()->ScreenAspect();
+	Graphics()->MapScreenToSize(ScreenWidth, ScreenHeight);
+	const float Time = Client()->GlobalTime();
+
+	// dark gradient
+	Graphics()->TextureClear();
+	Graphics()->QuadsBegin();
+	Graphics()->SetColor4(ColorRGBA(0.06f, 0.01f, 0.13f, 1.0f), ColorRGBA(0.01f, 0.02f, 0.10f, 1.0f),
+		ColorRGBA(0.01f, 0.0f, 0.03f, 1.0f), ColorRGBA(0.03f, 0.0f, 0.06f, 1.0f));
+	const IGraphics::CQuadItem Bg(0, 0, ScreenWidth, ScreenHeight);
+	Graphics()->QuadsDrawTL(&Bg, 1);
+	Graphics()->QuadsEnd();
+
+	Graphics()->BlendAdditive();
+
+	// big soft glow orbs drifting slowly
+	Graphics()->QuadsBegin();
+	for(int i = 0; i < 4; i++)
+	{
+		const float Px = ScreenWidth * (0.5f + 0.42f * std::sin(Time * (0.05f + 0.02f * i) + i * 1.7f));
+		const float Py = ScreenHeight * (0.5f + 0.38f * std::cos(Time * (0.04f + 0.015f * i) + i * 2.3f));
+		const float Radius = 70.0f + 25.0f * i;
+		for(int Ring = 10; Ring >= 1; Ring--)
+		{
+			Graphics()->SetColor(NeonColor(i, 0.018f));
+			Graphics()->DrawCircle(Px, Py, Radius * Ring / 10.0f, 32);
+		}
+	}
+	Graphics()->QuadsEnd();
+
+	// synthwave grid at the bottom
+	Graphics()->QuadsBegin();
+	const float Horizon = ScreenHeight * 0.68f;
+	const float GridScroll = std::fmod(Time * 0.35f, 1.0f);
+	for(int i = 0; i < 12; i++)
+	{
+		const float Depth = (i + GridScroll) / 12.0f; // 0 = horizon, 1 = bottom
+		const float Y = Horizon + (ScreenHeight - Horizon) * Depth * Depth;
+		Graphics()->SetColor(1.0f, 0.15f, 0.85f, 0.05f + 0.25f * Depth);
+		const IGraphics::CQuadItem Line(0, Y, ScreenWidth, 0.4f + 0.6f * Depth);
+		Graphics()->QuadsDrawTL(&Line, 1);
+	}
+	Graphics()->QuadsEnd();
+	Graphics()->LinesBegin();
+	for(int i = -14; i <= 14; i++)
+	{
+		const float BottomX = ScreenWidth / 2 + i * ScreenWidth / 10.0f;
+		Graphics()->SetColor(0.0f, 0.95f, 1.0f, 0.18f);
+		const IGraphics::CLineItem Line(ScreenWidth / 2 + i * 6.0f, Horizon, BottomX, ScreenHeight);
+		Graphics()->LinesDraw(&Line, 1);
+	}
+	Graphics()->LinesEnd();
+
+	// floating crystals (rotating diamonds)
+	Graphics()->QuadsBegin();
+	for(int i = 0; i < 9; i++)
+	{
+		const float Speed = 4.0f + 6.0f * NeonHash(i, 11);
+		const float Py = ScreenHeight + 30.0f - std::fmod(NeonHash(i, 12) * (ScreenHeight + 60.0f) + Time * Speed, ScreenHeight + 60.0f);
+		const float Px = NeonHash(i, 13) * ScreenWidth + 15.0f * std::sin(Time * 0.3f + i);
+		const float Size = 4.0f + 8.0f * NeonHash(i, 14);
+		Graphics()->QuadsSetRotation(Time * (0.3f + 0.5f * NeonHash(i, 15)) + i);
+		Graphics()->SetColor(NeonColor(i, 0.10f));
+		IGraphics::CQuadItem Glow(Px, Py, Size * 2.2f, Size * 2.2f);
+		Graphics()->QuadsDraw(&Glow, 1);
+		Graphics()->SetColor(NeonColor(i, 0.35f));
+		IGraphics::CQuadItem Core(Px, Py, Size, Size);
+		Graphics()->QuadsDraw(&Core, 1);
+	}
+	Graphics()->QuadsSetRotation(0.0f);
+	Graphics()->QuadsEnd();
+
+	// rising sparkles
+	Graphics()->QuadsBegin();
+	for(int i = 0; i < 80; i++)
+	{
+		const float Speed = 6.0f + 18.0f * NeonHash(i, 1);
+		const float Py = ScreenHeight + 10.0f - std::fmod(NeonHash(i, 2) * (ScreenHeight + 20.0f) + Time * Speed, ScreenHeight + 20.0f);
+		const float Px = NeonHash(i, 3) * ScreenWidth + 6.0f * std::sin(Time * (0.5f + NeonHash(i, 4)) + i);
+		const float Size = 0.4f + 1.1f * NeonHash(i, 5);
+		const float Twinkle = 0.55f + 0.45f * std::sin(Time * (1.5f + 2.0f * NeonHash(i, 6)) + i * 3.1f);
+		Graphics()->SetColor(NeonColor(i, 0.07f * Twinkle));
+		Graphics()->DrawCircle(Px, Py, Size * 4.0f, 12);
+		Graphics()->SetColor(NeonColor(i, 0.85f * Twinkle));
+		Graphics()->DrawCircle(Px, Py, Size, 8);
+	}
+	Graphics()->QuadsEnd();
+
+	Graphics()->BlendNormal();
+
+	// darken the borders a bit
+	Graphics()->TextureSet(m_TextureBlob);
+	Graphics()->QuadsBegin();
+	Graphics()->SetColor(0.0f, 0.0f, 0.0f, 0.6f);
+	const IGraphics::CQuadItem BlobQuadItem(-100, -100, ScreenWidth + 200, ScreenHeight + 200);
+	Graphics()->QuadsDrawTL(&BlobQuadItem, 1);
+	Graphics()->QuadsEnd();
+
+	Ui()->MapScreen();
 }
 
 void CMenus::RenderBackground()
