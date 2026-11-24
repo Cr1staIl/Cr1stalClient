@@ -70,7 +70,9 @@ jobs:
 
     - name: Write version file
       shell: bash
-      run: echo '{"build": ${{ github.run_number }}}' > installer-out/version.json
+      run: |
+        echo '{"build": ${{ github.run_number }}}' > installer-out/version.json
+        cat installer-out/version.json
 
     # rolling pre-release used by the in-game update button (not shown as the latest release)
     - name: Publish test update
