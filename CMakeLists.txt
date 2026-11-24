@@ -1355,6 +1355,14 @@ set(EXPECTED_DATA
   autoexec_server.cfg
   background_noise.png
   blob.png
+  cclient/save_hammer.png
+  cclient/save_hook_down.png
+  cclient/save_hook_left.png
+  cclient/save_hook_right.png
+  cclient/save_hook_up.png
+  cclient/save_stand_under.png
+  cclient/save_thanks.png
+  cclient/save_wait.png
   censorlist.txt
   communityicons/none.png
   countryflags/AD.png
@@ -2660,6 +2668,8 @@ if(CLIENT)
     components/broadcast.h
     components/camera.cpp
     components/camera.h
+    components/cclient.cpp
+    components/cclient.h
     components/censor.cpp
     components/censor.h
     components/chat.cpp

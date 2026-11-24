@@ -203,6 +203,20 @@ void CMenus::RenderSettingsCClient(CUIRect MainView)
 	}
 	Right.Gap();
 
+	// ---- save wheel and markers ----
+	Right.Headline(Localize("Saves and markers"));
+	Right.Note(Localize("Hold Shift and press Q or E: save wheel"), ColorRGBA(0.6f, 0.9f, 1.0f, 1.0f));
+	Right.Note(Localize("Middle mouse button: marker for your team"), ColorRGBA(0.6f, 0.9f, 1.0f, 1.0f));
+	Right.Note(Localize("Others with Cr1stal Client see pictures and markers"), ColorRGBA(0.75f, 0.75f, 0.9f, 1.0f));
+	{
+		static CButtonContainer s_BindMarkerButton;
+		CUIRect Button = Right.Line();
+		Button.VSplitLeft(220.0f, &Button, nullptr);
+		if(DoButton_Menu(&s_BindMarkerButton, Localize("Put markers on the middle mouse button"), 0, &Button))
+			Console()->ExecuteLine("bind mouse3 cc_ping", IConsole::CLIENT_ID_UNSPECIFIED);
+	}
+	Right.Gap();
+
 	// ---- HUD ----
 	Right.Headline(Localize("HUD"));
 	Right.Check(&g_Config.m_CcStatusbar, Localize("Status bar (FPS, ping, team, time)"));

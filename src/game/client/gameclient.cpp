@@ -153,6 +153,7 @@ void CGameClient::OnConsoleInit()
 					      &m_Hud,
 					      &m_Spectator,
 					      &m_Emoticon,
+					      &m_CClient,
 					      &m_InfoMessages,
 					      &m_Chat,
 					      &m_Broadcast,
@@ -175,6 +176,7 @@ void CGameClient::OnConsoleInit()
 						  &m_Scoreboard,
 						  &m_Motd, // for pressing esc to remove it
 						  &m_Spectator,
+						  &m_CClient, // before the emote wheel: Shift + Q / E opens the save wheel
 						  &m_Emoticon,
 						  &m_ImportantAlert,
 						  &m_Menus,

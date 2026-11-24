@@ -2916,5 +2916,53 @@ On join
 Console command when you join a server
 == Команда консоли при заходе на сервер
 
+Hook me up
+== Хукни меня вверх
+
+Hook me to the right
+== Хукни меня вправо
+
+Hammer me
+== Ударь меня молотком
+
+Stand under me
+== Встань подо мной
+
+Pull me down
+== Тяни меня вниз
+
+Hook me to the left
+== Хукни меня влево
+
+Wait, don't touch me
+== Подожди, не трогай
+
+Thanks!
+== Спасибо!
+
+Over here!
+== Сюда!
+
+Save me
+== Сейви меня
+
+How to save you?
+== Как тебя сейвить?
+
+Saves and markers
+== Сейвы и метки
+
+Hold Shift and press Q or E: save wheel
+== Зажми Shift и нажми Q или E: колесо сейвов
+
+Middle mouse button: marker for your team
+== Средняя кнопка мыши: метка для команды
+
+Others with Cr1stal Client see pictures and markers
+== Игроки с Cr1stal Client видят картинки и метки
+
+Put markers on the middle mouse button
+== Метки на среднюю кнопку мыши
+
 Virtual joystick which only aims and moves the mouse pointer relatively.
 == 

@@ -32,6 +32,7 @@
 #include "components/binds.h"
 #include "components/broadcast.h"
 #include "components/camera.h"
+#include "components/cclient.h"
 #include "components/censor.h"
 #include "components/chat.h"
 #include "components/console.h"
@@ -175,6 +176,7 @@ public:
 	CStatboard m_Statboard;
 	CSounds m_Sounds;
 	CEmoticon m_Emoticon;
+	CCClient m_CClient;
 	CDamageInd m_DamageInd;
 	CTouchControls m_TouchControls;
 	CVoting m_Voting;

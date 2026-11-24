@@ -2724,6 +2724,39 @@ not bound
 Show cursor
 == 显示光标
 
+Hook me up
+== 
+
+Hook me to the right
+== 
+
+Hammer me
+== 
+
+Stand under me
+== 
+
+Pull me down
+== 
+
+Hook me to the left
+== 
+
+Wait, don't touch me
+== 
+
+Thanks!
+== 
+
+Over here!
+== 
+
+Save me
+== 
+
+How to save you?
+== 
+
 You are the last one!
 == 
 
@@ -2860,6 +2893,21 @@ Indicator size
 == 
 
 Green: alive, blue: frozen
+== 
+
+Saves and markers
+== 
+
+Hold Shift and press Q or E: save wheel
+== 
+
+Middle mouse button: marker for your team
+== 
+
+Others with Cr1stal Client see pictures and markers
+== 
+
+Put markers on the middle mouse button
 == 
 
 Status bar (FPS, ping, team, time)
