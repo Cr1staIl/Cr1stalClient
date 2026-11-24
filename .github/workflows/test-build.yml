@@ -58,4 +58,3 @@ jobs:
       with:
         name: Cr1stalClient-Setup
         path: installer-out/Cr1stalClient-Setup.exe
-        archive: false
