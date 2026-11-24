@@ -10,6 +10,9 @@ on:
       - gh-readonly-queue/**
   workflow_dispatch:
 
+permissions:
+  contents: write
+
 concurrency:
   group: ${{ github.workflow }}-${{ github.ref }}
   cancel-in-progress: true
@@ -21,6 +24,12 @@ jobs:
     - uses: actions/checkout@v5
       with:
         submodules: recursive
+
+    - name: Set build number
+      shell: bash
+      run: |
+        sed -i "s/#define CCLIENT_BUILD 0/#define CCLIENT_BUILD ${{ github.run_number }}/" src/game/client/cclient_version.h
+        grep CCLIENT_BUILD src/game/client/cclient_version.h
 
     - name: Install Vulkan SDK
       uses: humbletim/install-vulkan-sdk@v1.2
@@ -58,3 +67,21 @@ jobs:
       with:
         name: Cr1stalClient-Setup
         path: installer-out/Cr1stalClient-Setup.exe
+
+    - name: Write version file
+      shell: bash
+      run: echo '{"build": ${{ github.run_number }}}' > installer-out/version.json
+
+    # rolling pre-release used by the in-game update button (not shown as the latest release)
+    - name: Publish test update
+      uses: softprops/action-gh-release@v2
+      with:
+        tag_name: test-latest
+        name: Cr♱stal Client test build (not for everyone yet)
+        body: Test build ${{ github.run_number }} from ${{ github.sha }}. Used by the in-game update button.
+        prerelease: true
+        make_latest: false
+        target_commitish: ${{ github.sha }}
+        files: |
+          installer-out/Cr1stalClient-Setup.exe
+          installer-out/version.json

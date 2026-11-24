@@ -10,6 +10,10 @@
 
 #include <game/client/component.h>
 
+#include <memory>
+
+class IHttpRequest;
+
 // Save wheel: hold Shift (emote wheel) and press Q or E, then pick how your
 // teammates should save you. Map markers: press the marker key to point at a
 // spot for your team. Both are sent as team chat messages with a short tag,
@@ -44,6 +48,27 @@ public:
 	bool OnInput(const IInput::CEvent &Event) override;
 
 	bool IsWheelActive() const { return m_WheelActive; }
+
+	// in-game updater (Windows): checks the test-latest release and installs it with one click
+	enum class EUpdateState
+	{
+		NONE,
+		CHECKING,
+		UP_TO_DATE,
+		AVAILABLE,
+		DOWNLOADING,
+		INSTALLING,
+		FAILED,
+	};
+	EUpdateState UpdateState() const { return m_UpdateState; }
+	int LatestBuild() const { return m_LatestBuild; }
+	static int CurrentBuild();
+	float UpdateProgress() const;
+	bool CanSelfUpdate() const;
+	void CheckForUpdate();
+	void StartUpdate();
+	void OnUpdate() override;
+	void OnShutdown() override;
 	static const char *SaveName(int Save);
 
 private:
@@ -70,6 +95,12 @@ private:
 	float m_aSaveRequestTime[MAX_CLIENTS];
 
 	float m_LastSendTime = -100.0f;
+
+	EUpdateState m_UpdateState = EUpdateState::NONE;
+	int m_LatestBuild = 0;
+	std::shared_ptr<IHttpRequest> m_pVersionRequest;
+	std::shared_ptr<IHttpRequest> m_pSetupRequest;
+	void FinishUpdate();
 
 	static void ConPing(IConsole::IResult *pResult, void *pUserData);
 

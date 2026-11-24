@@ -1,16 +1,21 @@
 /* Cr1stal Client (C-Client): save wheel and map markers. Based on DDNet, see licence.txt. */
 #include "cclient.h"
 
+#include <base/log.h>
+#include <base/process.h>
 #include <base/str.h>
 
 #include <engine/graphics.h>
+#include <engine/http.h>
 #include <engine/keys.h>
 #include <engine/shared/config.h>
+#include <engine/shared/json.h>
 #include <engine/storage.h>
 #include <engine/textrender.h>
 
 #include <generated/protocol.h>
 
+#include <game/client/cclient_version.h>
 #include <game/client/gameclient.h>
 #include <game/client/ui.h>
 #include <game/localization.h>
@@ -63,6 +68,9 @@ void CCClient::OnInit()
 {
 	for(int i = 0; i < NUM_SAVES; i++)
 		m_aSaveTextures[i] = Graphics()->LoadTexture(s_apSaveFiles[i], IStorage::TYPE_ALL);
+
+	if(g_Config.m_CcUpdateCheck)
+		CheckForUpdate();
 
 	// give the new features keys once, without touching keys the player already uses
 	if(!g_Config.m_CcDefaultBindsDone)
@@ -388,4 +396,117 @@ void CCClient::RenderWheel()
 	Ui()->DoLabel(&Label, pTitle, FontSize, TEXTALIGN_MC, Props);
 
 	RenderTools()->RenderCursor(ScreenCenter + m_SelectorMouse, 24.0f);
+}
+
+// ---------------------------------------------------------------- updater
+
+static const char *const s_pUpdateBaseUrl = "https://github.com/Cr1staIl/Cr1stalClient/releases/download/test-latest/";
+static const char *const s_pUpdateFile = "cclient_update/Cr1stalClient-Setup.exe";
+
+int CCClient::CurrentBuild()
+{
+	return CCLIENT_BUILD;
+}
+
+bool CCClient::CanSelfUpdate() const
+{
+#if defined(CONF_FAMILY_WINDOWS)
+	return CurrentBuild() > 0; // only builds made by GitHub know their number
+#else
+	return false;
+#endif
+}
+
+void CCClient::CheckForUpdate()
+{
+	if(!CanSelfUpdate() || m_UpdateState == EUpdateState::CHECKING || m_UpdateState == EUpdateState::DOWNLOADING || m_UpdateState == EUpdateState::INSTALLING)
+		return;
+	char aUrl[256];
+	str_format(aUrl, sizeof(aUrl), "%sversion.json", s_pUpdateBaseUrl);
+	m_pVersionRequest = HttpGet(aUrl);
+	m_pVersionRequest->Timeout(CTimeout{10000, 0, 500, 10});
+	m_pVersionRequest->MaxResponseSize(16 * 1024);
+	m_pVersionRequest->LogProgress(HTTPLOG::FAILURE);
+	Http()->Run(m_pVersionRequest);
+	m_UpdateState = EUpdateState::CHECKING;
+}
+
+void CCClient::StartUpdate()
+{
+	if(m_UpdateState != EUpdateState::AVAILABLE && m_UpdateState != EUpdateState::FAILED)
+		return;
+	Storage()->CreateFolder("cclient_update", IStorage::TYPE_SAVE);
+	char aUrl[256];
+	str_format(aUrl, sizeof(aUrl), "%sCr1stalClient-Setup.exe", s_pUpdateBaseUrl);
+	m_pSetupRequest = HttpGetFile(aUrl, Storage(), s_pUpdateFile, IStorage::TYPE_SAVE);
+	m_pSetupRequest->Timeout(CTimeout{10000, 0, 500, 30});
+	m_pSetupRequest->MaxResponseSize(300 * 1024 * 1024);
+	Http()->Run(m_pSetupRequest);
+	m_UpdateState = EUpdateState::DOWNLOADING;
+}
+
+float CCClient::UpdateProgress() const
+{
+	if(m_UpdateState == EUpdateState::DOWNLOADING && m_pSetupRequest)
+		return m_pSetupRequest->Progress() / 100.0f;
+	return m_UpdateState == EUpdateState::INSTALLING ? 1.0f : 0.0f;
+}
+
+void CCClient::OnUpdate()
+{
+	if(m_UpdateState == EUpdateState::CHECKING && m_pVersionRequest && m_pVersionRequest->Done())
+	{
+		m_UpdateState = EUpdateState::FAILED;
+		if(m_pVersionRequest->State() == EHttpState::DONE)
+		{
+			json_value *pJson = m_pVersionRequest->ResultJson();
+			if(pJson)
+			{
+				const json_value *pBuild = json_object_get(pJson, "build");
+				if(pBuild && pBuild->type == json_integer)
+				{
+					m_LatestBuild = json_int_get(pBuild);
+					m_UpdateState = m_LatestBuild > CurrentBuild() ? EUpdateState::AVAILABLE : EUpdateState::UP_TO_DATE;
+				}
+				json_value_free(pJson);
+			}
+		}
+		if(m_UpdateState == EUpdateState::FAILED)
+			m_UpdateState = EUpdateState::NONE; // no button when the check simply did not work
+		m_pVersionRequest = nullptr;
+	}
+
+	if(m_UpdateState == EUpdateState::DOWNLOADING && m_pSetupRequest && m_pSetupRequest->Done())
+	{
+		if(m_pSetupRequest->State() == EHttpState::DONE)
+			FinishUpdate();
+		else
+			m_UpdateState = EUpdateState::FAILED;
+		m_pSetupRequest = nullptr;
+	}
+}
+
+void CCClient::FinishUpdate()
+{
+	char aPath[IO_MAX_PATH_LENGTH];
+	Storage()->GetCompletePath(IStorage::TYPE_SAVE, s_pUpdateFile, aPath, sizeof(aPath));
+	// the installer closes the game, installs over it and starts it again
+	const char *apArgs[] = {"/SILENT", "/SUPPRESSMSGBOXES", "/NORESTART", "/CLOSEAPPLICATIONS"};
+	const PROCESS Process = process_execute(aPath, EShellExecuteWindowState::FOREGROUND, apArgs, std::size(apArgs));
+	if(Process == INVALID_PROCESS)
+	{
+		log_error("cclient", "could not start the installer '%s'", aPath);
+		m_UpdateState = EUpdateState::FAILED;
+		return;
+	}
+	m_UpdateState = EUpdateState::INSTALLING;
+	Client()->Quit();
+}
+
+void CCClient::OnShutdown()
+{
+	if(m_pVersionRequest)
+		m_pVersionRequest->Abort();
+	if(m_pSetupRequest && m_UpdateState == EUpdateState::DOWNLOADING)
+		m_pSetupRequest->Abort();
 }

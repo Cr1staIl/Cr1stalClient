@@ -2964,5 +2964,38 @@ Others with Cr1stal Client see pictures and markers
 Put markers on the middle mouse button
 == Метки на среднюю кнопку мыши
 
+Updates
+== Обновления
+
+Your version
+== Твоя версия
+
+Your version: local build (no updates)
+== Твоя версия: локальная сборка (без обновлений)
+
+Check for updates when the game starts
+== Проверять обновления при запуске
+
+Check for updates
+== Проверить обновления
+
+Checking…
+== Проверяю…
+
+You have the newest version
+== У тебя последняя версия
+
+Update is ready: see the main menu
+== Обновление готово: кнопка в главном меню
+
+Downloading update
+== Загрузка обновления
+
+Update failed, try again
+== Обновление не удалось, попробуй ещё раз
+
+Update Cr1stal Client
+== Обновить Cr1stal Client
+
 Virtual joystick which only aims and moves the mouse pointer relatively.
 == 

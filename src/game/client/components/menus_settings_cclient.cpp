@@ -6,6 +6,7 @@
 #include <engine/shared/config.h>
 #include <engine/textrender.h>
 
+#include <game/client/components/cclient.h>
 #include <game/client/gameclient.h>
 #include <game/client/lineinput.h>
 #include <game/client/ui.h>
@@ -200,6 +201,36 @@ void CMenus::RenderSettingsCClient(CUIRect MainView)
 		Right.Slider(&g_Config.m_CcIndicatorOffset, Localize("Indicator distance"), 50, 400);
 		Right.Slider(&g_Config.m_CcIndicatorSize, Localize("Indicator size"), 4, 30);
 		Right.Note(Localize("Green: alive, blue: frozen"), ColorRGBA(0.6f, 0.9f, 1.0f, 1.0f));
+	}
+	Right.Gap();
+
+	// ---- updates ----
+	Right.Headline(Localize("Updates"));
+	{
+		CCClient &CClient = GameClient()->m_CClient;
+		char aBuf[128];
+		if(CCClient::CurrentBuild() > 0)
+			str_format(aBuf, sizeof(aBuf), "%s: #%d", Localize("Your version"), CCClient::CurrentBuild());
+		else
+			str_copy(aBuf, Localize("Your version: local build (no updates)"));
+		Right.Note(aBuf, ColorRGBA(0.75f, 0.75f, 0.9f, 1.0f));
+		Right.Check(&g_Config.m_CcUpdateCheck, Localize("Check for updates when the game starts"));
+		if(CClient.CanSelfUpdate())
+		{
+			static CButtonContainer s_CheckButton;
+			CUIRect Button = Right.Line();
+			Button.VSplitLeft(220.0f, &Button, nullptr);
+			const CCClient::EUpdateState State = CClient.UpdateState();
+			const char *pLabel = Localize("Check for updates");
+			if(State == CCClient::EUpdateState::CHECKING)
+				pLabel = Localize("Checking…");
+			else if(State == CCClient::EUpdateState::UP_TO_DATE)
+				pLabel = Localize("You have the newest version");
+			else if(State == CCClient::EUpdateState::AVAILABLE)
+				pLabel = Localize("Update is ready: see the main menu");
+			if(DoButton_Menu(&s_CheckButton, pLabel, 0, &Button))
+				CClient.CheckForUpdate();
+		}
 	}
 	Right.Gap();
 

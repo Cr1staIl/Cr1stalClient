@@ -12,6 +12,7 @@
 
 #include <generated/client_data.h>
 
+#include <game/client/components/cclient.h>
 #include <game/client/gameclient.h>
 #include <game/client/ui.h>
 #include <game/localization.h>
@@ -120,6 +121,39 @@ void CMenusStart::RenderStartMenu(CUIRect MainView)
 
 	// render the neon "Cr♱stal Client" title
 	RenderNeonTitle(MainView.w / 2, 70.0f);
+
+	// Cr1stal Client in-game update button
+	{
+		CCClient &CClient = GameClient()->m_CClient;
+		const CCClient::EUpdateState State = CClient.UpdateState();
+		if(State == CCClient::EUpdateState::AVAILABLE || State == CCClient::EUpdateState::FAILED ||
+			State == CCClient::EUpdateState::DOWNLOADING || State == CCClient::EUpdateState::INSTALLING)
+		{
+			CUIRect UpdateButton;
+			UpdateButton.x = MainView.w / 2.0f - 120.0f;
+			UpdateButton.y = 150.0f;
+			UpdateButton.w = 240.0f;
+			UpdateButton.h = 26.0f;
+			char aLabel[128];
+			if(State == CCClient::EUpdateState::DOWNLOADING || State == CCClient::EUpdateState::INSTALLING)
+			{
+				Ui()->RenderProgressBar(UpdateButton, CClient.UpdateProgress());
+				str_format(aLabel, sizeof(aLabel), "%s %d%%", Localize("Downloading update"), round_to_int(CClient.UpdateProgress() * 100.0f));
+				Ui()->DoLabel(&UpdateButton, aLabel, 12.0f, TEXTALIGN_MC);
+			}
+			else
+			{
+				if(State == CCClient::EUpdateState::FAILED)
+					str_copy(aLabel, Localize("Update failed, try again"));
+				else
+					str_format(aLabel, sizeof(aLabel), "%s (#%d)", Localize("Update Cr1stal Client"), CClient.LatestBuild());
+				static CButtonContainer s_UpdateButton;
+				const float Pulse = 0.5f + 0.5f * std::sin(Client()->GlobalTime() * 3.0f);
+				if(GameClient()->m_Menus.DoButton_Menu(&s_UpdateButton, aLabel, 0, &UpdateButton, BUTTONFLAG_LEFT, nullptr, IGraphics::CORNER_ALL, 8.0f, 0.0f, ColorRGBA(0.75f, 0.15f, 0.7f, 0.45f + 0.25f * Pulse)))
+					CClient.StartUpdate();
+			}
+		}
+	}
 
 	const float Rounding = 10.0f;
 	const float VMargin = MainView.w / 2 - 190.0f;

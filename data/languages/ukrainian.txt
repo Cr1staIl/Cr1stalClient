@@ -2933,6 +2933,39 @@ Others with Cr1stal Client see pictures and markers
 Put markers on the middle mouse button
 == Мітки на середню кнопку миші
 
+Updates
+== Оновлення
+
+Your version
+== Твоя версія
+
+Your version: local build (no updates)
+== Твоя версія: локальна збірка (без оновлень)
+
+Check for updates when the game starts
+== Перевіряти оновлення під час запуску
+
+Check for updates
+== Перевірити оновлення
+
+Checking…
+== Перевіряю…
+
+You have the newest version
+== У тебе остання версія
+
+Update is ready: see the main menu
+== Оновлення готове: кнопка в головному меню
+
+Downloading update
+== Завантаження оновлення
+
+Update failed, try again
+== Оновлення не вдалося, спробуй ще раз
+
+Update Cr1stal Client
+== Оновити Cr1stal Client
+
 Hold Shift to be more precise.
 == 
 

@@ -693,6 +693,7 @@ MACRO_CONFIG_INT(CcShowHitbox, cc_show_hitbox, 0, 0, 1, CFGFLAG_CLIENT | CFGFLAG
 MACRO_CONFIG_INT(CcShowCenter, cc_show_center, 0, 0, 1, CFGFLAG_CLIENT | CFGFLAG_SAVE, "C-Client: show lines through the center of the screen")
 MACRO_CONFIG_INT(CcStatusbar, cc_statusbar, 0, 0, 1, CFGFLAG_CLIENT | CFGFLAG_SAVE, "C-Client: status bar at the bottom with FPS, ping, time and team")
 MACRO_CONFIG_INT(CcDefaultBindsDone, cc_default_binds_done, 0, 0, 1, CFGFLAG_CLIENT | CFGFLAG_SAVE, "C-Client: the default key for map markers was already set once")
+MACRO_CONFIG_INT(CcUpdateCheck, cc_update_check, 1, 0, 1, CFGFLAG_CLIENT | CFGFLAG_SAVE, "C-Client: check for a new version when the game starts")
 MACRO_CONFIG_INT(CrNeonBackground, cr_neon_background, 1, 0, 1, CFGFLAG_CLIENT | CFGFLAG_SAVE, "Cr1stal Client: animated neon main menu background instead of the map theme")
 MACRO_CONFIG_COL(ClBackgroundEntitiesColor, cl_background_entities_color, 128, CFGFLAG_CLIENT | CFGFLAG_SAVE, "Background (entities) color") // 0 0 128
 MACRO_CONFIG_STR(ClBackgroundEntities, cl_background_entities, IO_MAX_PATH_LENGTH, "", CFGFLAG_CLIENT | CFGFLAG_SAVE, "Background (entities)")

@@ -2802,6 +2802,30 @@ Indicator size
 Green: alive, blue: frozen
 == 
 
+Updates
+== 
+
+Your version
+== 
+
+Your version: local build (no updates)
+== 
+
+Check for updates when the game starts
+== 
+
+Check for updates
+== 
+
+Checking…
+== 
+
+You have the newest version
+== 
+
+Update is ready: see the main menu
+== 
+
 Saves and markers
 == 
 
@@ -2920,6 +2944,15 @@ Skin could not be found.
 == 
 
 No skins match your filter criteria
+== 
+
+Downloading update
+== 
+
+Update failed, try again
+== 
+
+Update Cr1stal Client
 == 
 
 Join
