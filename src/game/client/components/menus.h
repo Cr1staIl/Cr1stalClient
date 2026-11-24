@@ -581,6 +581,7 @@ protected:
 
 	// found in menus_settings_ddnet.cpp
 	void RenderSettingsDDNet(CUIRect MainView);
+	void RenderSettingsCClient(CUIRect MainView);
 
 	// found in menus_settings_general.cpp
 	void RenderSettingsGeneral(CUIRect MainView);
@@ -717,6 +718,7 @@ public:
 		SETTINGS_GRAPHICS,
 		SETTINGS_SOUND,
 		SETTINGS_DDNET,
+		SETTINGS_CCLIENT,
 		SETTINGS_ASSETS,
 		SETTINGS_CREDITS,
 

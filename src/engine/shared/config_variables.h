@@ -227,7 +227,7 @@ MACRO_CONFIG_STR(ClDummy7SkinEyes, dummy7_skin_eyes, protocol7::MAX_SKIN_ARRAY_S
 // MACRO_CONFIG_STR(ClCensorUrl, cl_censor_url, 100, "https://info.ddnet.org/censor.json", CFGFLAG_CLIENT | CFGFLAG_SAVE, "URL used to download words to censor (must start with https://)")
 
 MACRO_CONFIG_INT(UiPage, ui_page, 6, 6, 13, CFGFLAG_CLIENT | CFGFLAG_SAVE, "Interface page")
-MACRO_CONFIG_INT(UiSettingsPage, ui_settings_page, 0, 0, 10, CFGFLAG_CLIENT | CFGFLAG_SAVE, "Interface settings page")
+MACRO_CONFIG_INT(UiSettingsPage, ui_settings_page, 0, 0, 11, CFGFLAG_CLIENT | CFGFLAG_SAVE, "Interface settings page")
 MACRO_CONFIG_INT(UiToolboxPage, ui_toolbox_page, 0, 0, 2, CFGFLAG_CLIENT | CFGFLAG_SAVE, "Toolbox page")
 MACRO_CONFIG_STR(UiServerAddress, ui_server_address, 1024, "localhost:8303", CFGFLAG_CLIENT | CFGFLAG_SAVE | CFGFLAG_INSENSITIVE, "Interface server address")
 MACRO_CONFIG_INT(UiMousesens, ui_mousesens, 200, 1, 100000, CFGFLAG_SAVE | CFGFLAG_CLIENT, "Mouse sensitivity for menus/editor")
@@ -671,6 +671,16 @@ MACRO_CONFIG_INT(ClShowOthersAlpha, cl_show_others_alpha, 40, 0, 100, CFGFLAG_CL
 MACRO_CONFIG_INT(ClOverlayEntities, cl_overlay_entities, 0, 0, 100, CFGFLAG_CLIENT | CFGFLAG_SAVE, "Overlay game tiles with a percentage of opacity")
 MACRO_CONFIG_INT(ClShowQuads, cl_showquads, 1, 0, 1, CFGFLAG_CLIENT | CFGFLAG_SAVE, "Show background quads (only interesting for mappers, or if your system has extremely bad performance)")
 MACRO_CONFIG_COL(ClBackgroundColor, cl_background_color, 128, CFGFLAG_CLIENT | CFGFLAG_SAVE, "Background color") // 0 0 128
+// Cr1stal Client (C-Client) settings
+MACRO_CONFIG_INT(CcFastInput, cc_fast_input, 0, 0, 1, CFGFLAG_CLIENT | CFGFLAG_SAVE, "C-Client: apply your newest input to your own tee before the next tick is sent (feels more responsive)")
+MACRO_CONFIG_INT(CcFastInputAmount, cc_fast_input_amount, 20, 20, 100, CFGFLAG_CLIENT | CFGFLAG_SAVE, "C-Client: how far ahead fast input predicts your tee, in milliseconds (20 = 1 tick)")
+MACRO_CONFIG_INT(CcFrozenHud, cc_frozen_hud, 1, 0, 1, CFGFLAG_CLIENT | CFGFLAG_SAVE, "C-Client: show your team's tees at the top of the screen, frozen ones darkened")
+MACRO_CONFIG_INT(CcFrozenHudSize, cc_frozen_hud_size, 14, 8, 24, CFGFLAG_CLIENT | CFGFLAG_SAVE, "C-Client: size of the tees in the team freeze HUD")
+MACRO_CONFIG_INT(CcFrozenHudTeamOnly, cc_frozen_hud_team_only, 1, 0, 1, CFGFLAG_CLIENT | CFGFLAG_SAVE, "C-Client: only show the team freeze HUD while you are in a team")
+MACRO_CONFIG_INT(CcFrozenText, cc_frozen_text, 1, 0, 1, CFGFLAG_CLIENT | CFGFLAG_SAVE, "C-Client: show how many tees of your team are still alive (not frozen)")
+MACRO_CONFIG_INT(CcRainbowTee, cc_rainbow_tee, 0, 0, 1, CFGFLAG_CLIENT | CFGFLAG_SAVE, "C-Client: rainbow colors for your own tee (only you see it)")
+MACRO_CONFIG_INT(CcRainbowSpeed, cc_rainbow_speed, 100, 10, 500, CFGFLAG_CLIENT | CFGFLAG_SAVE, "C-Client: speed of the rainbow tee in percent")
+MACRO_CONFIG_INT(CcCursorScale, cc_cursor_scale, 100, 50, 300, CFGFLAG_CLIENT | CFGFLAG_SAVE, "C-Client: size of the in-game cursor in percent")
 MACRO_CONFIG_INT(CrNeonBackground, cr_neon_background, 1, 0, 1, CFGFLAG_CLIENT | CFGFLAG_SAVE, "Cr1stal Client: animated neon main menu background instead of the map theme")
 MACRO_CONFIG_COL(ClBackgroundEntitiesColor, cl_background_entities_color, 128, CFGFLAG_CLIENT | CFGFLAG_SAVE, "Background (entities) color") // 0 0 128
 MACRO_CONFIG_STR(ClBackgroundEntities, cl_background_entities, IO_MAX_PATH_LENGTH, "", CFGFLAG_CLIENT | CFGFLAG_SAVE, "Background (entities)")

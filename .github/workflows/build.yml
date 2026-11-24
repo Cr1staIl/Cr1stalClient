@@ -1,11 +1,14 @@
 name: Build
 
 on:
+  # Cr1stal Client: the full DDNet CI only runs on master or by hand,
+  # day-to-day test builds come from test-build.yml
   push:
-    branches-ignore:
-      - gh-readonly-queue/**
+    branches:
+      - master
   pull_request:
   merge_group:
+  workflow_dispatch:
 
 concurrency:
   group: ${{ github.workflow }}-${{ github.ref }}

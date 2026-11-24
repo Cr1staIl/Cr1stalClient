@@ -51,6 +51,7 @@ void CControls::ResetInput(int Dummy)
 	m_aLastData[Dummy].m_Fire &= INPUT_STATE_MASK;
 	m_aLastData[Dummy].m_Jump = 0;
 	m_aInputData[Dummy] = m_aLastData[Dummy];
+	m_aFastInput[Dummy] = m_aInputData[Dummy];
 
 	m_aInputDirectionLeft[Dummy] = 0;
 	m_aInputDirectionRight[Dummy] = 0;
@@ -292,6 +293,9 @@ int CControls::SnapInput(int *pData)
 	}
 	else
 	{
+		m_FastInputHookAction = false;
+		m_FastInputFireAction = false;
+
 		m_aInputData[g_Config.m_ClDummy].m_TargetX = (int)m_aMousePos[g_Config.m_ClDummy].x;
 		m_aInputData[g_Config.m_ClDummy].m_TargetY = (int)m_aMousePos[g_Config.m_ClDummy].y;
 
@@ -523,4 +527,66 @@ float CControls::GetMaxMouseDistance() const
 	float DeadZone = g_Config.m_ClDyncam ? g_Config.m_ClDyncamDeadzone : g_Config.m_ClMouseDeadzone;
 	float MaxDistance = g_Config.m_ClDyncam ? g_Config.m_ClDyncamMaxDistance : g_Config.m_ClMouseMaxDistance;
 	return std::min(FollowFactor != 0.0f ? CameraMaxDistance / FollowFactor + DeadZone : MaxDistance, MaxDistance);
+}
+
+// C-Client fast input (idea and approach from TClient by Tater, zlib licence).
+// Collects the newest input of this frame and reports whether it changed,
+// so the client can repredict right away instead of waiting for the next tick.
+bool CControls::CheckNewInput()
+{
+	bool aNewInput[NUM_DUMMIES] = {};
+	for(int Dummy = 0; Dummy < NUM_DUMMIES; Dummy++)
+	{
+		CNetObj_PlayerInput TestInput = m_aInputData[Dummy];
+		if(Dummy == g_Config.m_ClDummy)
+		{
+			TestInput.m_Direction = 0;
+			if(m_aInputDirectionLeft[Dummy] && !m_aInputDirectionRight[Dummy])
+				TestInput.m_Direction = -1;
+			if(!m_aInputDirectionLeft[Dummy] && m_aInputDirectionRight[Dummy])
+				TestInput.m_Direction = 1;
+		}
+
+		const CNetObj_PlayerInput &Old = m_aFastInput[Dummy];
+		if(Old.m_Direction != TestInput.m_Direction || Old.m_Hook != TestInput.m_Hook || Old.m_Fire != TestInput.m_Fire ||
+			Old.m_Jump != TestInput.m_Jump || Old.m_NextWeapon != TestInput.m_NextWeapon || Old.m_PrevWeapon != TestInput.m_PrevWeapon ||
+			Old.m_WantedWeapon != TestInput.m_WantedWeapon)
+		{
+			aNewInput[Dummy] = true;
+		}
+
+		// Keep the aim of a hook or shot that started this tick, so the prediction
+		// uses the same target that is sent to the server.
+		bool SetMousePos = false;
+		if(Dummy == g_Config.m_ClDummy)
+		{
+			if(Old.m_Hook == 0 && TestInput.m_Hook == 1)
+			{
+				m_FastInputHookAction = true;
+				SetMousePos = true;
+			}
+			if(Old.m_Fire != TestInput.m_Fire && TestInput.m_Fire % 2 == 1)
+			{
+				m_FastInputFireAction = true;
+				SetMousePos = true;
+			}
+			if(!m_FastInputHookAction && !m_FastInputFireAction)
+				SetMousePos = true;
+		}
+
+		if(SetMousePos)
+		{
+			TestInput.m_TargetX = (int)m_aMousePos[Dummy].x;
+			TestInput.m_TargetY = (int)m_aMousePos[Dummy].y;
+		}
+		else
+		{
+			TestInput.m_TargetX = Old.m_TargetX;
+			TestInput.m_TargetY = Old.m_TargetY;
+		}
+
+		m_aFastInput[Dummy] = TestInput;
+	}
+
+	return aNewInput[0] || aNewInput[1];
 }

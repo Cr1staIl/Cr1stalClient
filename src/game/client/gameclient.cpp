@@ -2577,6 +2577,11 @@ void CGameClient::ApplyPreInputs(int Tick, bool Direct, CGameWorld &GameWorld)
 	}
 }
 
+bool CGameClient::CheckNewInput()
+{
+	return m_Controls.CheckNewInput();
+}
+
 void CGameClient::OnPredict()
 {
 	// store the previous values so we can detect prediction errors
@@ -2638,9 +2643,19 @@ void CGameClient::OnPredict()
 		pDummyChar = m_PredictedWorld.GetCharacterById(m_aLocalIds[!g_Config.m_ClDummy]);
 
 	int PredictionTick = Client()->GetPredictionTick();
+
+	// C-Client fast input: predict our own tee a few extra ticks ahead using the newest local input.
+	// Everything that is shared with others (events, effects, other tees) stays on the regular tick.
+	const int FinalTickRegular = Client()->PredGameTick(g_Config.m_ClDummy);
+	const int FastInputTicks = g_Config.m_CcFastInput ? (g_Config.m_CcFastInputAmount + 19) / 20 : 0;
+	const int FinalTickSelf = FinalTickRegular + FastInputTicks;
+	const int LocalTee = g_Config.m_ClDummy ^ m_IsDummySwapping;
+
 	// predict
-	for(int Tick = Client()->GameTick(g_Config.m_ClDummy) + 1; Tick <= Client()->PredGameTick(g_Config.m_ClDummy); Tick++)
+	for(int Tick = Client()->GameTick(g_Config.m_ClDummy) + 1; Tick <= FinalTickSelf; Tick++)
 	{
+		const bool ExtraTick = Tick > FinalTickRegular;
+
 		// fetch the previous characters
 		if(Tick == PredictionTick)
 		{
@@ -2649,11 +2664,13 @@ void CGameClient::OnPredict()
 					m_aClients[i].m_PrevPredicted = pChar->GetCore();
 		}
 
-		if(Tick == Client()->PredGameTick(g_Config.m_ClDummy))
+		if(Tick == FinalTickSelf)
 		{
 			m_PredictedPrevChar = pLocalChar->GetCore();
 			m_aClients[m_Snap.m_LocalClientId].m_PrevPredicted = pLocalChar->GetCore();
-
+		}
+		if(Tick == FinalTickRegular)
+		{
 			if(pDummyChar)
 				m_aClients[m_aLocalIds[!g_Config.m_ClDummy]].m_PrevPredicted = pDummyChar->GetCore();
 		}
@@ -2665,6 +2682,15 @@ void CGameClient::OnPredict()
 		// apply inputs and tick
 		CNetObj_PlayerInput *pInputData = (CNetObj_PlayerInput *)Client()->GetInput(Tick, m_IsDummySwapping);
 		CNetObj_PlayerInput *pDummyInputData = !pDummyChar ? nullptr : (CNetObj_PlayerInput *)Client()->GetInput(Tick, m_IsDummySwapping ^ 1);
+		if(ExtraTick)
+		{
+			pInputData = &m_Controls.m_aFastInput[LocalTee];
+			pDummyInputData = nullptr;
+		}
+		// events of the extra ticks did not really happen yet
+		const bool OldPredictEvents = m_PredictedWorld.m_WorldConfig.m_PredictEvents;
+		if(ExtraTick)
+			m_PredictedWorld.m_WorldConfig.m_PredictEvents = false;
 		bool DummyFirst = pInputData && pDummyInputData && pDummyChar->GetCid() < pLocalChar->GetCid();
 
 		if(DummyFirst)
@@ -2685,6 +2711,7 @@ void CGameClient::OnPredict()
 		ApplyPreInputs(Tick, false, m_PredictedWorld);
 
 		m_PredictedWorld.Tick();
+		m_PredictedWorld.m_WorldConfig.m_PredictEvents = OldPredictEvents;
 
 		// fetch the current characters
 		if(Tick == PredictionTick)
@@ -2696,24 +2723,29 @@ void CGameClient::OnPredict()
 					m_aClients[i].m_Predicted = pChar->GetCore();
 		}
 
-		if(Tick == Client()->PredGameTick(g_Config.m_ClDummy))
+		if(Tick == FinalTickSelf)
 		{
 			m_PredictedChar = pLocalChar->GetCore();
 			m_aClients[m_Snap.m_LocalClientId].m_Predicted = pLocalChar->GetCore();
-
+		}
+		if(Tick == FinalTickRegular)
+		{
 			if(pDummyChar)
 				m_aClients[m_aLocalIds[!g_Config.m_ClDummy]].m_Predicted = pDummyChar->GetCore();
 		}
 
-		for(int i = 0; i < MAX_CLIENTS; i++)
-			if(CCharacter *pChar = m_PredictedWorld.GetCharacterById(i))
-			{
-				m_aClients[i].m_aPredPos[Tick % 200] = pChar->Core()->m_Pos;
-				m_aClients[i].m_aPredTick[Tick % 200] = Tick;
-			}
+		if(!ExtraTick)
+		{
+			for(int i = 0; i < MAX_CLIENTS; i++)
+				if(CCharacter *pChar = m_PredictedWorld.GetCharacterById(i))
+				{
+					m_aClients[i].m_aPredPos[Tick % 200] = pChar->Core()->m_Pos;
+					m_aClients[i].m_aPredTick[Tick % 200] = Tick;
+				}
+		}
 
 		// check if we want to trigger effects
-		if(Tick > m_aLastNewPredictedTick[Dummy])
+		if(!ExtraTick && Tick > m_aLastNewPredictedTick[Dummy])
 		{
 			m_aLastNewPredictedTick[Dummy] = Tick;
 			m_NewPredictedTick = true;
@@ -2748,8 +2780,16 @@ void CGameClient::OnPredict()
 					m_Effects.AirJump(Pos, 1.0f, 1.0f);
 		}
 
-		HandlePredictedEvents(Tick);
+		if(!ExtraTick)
+			HandlePredictedEvents(Tick);
+
+		if(FastInputTicks > 0 && Tick == FinalTickRegular)
+			m_RegularPredictedWorld.CopyWorld(&m_PredictedWorld);
 	}
+
+	// the rest of the client works with the regular predicted world
+	if(FastInputTicks > 0)
+		m_PredictedWorld.CopyWorld(&m_RegularPredictedWorld);
 
 	// detect mispredictions of other players and make corrections smoother when possible
 	if(g_Config.m_ClAntiPingSmooth && Predict() && AntiPingPlayers() && m_NewTick && m_PredictedTick >= MIN_TICK && absolute(m_PredictedTick - Client()->PredGameTick(g_Config.m_ClDummy)) <= 1 && absolute(Client()->GameTick(g_Config.m_ClDummy) - Client()->PrevGameTick(g_Config.m_ClDummy)) <= 2)
@@ -2826,7 +2866,7 @@ void CGameClient::OnPredict()
 		}
 	}
 
-	if(g_Config.m_Debug && g_Config.m_ClPredict && m_PredictedTick == Client()->PredGameTick(g_Config.m_ClDummy))
+	if(g_Config.m_Debug && g_Config.m_ClPredict && FastInputTicks == 0 && m_PredictedTick == Client()->PredGameTick(g_Config.m_ClDummy))
 	{
 		CNetObj_CharacterCore Before = {0}, Now = {0}, BeforePrev = {0}, NowPrev = {0};
 		BeforeChar.Write(&Before);

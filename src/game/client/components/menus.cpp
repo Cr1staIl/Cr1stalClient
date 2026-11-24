@@ -2492,8 +2492,8 @@ void CMenus::RenderNeonBackground()
 	// dark gradient
 	Graphics()->TextureClear();
 	Graphics()->QuadsBegin();
-	Graphics()->SetColor4(ColorRGBA(0.025f, 0.005f, 0.06f, 1.0f), ColorRGBA(0.005f, 0.01f, 0.045f, 1.0f),
-		ColorRGBA(0.004f, 0.0f, 0.012f, 1.0f), ColorRGBA(0.012f, 0.0f, 0.025f, 1.0f));
+	Graphics()->SetColor4(ColorRGBA(0.018f, 0.004f, 0.045f, 1.0f), ColorRGBA(0.004f, 0.008f, 0.032f, 1.0f),
+		ColorRGBA(0.002f, 0.0f, 0.008f, 1.0f), ColorRGBA(0.008f, 0.0f, 0.016f, 1.0f));
 	const IGraphics::CQuadItem Bg(0, 0, ScreenWidth, ScreenHeight);
 	Graphics()->QuadsDrawTL(&Bg, 1);
 	Graphics()->QuadsEnd();

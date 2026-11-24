@@ -2723,3 +2723,105 @@ not bound
 
 Show cursor
 == Mostrar cursor
+
+Cursor
+== 
+
+Cursor distance
+== 
+
+Type any value from 0 to 5000
+== 
+
+Dynamic camera is on: it uses its own distance
+== 
+
+Cursor size
+== 
+
+Fast input
+== 
+
+Enable fast input
+== 
+
+Your tee reacts to your keys right away, before the server tick. Only changes what you see, not what the server gets.
+== 
+
+Amount
+== 
+
+Looks
+== 
+
+Neon menu background
+== 
+
+Rainbow tee (only you see it)
+== 
+
+Rainbow speed
+== 
+
+Antiping
+== 
+
+Enable antiping
+== 
+
+Predicts other players and projectiles so the game feels like a lower ping
+== 
+
+Predict other players
+== 
+
+Smooth other players
+== 
+
+Predict grenades
+== 
+
+Predict weapons
+== 
+
+Prediction strength
+== 
+
+Predict freeze
+== 
+
+Show team at the top (frozen tees darkened)
+== 
+
+Tee size
+== 
+
+Show alive / total counter
+== 
+
+Only while in a team
+== 
+
+Freeze bars under frozen tees
+== 
+
+Whisper
+== 
+
+Copy name
+== 
+
+Copy skin (paste into console)
+== 
+
+Open profile on ddnet.org
+== 
+
+Invite to team
+== 
+
+Join team %d
+== 
+
+Vote kick
+== 

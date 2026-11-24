@@ -2690,9 +2690,6 @@ Relative aim
 Joystick Relative Aim
 == Относительное прицеливание на джойстике
 
-Virtual joystick which only aims and moves the mouse pointer relatively.
-== 
-
 Credits
 == Авторы
 
@@ -2744,3 +2741,87 @@ Join team %d
 
 Vote kick
 == Голосовать за кик
+
+Cursor
+== Курсор
+
+Cursor distance
+== Дальность курсора
+
+Type any value from 0 to 5000
+== Впиши любое число от 0 до 5000
+
+Dynamic camera is on: it uses its own distance
+== Включена динамическая камера: у неё своя дальность
+
+Cursor size
+== Размер курсора
+
+Fast input
+== Быстрый ввод (Fast Input)
+
+Enable fast input
+== Включить быстрый ввод
+
+Your tee reacts to your keys right away, before the server tick. Only changes what you see, not what the server gets.
+== Ти реагирует на нажатия сразу, ещё до тика сервера. Меняет только то, что видишь ты, а не то, что получает сервер.
+
+Amount
+== Сила
+
+Looks
+== Внешний вид
+
+Neon menu background
+== Неоновый фон меню
+
+Rainbow tee (only you see it)
+== Радужный ти (видишь только ты)
+
+Rainbow speed
+== Скорость радуги
+
+Antiping
+== Антипинг
+
+Enable antiping
+== Включить антипинг
+
+Predicts other players and projectiles so the game feels like a lower ping
+== Предсказывает других игроков и снаряды, чтобы игра ощущалась как с меньшим пингом
+
+Predict other players
+== Предсказывать других игроков
+
+Smooth other players
+== Сглаживать других игроков
+
+Predict grenades
+== Предсказывать гранаты
+
+Predict weapons
+== Предсказывать оружие
+
+Prediction strength
+== Сила предсказания
+
+Predict freeze
+== Предсказывать заморозку
+
+Show team at the top (frozen tees darkened)
+== Команда сверху экрана (замороженные затемнены)
+
+Tee size
+== Размер ти
+
+Show alive / total counter
+== Счётчик живых / всего
+
+Only while in a team
+== Только когда ты в команде
+
+Freeze bars under frozen tees
+== Полоски заморозки под ти
+
+Virtual joystick which only aims and moves the mouse pointer relatively.
+== 

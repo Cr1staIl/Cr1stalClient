@@ -2959,6 +2959,12 @@ void CClient::Update()
 					// send input
 					SendInput();
 				}
+
+				// C-Client fast input: repredict as soon as a new input arrives
+				if(g_Config.m_CcFastInput && GameClient()->CheckNewInput())
+				{
+					Repredict = true;
+				}
 			}
 
 			// only do sane predictions

@@ -650,7 +650,97 @@ void CHud::RenderCursor()
 
 	Graphics()->SetColor(1.0f, 1.0f, 1.0f, Alpha);
 	Graphics()->TextureSet(GameClient()->m_GameSkin.m_aSpriteWeaponCursors[CurWeapon]);
-	Graphics()->RenderQuadContainerAsSprite(m_HudQuadContainerIndex, m_aCursorOffset[CurWeapon], TargetPos.x, TargetPos.y);
+	const float CursorScale = g_Config.m_CcCursorScale / 100.0f; // C-Client cursor size
+	Graphics()->RenderQuadContainerAsSprite(m_HudQuadContainerIndex, m_aCursorOffset[CurWeapon], TargetPos.x, TargetPos.y, CursorScale, CursorScale);
+}
+
+// C-Client: your team at the top of the screen, frozen tees darkened, plus an "alive / total" counter
+void CHud::RenderCClientTeamHud()
+{
+	if(!GameClient()->m_GameInfo.m_EntitiesDDRace || GameClient()->m_Scoreboard.IsActive())
+		return;
+	if(!g_Config.m_CcFrozenHud && !g_Config.m_CcFrozenText)
+		return;
+
+	int ViewedId = GameClient()->m_Snap.m_LocalClientId;
+	if(GameClient()->m_Snap.m_SpecInfo.m_Active && GameClient()->m_Snap.m_SpecInfo.m_SpectatorId >= 0)
+		ViewedId = GameClient()->m_Snap.m_SpecInfo.m_SpectatorId;
+	if(ViewedId < 0)
+		return;
+	const int Team = GameClient()->m_Teams.Team(ViewedId);
+	if(Team == TEAM_FLOCK && g_Config.m_CcFrozenHudTeamOnly)
+		return;
+
+	int aMembers[MAX_CLIENTS];
+	int NumMembers = 0;
+	int NumFrozen = 0;
+	for(int i = 0; i < MAX_CLIENTS; i++)
+	{
+		if(!GameClient()->m_Snap.m_apPlayerInfos[i] || GameClient()->m_Teams.Team(i) != Team)
+			continue;
+		if(GameClient()->m_Snap.m_apPlayerInfos[i]->m_Team == TEAM_SPECTATORS)
+			continue;
+		aMembers[NumMembers++] = i;
+		if(GameClient()->m_aClients[i].m_FreezeEnd > 0 || GameClient()->m_aClients[i].m_DeepFrozen)
+			NumFrozen++;
+	}
+	if(NumMembers <= 1 && Team == TEAM_FLOCK)
+		return;
+
+	const float TeeSize = (float)g_Config.m_CcFrozenHudSize;
+	const int MaxTees = std::max(1, (int)((m_Width * 0.32f) / TeeSize));
+	const int Shown = std::min(NumMembers, MaxTees);
+	const float StartX = m_Width / 2.0f + 45.0f;
+	const float PanelW = Shown * TeeSize + 6.0f;
+	const float PanelH = TeeSize + 4.0f;
+
+	if(g_Config.m_CcFrozenHud)
+	{
+		Graphics()->TextureClear();
+		Graphics()->QuadsBegin();
+		Graphics()->SetColor(0.08f, 0.02f, 0.16f, 0.55f);
+		Graphics()->DrawRectExt(StartX - 3.0f, 0.0f, PanelW, PanelH, 4.0f, IGraphics::CORNER_B);
+		Graphics()->QuadsEnd();
+
+		// alive tees first, frozen ones at the end
+		int Drawn = 0;
+		for(int Pass = 0; Pass < 2; Pass++)
+		{
+			for(int m = 0; m < NumMembers && Drawn < Shown; m++)
+			{
+				const int Id = aMembers[m];
+				const CGameClient::CClientData &Data = GameClient()->m_aClients[Id];
+				const bool Frozen = Data.m_FreezeEnd > 0 || Data.m_DeepFrozen;
+				if(Frozen != (Pass == 1))
+					continue;
+
+				CTeeRenderInfo TeeInfo = Data.m_RenderInfo;
+				TeeInfo.m_Size = TeeSize;
+				float Alpha = 1.0f;
+				if(Frozen)
+				{
+					Alpha = 0.45f;
+					TeeInfo.m_ColorBody = ColorRGBA(TeeInfo.m_ColorBody.r * 0.4f, TeeInfo.m_ColorBody.g * 0.4f, TeeInfo.m_ColorBody.b * 0.5f, TeeInfo.m_ColorBody.a);
+					TeeInfo.m_ColorFeet = ColorRGBA(TeeInfo.m_ColorFeet.r * 0.4f, TeeInfo.m_ColorFeet.g * 0.4f, TeeInfo.m_ColorFeet.b * 0.5f, TeeInfo.m_ColorFeet.a);
+				}
+				const CAnimState *pIdleState = CAnimState::GetIdle();
+				const vec2 Pos(StartX + Drawn * TeeSize + TeeSize / 2.0f, TeeSize * 0.6f);
+				RenderTools()->RenderTee(pIdleState, &TeeInfo, Frozen ? EMOTE_PAIN : EMOTE_NORMAL, vec2(1.0f, 0.0f), Pos, Alpha);
+				Drawn++;
+			}
+		}
+	}
+
+	if(g_Config.m_CcFrozenText)
+	{
+		char aBuf[32];
+		str_format(aBuf, sizeof(aBuf), "%d/%d", NumMembers - NumFrozen, NumMembers);
+		const float FontSize = 8.0f;
+		const bool AllFrozen = NumMembers - NumFrozen <= 1 && NumMembers > 1;
+		TextRender()->TextColor(AllFrozen ? ColorRGBA(1.0f, 0.35f, 0.55f, 1.0f) : ColorRGBA(0.6f, 0.95f, 1.0f, 1.0f));
+		TextRender()->Text(StartX - 6.0f - TextRender()->TextWidth(FontSize, aBuf), 2.5f, FontSize, aBuf);
+		TextRender()->TextColor(TextRender()->DefaultTextColor());
+	}
 }
 
 void CHud::PrepareAmmoHealthAndArmorQuads()
@@ -1724,6 +1814,7 @@ void CHud::OnRender()
 		RenderDummyActions();
 		RenderWarmupTimer();
 		RenderTextInfo();
+		RenderCClientTeamHud();
 		RenderLocalTime((m_Width / 7) * 3);
 		if(Client()->State() != IClient::STATE_DEMOPLAYBACK)
 			RenderConnectionWarning();

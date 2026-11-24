@@ -41,6 +41,12 @@ public:
 	int m_aInputDirectionRight[NUM_DUMMIES];
 	int m_aShowHookColl[NUM_DUMMIES];
 
+	// C-Client fast input: newest local input, used to predict ahead of the server tick
+	CNetObj_PlayerInput m_aFastInput[NUM_DUMMIES];
+	bool m_FastInputHookAction = false;
+	bool m_FastInputFireAction = false;
+	bool CheckNewInput();
+
 	CControls();
 	int Sizeof() const override { return sizeof(*this); }
 

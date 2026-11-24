@@ -2690,6 +2690,108 @@ Always predict frozen players
 No country flags match your filter criteria
 == Немає прапорів країн, що відповідають вашим критеріям
 
+Whisper
+== Особисте повідомлення
+
+Copy name
+== Скопіювати нік
+
+Copy skin (paste into console)
+== Скопіювати скін (встав у консоль F1)
+
+Open profile on ddnet.org
+== Відкрити профіль на ddnet.org
+
+Invite to team
+== Запросити в команду
+
+Join team %d
+== Приєднатися до команди %d
+
+Vote kick
+== Голосувати за кік
+
+Cursor
+== Курсор
+
+Cursor distance
+== Дальність курсора
+
+Type any value from 0 to 5000
+== Впиши будь-яке число від 0 до 5000
+
+Dynamic camera is on: it uses its own distance
+== Увімкнена динамічна камера: у неї своя дальність
+
+Cursor size
+== Розмір курсора
+
+Fast input
+== Швидке введення (Fast Input)
+
+Enable fast input
+== Увімкнути швидке введення
+
+Your tee reacts to your keys right away, before the server tick. Only changes what you see, not what the server gets.
+== Ті реагує на натискання одразу, ще до тіку сервера. Змінює лише те, що бачиш ти, а не те, що отримує сервер.
+
+Amount
+== Сила
+
+Looks
+== Зовнішній вигляд
+
+Neon menu background
+== Неоновий фон меню
+
+Rainbow tee (only you see it)
+== Райдужний ті (бачиш лише ти)
+
+Rainbow speed
+== Швидкість веселки
+
+Antiping
+== Антипінг
+
+Enable antiping
+== Увімкнути антипінг
+
+Predicts other players and projectiles so the game feels like a lower ping
+== Передбачає інших гравців і снаряди, щоб гра відчувалася як з меншим пінгом
+
+Predict other players
+== Передбачати інших гравців
+
+Smooth other players
+== Згладжувати інших гравців
+
+Predict grenades
+== Передбачати гранати
+
+Predict weapons
+== Передбачати зброю
+
+Prediction strength
+== Сила передбачення
+
+Predict freeze
+== Передбачати заморозку
+
+Show team at the top (frozen tees darkened)
+== Команда вгорі екрана (заморожені затемнені)
+
+Tee size
+== Розмір ті
+
+Show alive / total counter
+== Лічильник живих / усього
+
+Only while in a team
+== Лише коли ти в команді
+
+Freeze bars under frozen tees
+== Смужки заморозки під ті
+
 Hold Shift to be more precise.
 == 
 
@@ -2723,24 +2825,3 @@ not bound
 
 Show cursor
 == 
-
-Whisper
-== Особисте повідомлення
-
-Copy name
-== Скопіювати нік
-
-Copy skin (paste into console)
-== Скопіювати скін (встав у консоль F1)
-
-Open profile on ddnet.org
-== Відкрити профіль на ddnet.org
-
-Invite to team
-== Запросити в команду
-
-Join team %d
-== Приєднатися до команди %d
-
-Vote kick
-== Голосувати за кік

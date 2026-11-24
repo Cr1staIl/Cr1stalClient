@@ -595,6 +595,15 @@ void CPlayers::RenderPlayer(
 	// TODO: snd_game_volume_others
 	const float Volume = 1.0f;
 
+	// C-Client rainbow tee (only visible for you)
+	if(Local && g_Config.m_CcRainbowTee && RenderInfo.m_ColorableRenderSkin.m_Body.IsValid())
+	{
+		const float Hue = std::fmod(Client()->GlobalTime() * 0.15f * g_Config.m_CcRainbowSpeed / 100.0f, 1.0f);
+		RenderInfo.m_CustomColoredSkin = true;
+		RenderInfo.m_ColorBody = color_cast<ColorRGBA>(ColorHSLA(Hue, 0.9f, 0.6f, 1.0f));
+		RenderInfo.m_ColorFeet = color_cast<ColorRGBA>(ColorHSLA(std::fmod(Hue + 0.5f, 1.0f), 0.9f, 0.55f, 1.0f));
+	}
+
 	// set size
 	RenderInfo.m_Size = 64.0f;
 
