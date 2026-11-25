@@ -916,11 +916,13 @@ bool CCClient::SkinBuilderCompose()
 					continue;
 				float R = pS[0] / 255.0f, G = pS[1] / 255.0f, B = pS[2] / 255.0f;
 				const float Sat = std::max({R, G, B}) - std::min({R, G, B});
-				if(pTint && Sat < 0.06f)
+				if(pTint)
 				{
-					R *= pTint->r;
-					G *= pTint->g;
-					B *= pTint->b;
+					// gray pixels get the colour, coloured details keep theirs, smooth in between
+					const float Amount = std::clamp(1.0f - Sat / 0.08f, 0.0f, 1.0f);
+					R *= 1.0f - Amount * (1.0f - pTint->r);
+					G *= 1.0f - Amount * (1.0f - pTint->g);
+					B *= 1.0f - Amount * (1.0f - pTint->b);
 				}
 				uint8_t *pD = pOut + ((size_t)(DstY + y) * W + (DstX + x)) * 4;
 				const float DstA = pD[3] / 255.0f;
@@ -967,7 +969,7 @@ bool CCClient::SkinBuilderCompose()
 	// body (0,0) with ears on top, and its outline (96,0)
 	Blit(m_aSbBody[Body], 0, 0, 96, 96, 0, 0, &BodyColor);
 	Blit(m_aSbEars[Ears], 0, 0, 96, 96, 0, 0, &BodyColor);
-	Outline(0, 0, 96, 96, 96, 0, 3);
+	Outline(0, 0, 96, 96, 96, 0, 4);
 	// hand (192,0): a small ball in the body colour, outline (224,0)
 	for(int y = 0; y < 32; y++)
 	{
