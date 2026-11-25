@@ -2793,9 +2793,6 @@ Prediction strength
 Predict freeze
 == Предсказывать заморозку
 
-Freeze bars under frozen tees
-== Полоски заморозки под ти
-
 You are the last one!
 == Ты последний!
 
@@ -3537,9 +3534,6 @@ Default
 Neon
 == Неон
 
-Virtual joystick which only aims and moves the mouse pointer relatively.
-== 
-
 Show my own name
 == Показывать свой ник
 
@@ -3551,3 +3545,36 @@ Client avatar before their names
 
 Others with Cr1stal Client see your avatar and your game pack
 == Другие с Cr1stal Client видят твою аватарку и твой game-пак
+
+Virtual joystick which only aims and moves the mouse pointer relatively.
+== 
+
+Show when frozen tees unfreeze
+== Показывать, когда ти разморозится
+
+Thin line instead of the bar
+== Тонкая линия вместо полоски
+
+Seconds under the line
+== Секунды под линией
+
+Also while still in freeze
+== Показывать и пока стоит во фризе
+
+Line color
+== Цвет линии
+
+At the screen edge
+== У края экрана
+
+Around your tee
+== Вокруг твоего ти
+
+Indicator
+== Индикатор
+
+Smaller when further away
+== Меньше, когда дальше
+
+Frozen ones in the ninja skin
+== Замороженные в скине ниндзя

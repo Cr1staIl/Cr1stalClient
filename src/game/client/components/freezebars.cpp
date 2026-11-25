@@ -1,5 +1,10 @@
 #include "freezebars.h"
 
+#include <base/str.h>
+
+#include <engine/shared/config.h>
+#include <engine/textrender.h>
+
 #include <game/client/gameclient.h>
 
 void CFreezeBars::RenderFreezeBar(const int ClientId)
@@ -11,7 +16,7 @@ void CFreezeBars::RenderFreezeBar(const int ClientId)
 	// pCharacter contains the predicted character for local players or the last snap for players who are spectated
 	CCharacterCore *pCharacter = &GameClient()->m_aClients[ClientId].m_Predicted;
 
-	if(pCharacter->m_FreezeEnd <= 0 || pCharacter->m_FreezeStart == 0 || pCharacter->m_FreezeEnd <= pCharacter->m_FreezeStart || !GameClient()->m_Snap.m_aCharacters[ClientId].m_HasExtendedDisplayInfo || (pCharacter->m_IsInFreeze && g_Config.m_ClFreezeBarsAlphaInsideFreeze == 0))
+	if(pCharacter->m_FreezeEnd <= 0 || pCharacter->m_FreezeStart == 0 || pCharacter->m_FreezeEnd <= pCharacter->m_FreezeStart || !GameClient()->m_Snap.m_aCharacters[ClientId].m_HasExtendedDisplayInfo || (pCharacter->m_IsInFreeze && (g_Config.m_CcFreezeLine ? !g_Config.m_CcFreezeLineInside : g_Config.m_ClFreezeBarsAlphaInsideFreeze == 0)))
 	{
 		return;
 	}
@@ -40,6 +45,15 @@ void CFreezeBars::RenderFreezeBar(const int ClientId)
 		return;
 	}
 
+	// C-Client: a thin neon line that shrinks to the middle, and the seconds left
+	if(g_Config.m_CcFreezeLine)
+	{
+		const float Alpha = GameClient()->IsOtherTeam(ClientId) ? g_Config.m_ClShowOthersAlpha / 100.0f : 1.0f;
+		const float Seconds = std::max(0.0f, ((float)pCharacter->m_FreezeEnd - (float)Tick) / (float)Client()->GameTickSpeed());
+		RenderFreezeLine(GameClient()->m_aClients[ClientId].m_RenderPos, FreezeProgress, Seconds, Alpha);
+		return;
+	}
+
 	vec2 Position = GameClient()->m_aClients[ClientId].m_RenderPos;
 	Position.x -= FreezeBarHalfWidth;
 	Position.y += 32;
@@ -51,6 +65,39 @@ void CFreezeBars::RenderFreezeBar(const int ClientId)
 	}
 
 	RenderFreezeBarPos(Position.x, Position.y, FreezeBarWidth, FreezeBarHeight, FreezeProgress, Alpha);
+}
+
+void CFreezeBars::RenderFreezeLine(vec2 TeePos, float Progress, float Seconds, float Alpha)
+{
+	const ColorRGBA Color = color_cast<ColorRGBA>(ColorHSLA(g_Config.m_CcFreezeLineColor, true));
+	const float A = Color.a * Alpha;
+	if(A <= 0.0f)
+		return;
+	const float FullWidth = 56.0f;
+	const float Thickness = 3.0f;
+	const float Y = TeePos.y + 31.0f;
+	const float Width = FullWidth * std::clamp(Progress, 0.0f, 1.0f);
+
+	// dark track, soft glow, bright line
+	Graphics()->DrawRect(TeePos.x - FullWidth / 2.0f, Y, FullWidth, Thickness, ColorRGBA(0.0f, 0.0f, 0.0f, 0.35f * A), IGraphics::CORNER_ALL, Thickness / 2.0f);
+	if(Width > 0.5f)
+	{
+		Graphics()->DrawRect(TeePos.x - Width / 2.0f - 2.0f, Y - 2.0f, Width + 4.0f, Thickness + 4.0f, Color.WithAlpha(0.22f * A), IGraphics::CORNER_ALL, (Thickness + 4.0f) / 2.0f);
+		Graphics()->DrawRect(TeePos.x - Width / 2.0f, Y, Width, Thickness, Color.WithAlpha(A), IGraphics::CORNER_ALL, Thickness / 2.0f);
+	}
+
+	if(g_Config.m_CcFreezeLineText)
+	{
+		char aBuf[16];
+		str_format(aBuf, sizeof(aBuf), "%.1f", Seconds);
+		const float FontSize = 11.0f;
+		const float TextW = TextRender()->TextWidth(FontSize, aBuf);
+		TextRender()->TextColor(ColorRGBA(1.0f, 1.0f, 1.0f, 0.95f * A));
+		TextRender()->TextOutlineColor(ColorRGBA(0.0f, 0.0f, 0.0f, 0.6f * A));
+		TextRender()->Text(TeePos.x - TextW / 2.0f, Y + Thickness + 2.0f, FontSize, aBuf);
+		TextRender()->TextColor(TextRender()->DefaultTextColor());
+		TextRender()->TextOutlineColor(TextRender()->DefaultTextOutlineColor());
+	}
 }
 
 void CFreezeBars::RenderFreezeBarPos(float x, const float y, const float Width, const float Height, float Progress, const float Alpha)

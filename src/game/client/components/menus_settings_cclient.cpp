@@ -645,16 +645,38 @@ void CMenus::RenderSettingsCClient(CUIRect MainView)
 		CCcColumn &C = Col(CARD_TEAM);
 		C.BeginCard(CARD_TEAM, Localize("Team"));
 		C.Check(&g_Config.m_CcLastNotify, Localize("Warn when you are the last one alive"));
-		C.Check(&g_Config.m_ClShowFreezeBars, Localize("Freeze bars under frozen tees"));
+		C.Check(&g_Config.m_ClShowFreezeBars, Localize("Show when frozen tees unfreeze"));
+		if(g_Config.m_ClShowFreezeBars)
+		{
+			C.Check(&g_Config.m_CcFreezeLine, Localize("Thin line instead of the bar"));
+			if(g_Config.m_CcFreezeLine)
+			{
+				C.Check(&g_Config.m_CcFreezeLineText, Localize("Seconds under the line"));
+				C.Check(&g_Config.m_CcFreezeLineInside, Localize("Also while still in freeze"));
+				C.Color(Localize("Line color"), &g_Config.m_CcFreezeLineColor, 0xFF9BFF8C);
+			}
+		}
 		C.Check(&g_Config.m_CcPlayerIndicator, Localize("Show teammates that are off screen"));
 		if(g_Config.m_CcPlayerIndicator)
 		{
+			static CButtonContainer s_aIndicatorStyle[2];
+			const char *apStyles[] = {Localize("At the screen edge"), Localize("Around your tee")};
+			C.Choice(&g_Config.m_CcIndicatorStyle, Localize("Indicator"), apStyles, 2, s_aIndicatorStyle);
 			C.Check(&g_Config.m_CcIndicatorFreezeOnly, Localize("Only frozen teammates"));
-			C.Check(&g_Config.m_CcIndicatorTees, Localize("Small tees instead of dots"));
-			C.Slider(&g_Config.m_CcIndicatorOffset, Localize("Indicator distance"), 50, 400);
-			C.Slider(&g_Config.m_CcIndicatorSize, Localize("Indicator size"), 4, 30);
-			C.Color(Localize("Not frozen"), &g_Config.m_CcIndicatorColorAlive, 0xFF66FF99);
-			C.Color(Localize("Frozen"), &g_Config.m_CcIndicatorColorFrozen, 0xFF99FFB3);
+			if(g_Config.m_CcIndicatorStyle == 0)
+			{
+				C.Slider(&g_Config.m_CcIndicatorEdgeSize, Localize("Indicator size"), 12, 128);
+				C.Check(&g_Config.m_CcIndicatorProximity, Localize("Smaller when further away"));
+				C.Check(&g_Config.m_CcIndicatorNinja, Localize("Frozen ones in the ninja skin"));
+			}
+			else
+			{
+				C.Check(&g_Config.m_CcIndicatorTees, Localize("Small tees instead of dots"));
+				C.Slider(&g_Config.m_CcIndicatorOffset, Localize("Indicator distance"), 50, 400);
+				C.Slider(&g_Config.m_CcIndicatorSize, Localize("Indicator size"), 4, 30);
+				C.Color(Localize("Not frozen"), &g_Config.m_CcIndicatorColorAlive, 0xFF66FF99);
+				C.Color(Localize("Frozen"), &g_Config.m_CcIndicatorColorFrozen, 0xFF99FFB3);
+			}
 		}
 		C.EndCard();
 	}

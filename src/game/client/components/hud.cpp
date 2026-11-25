@@ -2082,8 +2082,87 @@ void CHud::RenderCClientWorld()
 		Graphics()->LinesEnd();
 	}
 
+	// teammates that are off screen, like BestClient: their real tee at the edge of the
+	// screen in their direction, smaller the further away they are
+	if(g_Config.m_CcPlayerIndicator && HasLocal && g_Config.m_CcIndicatorStyle == 0)
+	{
+		const int Team = GameClient()->m_Teams.Team(LocalId);
+		const int CurTick = Client()->GameTick(g_Config.m_ClDummy);
+		auto IsFrozen = [&](const CGameClient::CClientData &Data) {
+			return Data.m_DeepFrozen || Data.m_LiveFrozen || (Data.m_FreezeEnd != 0 && Data.m_FreezeEnd > CurTick);
+		};
+		const bool LocalAlive = !IsFrozen(GameClient()->m_aClients[LocalId]);
+		bool AnyOtherAlive = false;
+		int aIds[MAX_CLIENTS];
+		int Num = 0;
+		if(Team != TEAM_FLOCK && Team < TEAM_SUPER)
+		{
+			for(int i = 0; i < MAX_CLIENTS; i++)
+			{
+				if(i == LocalId || !GameClient()->m_Snap.m_apPlayerInfos[i] || !GameClient()->m_Snap.m_aCharacters[i].m_Active || GameClient()->m_Teams.Team(i) != Team)
+					continue;
+				if(!IsFrozen(GameClient()->m_aClients[i]))
+					AnyOtherAlive = true;
+				aIds[Num++] = i;
+			}
+		}
+		const bool LastAlive = LocalAlive && !AnyOtherAlive;
+		const float Zoom = GameClient()->m_Camera.m_Zoom;
+		const float Left = ScreenRect.m_TopLeft.x, Top = ScreenRect.m_TopLeft.y;
+		const float Right = ScreenRect.m_BottomRight.x, Bottom = ScreenRect.m_BottomRight.y;
+		const vec2 ScreenCenter((Left + Right) / 2.0f, (Top + Bottom) / 2.0f);
+		const float HalfW = (Right - Left) / 2.0f, HalfH = (Bottom - Top) / 2.0f;
+		const float BaseSize = (float)g_Config.m_CcIndicatorEdgeSize * Zoom;
+		const float Margin = BaseSize * 1.15f * 0.55f;
+		const float MaxX = HalfW - Margin, MaxY = HalfH - Margin;
+		for(int n = 0; n < Num && MaxX > 1.0f && MaxY > 1.0f; n++)
+		{
+			const int i = aIds[n];
+			const CGameClient::CClientData &Data = GameClient()->m_aClients[i];
+			const vec2 Pos = Data.m_RenderPos;
+			if(Pos.x > Left + Margin && Pos.x < Right - Margin && Pos.y > Top + Margin && Pos.y < Bottom - Margin)
+				continue;
+			const bool Frozen = IsFrozen(Data);
+			if(g_Config.m_CcIndicatorFreezeOnly && !Frozen)
+				continue;
+			const vec2 Delta = Pos - ScreenCenter;
+			if(Delta.x == 0.0f && Delta.y == 0.0f)
+				continue;
+			const vec2 Dir = normalize(Delta);
+			const float Tx = Dir.x == 0.0f ? 1e30f : MaxX / absolute(Dir.x);
+			const float Ty = Dir.y == 0.0f ? 1e30f : MaxY / absolute(Dir.y);
+			const float ToEdge = std::min(Tx, Ty);
+			// frozen teammates are bigger when you are the last one who can save them
+			float Size = Frozen && LastAlive ? BaseSize * 1.15f : BaseSize;
+			if(g_Config.m_CcIndicatorProximity)
+			{
+				const float Beyond = std::max(0.0f, distance(ScreenCenter, Pos) - std::min(HalfW, HalfH));
+				float Amount = std::min(1.0f, Beyond / 2000.0f);
+				Amount *= Amount;
+				Size += (16.0f * Zoom - Size) * Amount;
+			}
+			CTeeRenderInfo TeeInfo = Data.m_RenderInfo;
+			if(g_Config.m_CcIndicatorNinja && Frozen && GameClient()->m_Players.NinjaTeeRenderInfo())
+				TeeInfo = GameClient()->m_Players.NinjaTeeRenderInfo()->TeeRenderInfo();
+			TeeInfo.m_Size = Size;
+			TeeInfo.m_TeeRenderFlags |= TEE_NO_WEAPON;
+			const CAnimState *pIdle = CAnimState::GetIdle();
+			vec2 OffsetToMid;
+			CRenderTools::GetRenderTeeOffsetToRenderedTee(pIdle, &TeeInfo, OffsetToMid);
+			const vec2 IconPos(ScreenCenter.x + Dir.x * ToEdge, ScreenCenter.y + Dir.y * ToEdge + OffsetToMid.y);
+			// they look where they really look
+			const CNetObj_Character &Cur = Data.m_RenderCur;
+			const CNetObj_Character &Prev = Data.m_RenderPrev;
+			const float Intra = Data.m_IsPredicted ? Client()->PredIntraGameTick(g_Config.m_ClDummy) : Client()->IntraGameTick(g_Config.m_ClDummy);
+			const float Angle = GameClient()->m_Players.GetPlayerTargetAngle(&Prev, &Cur, i, Intra);
+			TeeInfo.m_GotAirJump = !(Cur.m_Jumped & 2);
+			RenderTools()->RenderTee(pIdle, &TeeInfo, Frozen ? EMOTE_PAIN : Cur.m_Emote, direction(Angle), IconPos, 0.95f);
+		}
+		Graphics()->TextureClear();
+	}
+
 	// teammates that are off screen: a dot around your tee pointing at them
-	if(g_Config.m_CcPlayerIndicator && HasLocal)
+	if(g_Config.m_CcPlayerIndicator && HasLocal && g_Config.m_CcIndicatorStyle == 1)
 	{
 		const int Team = GameClient()->m_Teams.Team(LocalId);
 		const vec2 LocalPos = GameClient()->m_aClients[LocalId].m_RenderPos;

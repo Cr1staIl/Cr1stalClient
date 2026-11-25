@@ -2765,9 +2765,6 @@ Prediction strength
 Predict freeze
 == Передбачати заморозку
 
-Freeze bars under frozen tees
-== Смужки заморозки під ті
-
 You are the last one!
 == Ти останній!
 
@@ -3384,7 +3381,37 @@ Light mode: your PC is fast
 Turning it off brings your settings back
 == 
 
+Show when frozen tees unfreeze
+== 
+
+Thin line instead of the bar
+== 
+
+Seconds under the line
+== 
+
+Also while still in freeze
+== 
+
+Line color
+== 
+
+At the screen edge
+== 
+
+Around your tee
+== 
+
+Indicator
+== 
+
 Only frozen teammates
+== 
+
+Smaller when further away
+== 
+
+Frozen ones in the ninja skin
 == 
 
 Small tees instead of dots

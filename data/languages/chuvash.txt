@@ -2670,22 +2670,49 @@ Turning it off brings your settings back
 Warn when you are the last one alive
 == 
 
-Freeze bars under frozen tees
+Show when frozen tees unfreeze
+== 
+
+Thin line instead of the bar
+== 
+
+Seconds under the line
+== 
+
+Also while still in freeze
+== 
+
+Line color
 == 
 
 Show teammates that are off screen
 == 
 
+At the screen edge
+== 
+
+Around your tee
+== 
+
+Indicator
+== 
+
 Only frozen teammates
+== 
+
+Indicator size
+== 
+
+Smaller when further away
+== 
+
+Frozen ones in the ninja skin
 == 
 
 Small tees instead of dots
 == 
 
 Indicator distance
-== 
-
-Indicator size
 == 
 
 Not frozen
