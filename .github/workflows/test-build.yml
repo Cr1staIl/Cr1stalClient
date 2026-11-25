@@ -83,7 +83,7 @@ jobs:
         body: Test build ${{ github.run_number }} from ${{ github.sha }}. Used by the in-game update button.
         prerelease: true
         make_latest: false
-        target_commitish: ${{ github.sha }}
+        overwrite_files: true
         files: |
           installer-out/Cr1stalClient-Setup.exe
           installer-out/version.json
