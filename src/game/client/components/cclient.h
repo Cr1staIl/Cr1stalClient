@@ -121,6 +121,7 @@ private:
 	bool m_WheelActive = false;
 	vec2 m_SelectorMouse = vec2(0.0f, 0.0f);
 	int m_SelectedSave = -1;
+	float m_aWheelAnim[NUM_SAVES] = {};
 
 	SMarker m_aMarkers[MAX_MARKERS];
 	int m_NextMarker = 0;

@@ -991,7 +991,7 @@ void CMenus::RenderServerbrowserCommunitiesFilter(CUIRect View)
 	View.HSplitTop(19.0f, &Tab, &View);
 	Tab.Draw(CCStyle::CARD, IGraphics::CORNER_T, 10.0f);
 	Ui()->DoLabel(&Tab, Localize("Communities"), 12.0f, TEXTALIGN_MC);
-	View.Draw(ColorRGBA(0.105f, 0.09f, 0.165f, 0.6f), IGraphics::CORNER_B, 10.0f);
+	View.Draw(ColorRGBA(0.085f, 0.08f, 0.09f, 0.6f), IGraphics::CORNER_B, 10.0f);
 
 	const int MaxEntries = ServerBrowser()->Communities().size();
 	if(MaxEntries == 0)

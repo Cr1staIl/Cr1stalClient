@@ -13,6 +13,7 @@
 #include <generated/client_data.h>
 
 #include <game/client/components/cclient.h>
+#include <game/client/components/cclient_style.h>
 #include <game/client/gameclient.h>
 #include <game/client/ui.h>
 #include <game/localization.h>
@@ -20,6 +21,7 @@
 
 #include <algorithm>
 #include <cmath>
+#include <string>
 
 #if defined(CONF_PLATFORM_ANDROID)
 #include <android/android_main.h>
@@ -38,9 +40,9 @@ void CMenusStart::RenderNeonTitle(float CenterX, float Y)
 	const float Time = Client()->GlobalTime();
 
 	const ColorRGBA aPalette[] = {
-		ColorRGBA(0.0f, 0.95f, 1.0f, 1.0f), // cyan
-		ColorRGBA(0.6f, 0.3f, 1.0f, 1.0f), // violet
-		ColorRGBA(1.0f, 0.15f, 0.85f, 1.0f), // magenta
+		ColorRGBA(1.0f, 0.93f, 0.95f, 1.0f), // almost white
+		ColorRGBA(1.0f, 0.35f, 0.45f, 1.0f), // light red
+		ColorRGBA(0.88f, 0.07f, 0.24f, 1.0f), // crimson
 	};
 
 	const ColorRGBA OldColor = TextRender()->GetTextColor();
@@ -94,7 +96,7 @@ void CMenusStart::RenderNeonTitle(float CenterX, float Y)
 			Graphics()->QuadsBegin();
 			for(int Ring = 20; Ring >= 1; Ring--)
 			{
-				Graphics()->SetColor(Color.WithAlpha(0.006f));
+				Graphics()->SetColor(aPalette[2].WithAlpha(0.005f));
 				Graphics()->DrawCircle(HaloCenter.x, HaloCenter.y, Char.m_Size * 0.55f * Ring / 20.0f, 48);
 			}
 			Graphics()->QuadsEnd();
@@ -161,128 +163,133 @@ void CMenusStart::RenderStartMenu(CUIRect MainView)
 		}
 	}
 
-	const float Rounding = 14.0f;
 	const float VMargin = MainView.w / 2 - 190.0f;
 
 	CUIRect Button;
 	int NewPage = -1;
 
-	CUIRect ExtMenu;
-	MainView.VSplitLeft(30.0f, nullptr, &ExtMenu);
-	ExtMenu.VSplitLeft(100.0f, &ExtMenu, nullptr);
-
-	ExtMenu.HSplitBottom(20.0f, &ExtMenu, &Button);
-	static CButtonContainer s_DiscordButton;
-	if(GameClient()->m_Menus.DoButton_Menu(&s_DiscordButton, Localize("Discord"), 0, &Button, BUTTONFLAG_LEFT, nullptr, IGraphics::CORNER_ALL, 5.0f, 0.0f, ColorRGBA(1.0f, 1.0f, 1.0f, 0.07f)))
+	// small links in the bottom left corner
 	{
-		Client()->ViewLink(Localize("https://ddnet.org/discord"));
-	}
-
-	ExtMenu.HSplitBottom(5.0f, &ExtMenu, nullptr); // little space
-	ExtMenu.HSplitBottom(20.0f, &ExtMenu, &Button);
-	static CButtonContainer s_LearnButton;
-	if(GameClient()->m_Menus.DoButton_Menu(&s_LearnButton, Localize("Learn"), 0, &Button, BUTTONFLAG_LEFT, nullptr, IGraphics::CORNER_ALL, 5.0f, 0.0f, ColorRGBA(1.0f, 1.0f, 1.0f, 0.07f)))
-	{
-		Client()->ViewLink(Localize("https://wiki.ddnet.org/"));
-	}
-
-	ExtMenu.HSplitBottom(5.0f, &ExtMenu, nullptr); // little space
-	ExtMenu.HSplitBottom(20.0f, &ExtMenu, &Button);
-	static CButtonContainer s_TutorialButton;
-	if(GameClient()->m_Menus.DoButton_Menu(&s_TutorialButton, Localize("Tutorial"), 0, &Button, BUTTONFLAG_LEFT, nullptr, IGraphics::CORNER_ALL, 5.0f, 0.0f, ColorRGBA(1.0f, 1.0f, 1.0f, 0.07f)))
-	{
-		GameClient()->m_Menus.JoinTutorial();
-	}
-
-	ExtMenu.HSplitBottom(5.0f, &ExtMenu, nullptr); // little space
-	ExtMenu.HSplitBottom(20.0f, &ExtMenu, &Button);
-	static CButtonContainer s_WebsiteButton;
-	if(GameClient()->m_Menus.DoButton_Menu(&s_WebsiteButton, Localize("Website"), 0, &Button, BUTTONFLAG_LEFT, nullptr, IGraphics::CORNER_ALL, 5.0f, 0.0f, ColorRGBA(1.0f, 1.0f, 1.0f, 0.07f)))
-	{
-		Client()->ViewLink("https://ddnet.org/");
-	}
-
-	ExtMenu.HSplitBottom(5.0f, &ExtMenu, nullptr); // little space
-	ExtMenu.HSplitBottom(20.0f, &ExtMenu, &Button);
-	static CButtonContainer s_NewsButton;
-	if(GameClient()->m_Menus.DoButton_Menu(&s_NewsButton, Localize("News"), 0, &Button, BUTTONFLAG_LEFT, nullptr, IGraphics::CORNER_ALL, 5.0f, 0.0f, g_Config.m_UiUnreadNews ? ColorRGBA(0.0f, 1.0f, 0.0f, 0.25f) : ColorRGBA(1.0f, 1.0f, 1.0f, 0.07f)) || CheckHotKey(KEY_N))
-		NewPage = CMenus::PAGE_NEWS;
-
-	CUIRect Menu;
-	MainView.VMargin(VMargin, &Menu);
-	Menu.HSplitBottom(25.0f, &Menu, nullptr);
-
-	Menu.HSplitBottom(40.0f, &Menu, &Button);
-	static CButtonContainer s_QuitButton;
-	bool UsedEscape = false;
-	if(GameClient()->m_Menus.DoButton_Menu(&s_QuitButton, Localize("Quit"), 0, &Button, BUTTONFLAG_LEFT, nullptr, IGraphics::CORNER_ALL, Rounding, 0.5f, ColorRGBA(1.0f, 1.0f, 1.0f, 0.07f)) || (UsedEscape = Ui()->ConsumeHotkey(CUi::HOTKEY_ESCAPE)) || CheckHotKey(KEY_Q))
-	{
-		if(UsedEscape || GameClient()->Editor()->HasUnsavedData() || (GameClient()->CurrentRaceTime() / 60 >= g_Config.m_ClConfirmQuitTime && g_Config.m_ClConfirmQuitTime >= 0))
+		CUIRect Links;
+		MainView.VSplitLeft(30.0f, nullptr, &Links);
+		Links.VSplitLeft(110.0f, &Links, nullptr);
+		Links.HSplitBottom(25.0f, &Links, nullptr);
+		static CButtonContainer s_DiscordButton, s_LearnButton, s_TutorialButton, s_WebsiteButton;
+		struct
 		{
-			GameClient()->m_Menus.ShowQuitPopup();
-		}
-		else
+			CButtonContainer *m_pButton;
+			const char *m_pText;
+		} aLinks[] = {
+			{&s_DiscordButton, Localize("Discord")},
+			{&s_LearnButton, Localize("Learn")},
+			{&s_TutorialButton, Localize("Tutorial")},
+			{&s_WebsiteButton, Localize("Website")},
+		};
+		for(int i = 0; i < (int)std::size(aLinks); i++)
 		{
-			Client()->Quit();
+			Links.HSplitBottom(18.0f, &Links, &Button);
+			Links.HSplitBottom(3.0f, &Links, nullptr);
+			const float HoverA = Ui()->HoverAnim(aLinks[i].m_pButton);
+			Button.VSplitLeft(4.0f * HoverA, nullptr, &Button); // slides a little to the right
+			SLabelProperties Props;
+			Props.SetColor(ColorRGBA(0.62f + 0.38f * HoverA, 0.6f - 0.4f * HoverA, 0.65f - 0.35f * HoverA, 0.75f + 0.25f * HoverA));
+			Ui()->DoLabel(&Button, aLinks[i].m_pText, 11.0f, TEXTALIGN_ML, Props);
+			if(Ui()->DoButtonLogic(aLinks[i].m_pButton, 0, &Button, BUTTONFLAG_LEFT))
+			{
+				if(i == 0)
+					Client()->ViewLink(Localize("https://ddnet.org/discord"));
+				else if(i == 1)
+					Client()->ViewLink(Localize("https://wiki.ddnet.org/"));
+				else if(i == 2)
+					GameClient()->m_Menus.JoinTutorial();
+				else
+					Client()->ViewLink("https://ddnet.org/");
+			}
 		}
 	}
 
-	Menu.HSplitBottom(100.0f, &Menu, nullptr);
-	Menu.HSplitBottom(40.0f, &Menu, &Button);
-	static CButtonContainer s_SettingsButton;
-	if(GameClient()->m_Menus.DoButton_Menu(&s_SettingsButton, Localize("Settings"), 0, &Button, BUTTONFLAG_LEFT, g_Config.m_ClShowStartMenuImages ? "settings" : nullptr, IGraphics::CORNER_ALL, Rounding, 0.5f, ColorRGBA(1.0f, 1.0f, 1.0f, 0.07f)) || CheckHotKey(KEY_S))
-		NewPage = CMenus::PAGE_SETTINGS;
-
-	Menu.HSplitBottom(5.0f, &Menu, nullptr); // little space
-	Menu.HSplitBottom(40.0f, &Menu, &Button);
-	static CButtonContainer s_LocalServerButton;
-
-	const char *pLocalServerImage = g_Config.m_ClShowStartMenuImages ? "local_server" : nullptr;
-	const bool LocalServerRunning = GameClient()->m_LocalServer.IsServerRunning();
-	if(LocalServerRunning)
+	// big play button under the title
 	{
-		// Split in the middle of the label area, the image is rendered on the right
-		CUIRect JoinButton, StopButton;
-		const float ImageWidth = pLocalServerImage == nullptr ? 0.0f : Button.h * CMenus::BUTTON_IMAGE_WIDTH_FACTOR;
-		Button.VSplitLeft((Button.w - ImageWidth) / 2.0f, &JoinButton, &StopButton);
-		if(GameClient()->m_Menus.DoButton_Menu(&s_LocalServerButton, Localize("Join"), 0, &JoinButton, BUTTONFLAG_LEFT, nullptr, IGraphics::CORNER_L, Rounding, 0.5f, ColorRGBA(0.0f, 1.0f, 0.0f, 0.25f)) || CheckHotKey(KEY_J))
+		static CButtonContainer s_PlayButton;
+		const float HoverA = Ui()->HoverAnim(&s_PlayButton);
+		const float Grow = 4.0f * HoverA;
+		CUIRect Play;
+		Play.w = 220.0f + Grow * 2.0f;
+		Play.h = 42.0f + Grow;
+		Play.x = MainView.w / 2.0f - Play.w / 2.0f;
+		Play.y = 190.0f - Grow / 2.0f;
+		// soft red light around it, stronger on hover
+		for(int i = 4; i >= 1; i--)
 		{
+			CUIRect Halo;
+			Play.Margin(-2.0f * i, &Halo);
+			Halo.Draw(ColorRGBA(0.86f, 0.07f, 0.23f, (0.02f + 0.035f * HoverA)), IGraphics::CORNER_ALL, Halo.h / 2.0f);
+		}
+		Play.Draw4(ColorRGBA(0.95f, 0.16f, 0.32f, 1.0f), ColorRGBA(0.72f, 0.04f, 0.17f, 1.0f), ColorRGBA(0.8f, 0.07f, 0.22f, 1.0f), ColorRGBA(0.55f, 0.02f, 0.12f, 1.0f), IGraphics::CORNER_ALL, Play.h / 2.0f);
+		if(HoverA > 0.01f)
+			Play.Draw(ColorRGBA(1.0f, 1.0f, 1.0f, 0.08f * HoverA), IGraphics::CORNER_ALL, Play.h / 2.0f);
+		SLabelProperties Props;
+		Props.SetColor(ColorRGBA(1.0f, 1.0f, 1.0f, 1.0f));
+		Ui()->DoLabel(&Play, Localize("Play", "Start menu"), 17.0f + HoverA, TEXTALIGN_MC, Props);
+		if(Ui()->DoButtonLogic(&s_PlayButton, 0, &Play, BUTTONFLAG_LEFT) || Ui()->ConsumeHotkey(CUi::HOTKEY_ENTER) || CheckHotKey(KEY_P))
+			NewPage = g_Config.m_UiPage >= CMenus::PAGE_INTERNET && g_Config.m_UiPage <= CMenus::PAGE_FAVORITE_COMMUNITY_5 ? g_Config.m_UiPage : CMenus::PAGE_INTERNET;
+	}
+
+	// dock at the bottom
+	{
+		const bool LocalServerRunning = GameClient()->m_LocalServer.IsServerRunning();
+		enum
+		{
+			DOCK_PLAY = 0,
+			DOCK_DEMOS,
+			DOCK_EDITOR,
+			DOCK_SERVER,
+			DOCK_PROFILE,
+			DOCK_NEWS,
+			DOCK_SETTINGS,
+			DOCK_QUIT,
+			NUM_DOCK,
+		};
+		const char *apIcons[NUM_DOCK] = {FontIcon::PLAY, FontIcon::FILM, FontIcon::PEN_TO_SQUARE, LocalServerRunning ? FontIcon::STOP : FontIcon::NETWORK_WIRED, FontIcon::USER, FontIcon::NEWSPAPER, FontIcon::GEAR, FontIcon::POWER_OFF};
+		const char *apLabels[NUM_DOCK] = {Localize("Play", "Start menu"), Localize("Demos"), Localize("Editor"), LocalServerRunning ? Localize("Stop server") : Localize("Run server"), Localize("Profile"), Localize("News"), Localize("Settings"), Localize("Quit")};
+		const bool aHighlighted[NUM_DOCK] = {false, false, GameClient()->Editor()->HasUnsavedData(), LocalServerRunning, false, g_Config.m_UiUnreadNews != 0, false, false};
+		const int Clicked = RenderDock(MainView, apIcons, apLabels, aHighlighted, NUM_DOCK);
+
+		bool UsedEscape = false;
+		if(Clicked == DOCK_DEMOS || CheckHotKey(KEY_D))
+			NewPage = CMenus::PAGE_DEMOS;
+		if(Clicked == DOCK_PLAY)
+			NewPage = g_Config.m_UiPage >= CMenus::PAGE_INTERNET && g_Config.m_UiPage <= CMenus::PAGE_FAVORITE_COMMUNITY_5 ? g_Config.m_UiPage : CMenus::PAGE_INTERNET;
+		if(Clicked == DOCK_EDITOR || CheckHotKey(KEY_E))
+		{
+			g_Config.m_ClEditor = 1;
+			Input()->MouseModeRelative();
+		}
+		if(Clicked == DOCK_SERVER || CheckHotKey(KEY_R))
+		{
+			if(LocalServerRunning)
+				GameClient()->m_LocalServer.KillServer();
+			else
+				GameClient()->m_LocalServer.RunServer({});
+		}
+		if(LocalServerRunning && CheckHotKey(KEY_J))
 			GameClient()->m_LocalServer.Connect();
-		}
-		static CButtonContainer s_StopServerButton;
-		if(GameClient()->m_Menus.DoButton_Menu(&s_StopServerButton, Localize("Stop server"), 0, &StopButton, BUTTONFLAG_LEFT, pLocalServerImage, IGraphics::CORNER_R, Rounding, 0.5f, ColorRGBA(1.0f, 0.0f, 0.0f, 0.25f), &s_LocalServerButton) || CheckHotKey(KEY_R))
+		if(Clicked == DOCK_PROFILE)
 		{
-			GameClient()->m_LocalServer.KillServer();
+			g_Config.m_UiSettingsPage = CMenus::SETTINGS_PLAYER;
+			NewPage = CMenus::PAGE_SETTINGS;
 		}
-	}
-	else if(GameClient()->m_Menus.DoButton_Menu(&s_LocalServerButton, Localize("Run server"), 0, &Button, BUTTONFLAG_LEFT, pLocalServerImage, IGraphics::CORNER_ALL, Rounding, 0.5f, ColorRGBA(1.0f, 1.0f, 1.0f, 0.07f)) || CheckHotKey(KEY_R))
-	{
-		GameClient()->m_LocalServer.RunServer({});
-	}
-
-	Menu.HSplitBottom(5.0f, &Menu, nullptr); // little space
-	Menu.HSplitBottom(40.0f, &Menu, &Button);
-	static CButtonContainer s_MapEditorButton;
-	if(GameClient()->m_Menus.DoButton_Menu(&s_MapEditorButton, Localize("Editor"), 0, &Button, BUTTONFLAG_LEFT, g_Config.m_ClShowStartMenuImages ? "editor" : nullptr, IGraphics::CORNER_ALL, Rounding, 0.5f, GameClient()->Editor()->HasUnsavedData() ? ColorRGBA(0.0f, 1.0f, 0.0f, 0.25f) : ColorRGBA(1.0f, 1.0f, 1.0f, 0.07f)) || CheckHotKey(KEY_E))
-	{
-		g_Config.m_ClEditor = 1;
-		Input()->MouseModeRelative();
-	}
-
-	Menu.HSplitBottom(5.0f, &Menu, nullptr); // little space
-	Menu.HSplitBottom(40.0f, &Menu, &Button);
-	static CButtonContainer s_DemoButton;
-	if(GameClient()->m_Menus.DoButton_Menu(&s_DemoButton, Localize("Demos"), 0, &Button, BUTTONFLAG_LEFT, g_Config.m_ClShowStartMenuImages ? "demos" : nullptr, IGraphics::CORNER_ALL, Rounding, 0.5f, ColorRGBA(1.0f, 1.0f, 1.0f, 0.07f)) || CheckHotKey(KEY_D))
-	{
-		NewPage = CMenus::PAGE_DEMOS;
-	}
-
-	Menu.HSplitBottom(5.0f, &Menu, nullptr); // little space
-	Menu.HSplitBottom(40.0f, &Menu, &Button);
-	static CButtonContainer s_PlayButton;
-	if(GameClient()->m_Menus.DoButton_Menu(&s_PlayButton, Localize("Play", "Start menu"), 0, &Button, BUTTONFLAG_LEFT, g_Config.m_ClShowStartMenuImages ? "play_game" : nullptr, IGraphics::CORNER_ALL, Rounding, 0.5f, ColorRGBA(0.42f, 0.37f, 1.0f, 0.85f)) || Ui()->ConsumeHotkey(CUi::HOTKEY_ENTER) || CheckHotKey(KEY_P))
-	{
-		NewPage = g_Config.m_UiPage >= CMenus::PAGE_INTERNET && g_Config.m_UiPage <= CMenus::PAGE_FAVORITE_COMMUNITY_5 ? g_Config.m_UiPage : CMenus::PAGE_INTERNET;
+		if(Clicked == DOCK_NEWS || CheckHotKey(KEY_N))
+			NewPage = CMenus::PAGE_NEWS;
+		if(Clicked == DOCK_SETTINGS || CheckHotKey(KEY_S))
+			NewPage = CMenus::PAGE_SETTINGS;
+		if(Clicked == DOCK_QUIT || (UsedEscape = Ui()->ConsumeHotkey(CUi::HOTKEY_ESCAPE)) || CheckHotKey(KEY_Q))
+		{
+			if(UsedEscape || GameClient()->Editor()->HasUnsavedData() || (GameClient()->CurrentRaceTime() / 60 >= g_Config.m_ClConfirmQuitTime && g_Config.m_ClConfirmQuitTime >= 0))
+				GameClient()->m_Menus.ShowQuitPopup();
+			else
+				Client()->Quit();
+		}
 	}
 
 	// render version
@@ -393,6 +400,108 @@ void CMenusStart::RenderStartMenu(CUIRect MainView)
 		GameClient()->m_Menus.SetShowStart(false);
 		GameClient()->m_Menus.SetMenuPage(NewPage);
 	}
+}
+
+int CMenusStart::RenderDock(const CUIRect &MainView, const char *const *ppIcons, const char *const *ppLabels, const bool *pHighlighted, int Num)
+{
+	static CButtonContainer s_aButtons[16];
+	static char s_aLabelKeys[16]; // own addresses for the label fade
+	static char s_DockKey;
+	Num = std::min(Num, (int)std::size(s_aButtons));
+
+	const float BaseSize = 30.0f;
+	const float Gap = 7.0f;
+	const float Pad = 7.0f;
+	const float MaxGrow = 0.5f; // the icon under the mouse becomes 50% bigger
+	const float Reach = 52.0f; // how far the growing spreads to the neighbours
+	const float BottomY = MainView.y + MainView.h - 22.0f;
+
+	// the dock without growing, to know where the mouse is relative to the icons
+	const float BaseWidth = Num * BaseSize + (Num - 1) * Gap;
+	const float BaseX = MainView.x + MainView.w / 2.0f - BaseWidth / 2.0f;
+	CUIRect Panel;
+	Panel.x = BaseX - Pad;
+	Panel.y = BottomY - BaseSize - Pad;
+	Panel.w = BaseWidth + Pad * 2.0f;
+	Panel.h = BaseSize + Pad * 2.0f;
+	// the grown icons stick out above the panel, they still count as the dock
+	CUIRect HoverZone = Panel;
+	HoverZone.y -= BaseSize * MaxGrow + 6.0f;
+	HoverZone.h += BaseSize * MaxGrow + 6.0f;
+	HoverZone.x -= BaseSize * MaxGrow;
+	HoverZone.w += BaseSize * MaxGrow * 2.0f;
+	const float DockA = Ui()->StateAnim(&s_DockKey, Ui()->MouseInside(&HoverZone) && !Ui()->IsPopupOpen(), 10.0f);
+	const float MouseX = Ui()->MouseX();
+
+	float aScale[16];
+	float Total = 0.0f;
+	for(int i = 0; i < Num; i++)
+	{
+		const float Center = BaseX + i * (BaseSize + Gap) + BaseSize / 2.0f;
+		const float Dist = (MouseX - Center) / Reach;
+		aScale[i] = 1.0f + MaxGrow * DockA * std::exp(-Dist * Dist);
+		Total += BaseSize * aScale[i];
+	}
+	Total += (Num - 1) * Gap;
+
+	// panel grows with the icons, like on a Mac
+	Panel.w = Total + Pad * 2.0f;
+	Panel.x = MainView.x + MainView.w / 2.0f - Panel.w / 2.0f;
+	CCStyle::DrawCard(Panel, 12.0f, ColorRGBA(0.07f, 0.065f, 0.075f, 0.92f));
+
+	int Clicked = -1;
+	float X = Panel.x + Pad;
+	for(int i = 0; i < Num; i++)
+	{
+		const float Size = BaseSize * aScale[i];
+		CUIRect Icon;
+		Icon.x = X;
+		Icon.y = BottomY - Size;
+		Icon.w = Size;
+		Icon.h = Size;
+		X += Size + Gap;
+
+		const float HoverA = Ui()->HoverAnim(&s_aButtons[i]);
+		CCStyle::DrawCard(Icon, 7.0f + 2.0f * (aScale[i] - 1.0f), ColorRGBA(0.1f, 0.095f, 0.105f, 1.0f), HoverA);
+		if(pHighlighted[i])
+		{
+			// small dot under an icon that wants attention
+			CUIRect Dot;
+			Dot.w = Dot.h = 3.0f;
+			Dot.x = Icon.x + Icon.w / 2.0f - 1.5f;
+			Dot.y = Icon.y + Icon.h + 2.5f;
+			Dot.Draw(CCStyle::ACCENT, IGraphics::CORNER_ALL, 1.5f);
+		}
+
+		TextRender()->SetFontPreset(EFontPreset::ICON_FONT);
+		TextRender()->SetRenderFlags(ETextRenderFlags::TEXT_RENDER_FLAG_ONLY_ADVANCE_WIDTH | ETextRenderFlags::TEXT_RENDER_FLAG_NO_X_BEARING | ETextRenderFlags::TEXT_RENDER_FLAG_NO_Y_BEARING | ETextRenderFlags::TEXT_RENDER_FLAG_NO_PIXEL_ALIGNMENT | ETextRenderFlags::TEXT_RENDER_FLAG_NO_OVERSIZE);
+		SLabelProperties IconProps;
+		IconProps.SetColor(CCStyle::Mix(ColorRGBA(0.85f, 0.12f, 0.3f, 0.85f), ColorRGBA(1.0f, 0.38f, 0.5f, 1.0f), HoverA));
+		Ui()->DoLabel(&Icon, ppIcons[i], Size * 0.42f, TEXTALIGN_MC, IconProps);
+		TextRender()->SetRenderFlags(0);
+		TextRender()->SetFontPreset(EFontPreset::DEFAULT_FONT);
+
+		// label above the icon, fades in and rises a little
+		const float LabelA = Ui()->StateAnim(&s_aLabelKeys[i], Ui()->HotItem() == &s_aButtons[i], 14.0f);
+		if(LabelA > 0.01f)
+		{
+			const float FontSize = 8.5f;
+			const std::string Text = CCStyle::Upper(ppLabels[i]);
+			CUIRect Label;
+			Label.w = TextRender()->TextWidth(FontSize, Text.c_str()) + 12.0f;
+			Label.h = 14.0f;
+			Label.x = Icon.x + Icon.w / 2.0f - Label.w / 2.0f;
+			Label.y = Icon.y - Label.h - 5.0f - 4.0f * LabelA;
+			Label.Draw(ColorRGBA(0.12f, 0.03f, 0.06f, 0.95f * LabelA), IGraphics::CORNER_ALL, 4.0f);
+			SLabelProperties Props;
+			Props.SetColor(CCStyle::ACCENT_TEXT.WithAlpha(LabelA));
+			Ui()->DoLabel(&Label, Text.c_str(), FontSize, TEXTALIGN_MC, Props);
+		}
+
+		if(Ui()->DoButtonLogic(&s_aButtons[i], 0, &Icon, BUTTONFLAG_LEFT))
+			Clicked = i;
+	}
+	return Clicked;
 }
 
 bool CMenusStart::CheckHotKey(int Key) const

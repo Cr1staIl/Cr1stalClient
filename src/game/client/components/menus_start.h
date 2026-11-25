@@ -14,6 +14,8 @@ public:
 private:
 	bool CheckHotKey(int Key) const;
 	void RenderNeonTitle(float CenterX, float Y);
+	// macOS style dock: returns the index of the clicked item or -1
+	int RenderDock(const CUIRect &MainView, const char *const *ppIcons, const char *const *ppLabels, const bool *pHighlighted, int Num);
 };
 
 #endif

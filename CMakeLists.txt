@@ -2687,6 +2687,9 @@ if(CLIENT)
     components/cclient.h
     components/cclient_media.cpp
     components/cclient_media.h
+    components/cclient_playtime.cpp
+    components/cclient_playtime.h
+    components/cclient_style.cpp
     components/cclient_style.h
     components/censor.cpp
     components/censor.h

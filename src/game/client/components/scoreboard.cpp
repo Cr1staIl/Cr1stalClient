@@ -27,7 +27,7 @@
 static constexpr float MARGIN = 10.0f;
 static constexpr float ROUNDING = 14.0f;
 // C-Client: dark violet card like the rest of the new design
-static constexpr ColorRGBA BACKGROUND_COLOR(0.06f, 0.045f, 0.11f, 0.9f);
+static constexpr ColorRGBA BACKGROUND_COLOR(0.06f, 0.055f, 0.065f, 0.9f);
 
 static constexpr float POPUP_WIDTH = 140.0f;
 
@@ -719,7 +719,7 @@ void CScoreboard::RenderScoreboard(CUIRect Scoreboard, int Team, int CountStart,
 				(GameClient()->m_Snap.m_SpecInfo.m_SpectatorId == SPEC_FREEVIEW && pInfo->m_Local) ||
 				(GameClient()->m_Snap.m_SpecInfo.m_Active && pInfo->m_ClientId == GameClient()->m_Snap.m_SpecInfo.m_SpectatorId))
 			{
-				Row.Draw(ColorRGBA(0.42f, 0.37f, 1.0f, 0.32f), IGraphics::CORNER_ALL, RoundRadius);
+				Row.Draw(ColorRGBA(0.86f, 0.07f, 0.23f, 0.32f), IGraphics::CORNER_ALL, RoundRadius);
 			}
 
 			const CGameClient::CClientData &ClientData = GameClient()->m_aClients[pInfo->m_ClientId];
@@ -1357,12 +1357,12 @@ CUi::EPopupMenuFunctionResult CScoreboard::CScoreboardPopupContext::Render(void 
 	constexpr float ButtonSize = 17.5f;
 
 	// C-Client: dark card with pill buttons (new design)
-	View.Draw(ColorRGBA(0.075f, 0.06f, 0.13f, 0.97f), IGraphics::CORNER_ALL, 12.0f);
+	View.Draw(ColorRGBA(0.075f, 0.07f, 0.08f, 0.97f), IGraphics::CORNER_ALL, 12.0f);
 	View.Margin(Margin, &View);
 
 	auto SoftColor = [pUi](const CButtonContainer *pButton, bool Checked = false) {
 		if(Checked)
-			return pUi->HotItem() == pButton ? ColorRGBA(0.42f, 0.37f, 1.0f, 0.65f) : ColorRGBA(0.42f, 0.37f, 1.0f, 0.45f);
+			return pUi->HotItem() == pButton ? ColorRGBA(0.86f, 0.07f, 0.23f, 0.65f) : ColorRGBA(0.86f, 0.07f, 0.23f, 0.45f);
 		return pUi->HotItem() == pButton ? ColorRGBA(1.0f, 1.0f, 1.0f, 0.16f) : ColorRGBA(1.0f, 1.0f, 1.0f, 0.07f);
 	};
 	auto SoftButton = [pUi, &SoftColor](CButtonContainer *pButton, const char *pText, const CUIRect *pRect, float Size, bool Checked = false, bool Danger = false) {

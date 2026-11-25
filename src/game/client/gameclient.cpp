@@ -155,6 +155,7 @@ void CGameClient::OnConsoleInit()
 					      &m_Spectator,
 					      &m_Emoticon,
 					      &m_CClient,
+					      &m_CPlaytime,
 					      &m_InfoMessages,
 					      &m_Chat,
 					      &m_Broadcast,

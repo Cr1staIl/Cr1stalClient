@@ -3071,6 +3071,42 @@ Only changes what you see, not what the server gets
 Hold Shift to be more precise.
 == 
 
+[Playtime category]
+Easy
+== 
+
+[Playtime category]
+Main
+== 
+
+[Playtime category]
+Hard
+== 
+
+[Playtime category]
+Insane
+== 
+
+[Playtime category]
+Extreme
+== 
+
+[Playtime category]
+Mods
+== 
+
+[Playtime category]
+Jet
+== 
+
+[Playtime category]
+Solo
+== 
+
+[Playtime category]
+Other
+== 
+
 Dummy is not connected
 == 
 
@@ -3099,7 +3135,31 @@ Teleport dummy to cursor
 Practice
 == 
 
-Join
+In game
+== 
+
+Maps played
+== 
+
+Favourite map
+== 
+
+Playtime
+== 
+
+Counted on this computer since %s
+== 
+
+Most time spent on maps
+== 
+
+Play a map and it shows up here
+== 
+
+Country
+== 
+
+Profile
 == 
 
 not bound

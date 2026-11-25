@@ -18,6 +18,8 @@
 
 #include <game/localization.h>
 
+#include <cmath>
+
 constexpr float TOOLTIP_FONTSIZE = 14.0f;
 
 void CUIElement::Init(CUi *pUI, int RequestedRectCount)
@@ -447,9 +449,35 @@ float CUi::ButtonColorMul(const void *pId)
 {
 	if(CheckActiveItem(pId))
 		return ButtonColorMulActive();
-	else if(HotItem() == pId)
-		return ButtonColorMulHot();
-	return ButtonColorMulDefault();
+	// C-Client: buttons light up and fade back smoothly
+	return ButtonColorMulDefault() + (ButtonColorMulHot() - ButtonColorMulDefault()) * HoverAnim(pId);
+}
+
+float CUi::StateAnim(const void *pId, bool On, float Speed)
+{
+	const int64_t Now = time_get();
+	auto It = m_HoverAnims.find(pId);
+	if(It == m_HoverAnims.end())
+	{
+		It = m_HoverAnims.emplace(pId, SHoverAnim{On ? 1.0f : 0.0f, Now}).first;
+		return It->second.m_Value;
+	}
+	SHoverAnim &Anim = It->second;
+	const float Delta = (float)((double)(Now - Anim.m_LastUpdate) / (double)time_freq());
+	Anim.m_LastUpdate = Now;
+	const float Target = On ? 1.0f : 0.0f;
+	if(Delta > 0.5f)
+		Anim.m_Value = Target; // not shown for a while: no old animation
+	else
+		Anim.m_Value += (Target - Anim.m_Value) * (1.0f - std::exp(-Speed * Delta));
+	if(std::abs(Anim.m_Value - Target) < 0.001f)
+		Anim.m_Value = Target;
+	return Anim.m_Value;
+}
+
+float CUi::HoverAnim(const void *pId, float Speed)
+{
+	return StateAnim(pId, HotItem() == pId || CheckActiveItem(pId), Speed);
 }
 
 const CUIRect *CUi::Screen()

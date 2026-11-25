@@ -1283,6 +1283,42 @@ Save me
 How to save you?
 == 
 
+[Playtime category]
+Easy
+== 
+
+[Playtime category]
+Main
+== 
+
+[Playtime category]
+Hard
+== 
+
+[Playtime category]
+Insane
+== 
+
+[Playtime category]
+Extreme
+== 
+
+[Playtime category]
+Mods
+== 
+
+[Playtime category]
+Jet
+== 
+
+[Playtime category]
+Solo
+== 
+
+[Playtime category]
+Other
+== 
+
 Searching
 == 
 
@@ -2977,6 +3013,30 @@ auto
 Player info change cooldown
 == 
 
+In game
+== 
+
+Maps played
+== 
+
+Favourite map
+== 
+
+Playtime
+== 
+
+Counted on this computer since %s
+== 
+
+Most time spent on maps
+== 
+
+Play a map and it shows up here
+== 
+
+Country
+== 
+
 No country flags match your filter criteria
 == 
 
@@ -3028,7 +3088,7 @@ Update Cr1stal Client
 Tutorial
 == 
 
-Join
+Profile
 == 
 
 Download

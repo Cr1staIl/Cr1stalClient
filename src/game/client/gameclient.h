@@ -33,6 +33,7 @@
 #include "components/broadcast.h"
 #include "components/camera.h"
 #include "components/cclient.h"
+#include "components/cclient_playtime.h"
 #include "components/censor.h"
 #include "components/chat.h"
 #include "components/console.h"
@@ -178,6 +179,7 @@ public:
 	CEmoticon m_Emoticon;
 	CCClient m_CClient;
 	CCOutlines m_COutlines;
+	CCPlaytime m_CPlaytime;
 	CDamageInd m_DamageInd;
 	CTouchControls m_TouchControls;
 	CVoting m_Voting;

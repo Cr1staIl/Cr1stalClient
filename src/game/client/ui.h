@@ -13,6 +13,7 @@
 #include <chrono>
 #include <memory>
 #include <string>
+#include <unordered_map>
 #include <vector>
 
 class CScrollRegion;
@@ -340,6 +341,13 @@ public:
 
 class CUi
 {
+	struct SHoverAnim
+	{
+		float m_Value = 0.0f;
+		int64_t m_LastUpdate = 0;
+	};
+	std::unordered_map<const void *, SHoverAnim> m_HoverAnims;
+
 public:
 	/**
 	 * These enum values are returned by popup menu functions to specify the behavior.
@@ -614,6 +622,13 @@ public:
 	constexpr float ButtonColorMulHot() const { return 1.5f; }
 	constexpr float ButtonColorMulDefault() const { return 1.0f; }
 	float ButtonColorMul(const void *pId);
+	/**
+	 * C-Client: smooth hover value of an element, 0 = not hovered, 1 = hovered.
+	 * Fades in and out over about a fifth of a second.
+	 */
+	float HoverAnim(const void *pId, float Speed = 12.0f);
+	// same, for a state that is not the hover state (a selected tab, an open popup)
+	float StateAnim(const void *pId, bool On, float Speed = 12.0f);
 
 	const CUIRect *Screen();
 	void MapScreen();

@@ -2712,9 +2712,6 @@ Always predict frozen players
 No country flags match your filter criteria
 == Ни один флаг страны не подходит критериям ваших фильтров
 
-Join
-== Присоединиться
-
 not bound
 == Не назначено
 
@@ -3099,11 +3096,74 @@ Normal DDNet input
 Only changes what you see, not what the server gets
 == Меняет только то, что видишь ты, а не то, что получает сервер
 
-Virtual joystick which only aims and moves the mouse pointer relatively.
-== 
-
 Show the song title
 == Показывать название песни
 
 A long title slides from side to side
 == Длинное название двигается из стороны в сторону
+
+[Playtime category]
+Easy
+== Easy
+
+[Playtime category]
+Main
+== Main
+
+[Playtime category]
+Hard
+== Hard
+
+[Playtime category]
+Insane
+== Insane
+
+[Playtime category]
+Extreme
+== Extreme
+
+[Playtime category]
+Mods
+== Моды
+
+[Playtime category]
+Jet
+== Jet
+
+[Playtime category]
+Solo
+== Solo
+
+[Playtime category]
+Other
+== Другие
+
+Virtual joystick which only aims and moves the mouse pointer relatively.
+== 
+
+In game
+== В игре
+
+Maps played
+== Сыграно карт
+
+Favourite map
+== Любимая карта
+
+Playtime
+== Время в игре
+
+Counted on this computer since %s
+== Считается на этом компьютере с %s
+
+Most time spent on maps
+== Больше всего времени на картах
+
+Play a map and it shows up here
+== Сыграй карту, и она появится здесь
+
+Country
+== Страна
+
+Profile
+== Профиль

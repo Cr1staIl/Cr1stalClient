@@ -424,9 +424,9 @@ void CCClient::RenderWheel()
 
 	Graphics()->TextureClear();
 	Graphics()->QuadsBegin();
-	Graphics()->SetColor(0.06f, 0.01f, 0.14f, 0.75f);
+	Graphics()->SetColor(0.05f, 0.045f, 0.055f, 0.82f);
 	Graphics()->DrawCircle(ScreenCenter.x, ScreenCenter.y, 200.0f, 64);
-	Graphics()->SetColor(0.6f, 0.3f, 1.0f, 0.25f);
+	Graphics()->SetColor(0.86f, 0.07f, 0.23f, 0.22f);
 	Graphics()->DrawCircle(ScreenCenter.x, ScreenCenter.y, 60.0f, 48);
 	Graphics()->QuadsEnd();
 
@@ -437,20 +437,23 @@ void CCClient::RenderWheel()
 			Angle -= 2 * pi;
 		const vec2 Pos = ScreenCenter + direction(Angle) * 140.0f;
 		const bool Selected = m_SelectedSave == Save;
-		const float Size = Selected ? 86.0f : 62.0f;
+		// the chosen picture grows smoothly, the old one shrinks back
+		m_aWheelAnim[Save] += ((Selected ? 1.0f : 0.0f) - m_aWheelAnim[Save]) * std::min(1.0f, Client()->RenderFrameTime() * 14.0f);
+		const float Anim = m_aWheelAnim[Save];
+		const float Size = 62.0f + 24.0f * Anim;
 
-		if(Selected)
+		if(Anim > 0.01f)
 		{
 			Graphics()->TextureClear();
 			Graphics()->QuadsBegin();
-			Graphics()->SetColor(0.0f, 0.95f, 1.0f, 0.25f);
+			Graphics()->SetColor(0.86f, 0.07f, 0.23f, 0.3f * Anim);
 			Graphics()->DrawCircle(Pos.x, Pos.y, Size * 0.62f, 32);
 			Graphics()->QuadsEnd();
 		}
 
 		Graphics()->TextureSet(m_aSaveTextures[Save]);
 		Graphics()->QuadsBegin();
-		Graphics()->SetColor(1.0f, 1.0f, 1.0f, Selected ? 1.0f : 0.8f);
+		Graphics()->SetColor(1.0f, 1.0f, 1.0f, 0.8f + 0.2f * Anim);
 		IGraphics::CQuadItem Icon(Pos.x, Pos.y, Size, Size);
 		Graphics()->QuadsDraw(&Icon, 1);
 		Graphics()->QuadsEnd();
@@ -466,7 +469,7 @@ void CCClient::RenderWheel()
 	Label.h = 40.0f;
 	SLabelProperties Props;
 	Props.m_MaxWidth = Label.w;
-	Props.SetColor(ColorRGBA(0.85f, 0.95f, 1.0f, 1.0f));
+	Props.SetColor(ColorRGBA(1.0f, 0.88f, 0.9f, 1.0f));
 	Ui()->DoLabel(&Label, pTitle, FontSize, TEXTALIGN_MC, Props);
 
 	RenderTools()->RenderCursor(ScreenCenter + m_SelectorMouse, 24.0f);

@@ -310,7 +310,7 @@ int CMenus::DoButton_CheckBox_Common(const void *pId, const char *pText, const c
 
 		const ColorRGBA Off(0.23f, 0.21f, 0.28f, 1.0f);
 		const ColorRGBA On(0.204f, 0.78f, 0.349f, 1.0f);
-		const float Hot = Ui()->HotItem() == pId ? 0.06f : 0.0f;
+		const float Hot = 0.06f * Ui()->HoverAnim(pId);
 		Switch.Draw(ColorRGBA(Off.r + (On.r - Off.r) * A + Hot, Off.g + (On.g - Off.g) * A + Hot, Off.b + (On.b - Off.b) * A + Hot, 1.0f), IGraphics::CORNER_ALL, Switch.h / 2.0f);
 		const float KnobSize = Switch.h - 3.0f;
 		CUIRect Knob;
@@ -2456,13 +2456,13 @@ void CMenus::UpdateColors()
 	ms_GuiColor = color_cast<ColorRGBA>(ColorHSLA(g_Config.m_UiColor, true));
 
 	// C-Client: dark tabs, the active one has the same color as the page panel below it
-	ms_ColorTabbarInactiveOutgame = ColorRGBA(0.045f, 0.035f, 0.085f, 0.45f);
-	ms_ColorTabbarActiveOutgame = ColorRGBA(0.045f, 0.035f, 0.085f, 0.82f);
+	ms_ColorTabbarInactiveOutgame = ColorRGBA(0.06f, 0.055f, 0.065f, 0.5f);
+	ms_ColorTabbarActiveOutgame = ColorRGBA(0.06f, 0.055f, 0.065f, 0.88f);
 	ms_ColorTabbarHoverOutgame = ColorRGBA(1.0f, 1.0f, 1.0f, 0.12f);
 
 	// C-Client: the same dark look in game, a bit less see-through because the map is behind
-	ms_ColorTabbarInactiveIngame = ColorRGBA(0.045f, 0.035f, 0.085f, 0.6f);
-	ms_ColorTabbarActiveIngame = ColorRGBA(0.045f, 0.035f, 0.085f, 0.9f);
+	ms_ColorTabbarInactiveIngame = ColorRGBA(0.06f, 0.055f, 0.065f, 0.65f);
+	ms_ColorTabbarActiveIngame = ColorRGBA(0.06f, 0.055f, 0.065f, 0.92f);
 	ms_ColorTabbarHoverIngame = ColorRGBA(1.0f, 1.0f, 1.0f, 0.12f);
 }
 
@@ -2487,16 +2487,6 @@ static float NeonHash(int Index, int Salt)
 	Hash = (Hash ^ (Hash >> 13)) * 1274126177u;
 	Hash ^= Hash >> 16;
 	return (Hash & 0xffffff) / (float)0xffffff;
-}
-
-static ColorRGBA NeonColor(int Index, float Alpha)
-{
-	switch(Index % 3)
-	{
-	case 0: return ColorRGBA(0.0f, 0.95f, 1.0f, Alpha); // cyan
-	case 1: return ColorRGBA(1.0f, 0.15f, 0.85f, Alpha); // magenta
-	default: return ColorRGBA(0.6f, 0.3f, 1.0f, Alpha); // violet
-	}
 }
 
 // rotated rectangle as a freeform quad (center, half width, half height, angle)
@@ -2536,95 +2526,82 @@ void CMenus::RenderNeonBackground()
 	Graphics()->MapScreenToSize(ScreenWidth, ScreenHeight);
 	const float Time = Client()->GlobalTime();
 
-	// deep space gradient
+	// almost black, a little lighter at the top
 	Graphics()->TextureClear();
 	Graphics()->QuadsBegin();
-	Graphics()->SetColor4(ColorRGBA(0.020f, 0.006f, 0.050f, 1.0f), ColorRGBA(0.004f, 0.010f, 0.040f, 1.0f),
-		ColorRGBA(0.003f, 0.001f, 0.012f, 1.0f), ColorRGBA(0.010f, 0.002f, 0.022f, 1.0f));
+	Graphics()->SetColor4(ColorRGBA(0.052f, 0.046f, 0.052f, 1.0f), ColorRGBA(0.052f, 0.046f, 0.052f, 1.0f),
+		ColorRGBA(0.022f, 0.019f, 0.023f, 1.0f), ColorRGBA(0.022f, 0.019f, 0.023f, 1.0f));
 	const IGraphics::CQuadItem Bg(0, 0, ScreenWidth, ScreenHeight);
 	Graphics()->QuadsDrawTL(&Bg, 1);
 	Graphics()->QuadsEnd();
 
 	Graphics()->BlendAdditive();
 
-	// nebula clouds: many very faint circles give a smooth falloff
+	// red haze along the left and right edge, breathing very slowly
+	{
+		const ColorRGBA Red(0.62f, 0.03f, 0.12f, 1.0f);
+		const float BreathL = 0.75f + 0.25f * std::sin(Time * 0.35f);
+		const float BreathR = 0.75f + 0.25f * std::sin(Time * 0.31f + 2.0f);
+		const float Width = ScreenWidth * 0.22f;
+		Graphics()->QuadsBegin();
+		Graphics()->SetColor4(Red.WithAlpha(0.28f * BreathL), Red.WithAlpha(0.0f), Red.WithAlpha(0.18f * BreathL), Red.WithAlpha(0.0f));
+		const IGraphics::CQuadItem Left(0, 0, Width, ScreenHeight);
+		Graphics()->QuadsDrawTL(&Left, 1);
+		Graphics()->SetColor4(Red.WithAlpha(0.0f), Red.WithAlpha(0.2f * BreathR), Red.WithAlpha(0.0f), Red.WithAlpha(0.3f * BreathR));
+		const IGraphics::CQuadItem Right(ScreenWidth - Width, 0, Width, ScreenHeight);
+		Graphics()->QuadsDrawTL(&Right, 1);
+		Graphics()->QuadsEnd();
+	}
+
+	// big soft red glows drifting around: many very faint circles give a smooth falloff
 	Graphics()->QuadsBegin();
-	const ColorRGBA aNebula[] = {
-		ColorRGBA(0.45f, 0.15f, 0.9f, 1.0f), // violet
-		ColorRGBA(0.0f, 0.55f, 0.9f, 1.0f), // blue
-		ColorRGBA(0.85f, 0.1f, 0.6f, 1.0f), // magenta
-		ColorRGBA(0.1f, 0.35f, 0.8f, 1.0f), // deep blue
+	const ColorRGBA aGlow[] = {
+		ColorRGBA(0.75f, 0.04f, 0.16f, 1.0f),
+		ColorRGBA(0.55f, 0.02f, 0.10f, 1.0f),
+		ColorRGBA(0.85f, 0.10f, 0.22f, 1.0f),
 	};
-	for(int i = 0; i < 4; i++)
+	for(int i = 0; i < 3; i++)
 	{
-		const float Px = ScreenWidth * (0.5f + 0.40f * std::sin(Time * (0.020f + 0.007f * i) + i * 1.9f));
-		const float Py = ScreenHeight * (0.5f + 0.32f * std::cos(Time * (0.017f + 0.006f * i) + i * 2.6f));
-		const float Radius = 90.0f + 35.0f * i;
-		for(int Ring = 24; Ring >= 1; Ring--)
+		const float Px = ScreenWidth * (0.5f + 0.42f * std::sin(Time * (0.018f + 0.006f * i) + i * 2.1f));
+		const float Py = ScreenHeight * (0.55f + 0.35f * std::cos(Time * (0.015f + 0.005f * i) + i * 2.9f));
+		const float Radius = 110.0f + 40.0f * i;
+		for(int Ring = 28; Ring >= 1; Ring--)
 		{
-			Graphics()->SetColor(aNebula[i].WithAlpha(0.0045f));
-			Graphics()->DrawCircle(Px, Py, Radius * Ring / 24.0f, 40);
+			Graphics()->SetColor(aGlow[i].WithAlpha(0.0032f));
+			Graphics()->DrawCircle(Px, Py, Radius * Ring / 28.0f, 48);
 		}
 	}
 	Graphics()->QuadsEnd();
 
-	// stars in three depth layers, drifting slowly to the left and twinkling
+	// a little dust floating up
 	Graphics()->QuadsBegin();
-	for(int i = 0; i < 180; i++)
+	for(int i = 0; i < 40; i++)
 	{
-		const int Layer = i % 3;
-		const float Speed = 1.0f + Layer * 2.5f;
-		const float Px = std::fmod(NeonHash(i, 21) * (ScreenWidth + 20.0f) - Time * Speed + 1000.0f * (ScreenWidth + 20.0f), ScreenWidth + 20.0f) - 10.0f;
-		const float Py = NeonHash(i, 22) * ScreenHeight;
-		const float Size = 0.25f + 0.25f * Layer + 0.3f * NeonHash(i, 23);
-		const float Twinkle = 0.45f + 0.55f * (0.5f + 0.5f * std::sin(Time * (0.8f + 2.2f * NeonHash(i, 24)) + i * 2.7f));
-		const ColorRGBA Tint = NeonHash(i, 25) < 0.7f ? ColorRGBA(0.85f, 0.9f, 1.0f, 1.0f) : NeonColor(i, 1.0f);
-		Graphics()->SetColor(Tint.WithAlpha(0.06f * Twinkle));
-		Graphics()->DrawCircle(Px, Py, Size * 1.6f, 10);
-		Graphics()->SetColor(Tint.WithAlpha(0.8f * Twinkle));
-		Graphics()->DrawCircle(Px, Py, Size * 0.5f, 8);
+		const float Speed = 1.5f + 3.0f * NeonHash(i, 21);
+		const float Py = ScreenHeight + 5.0f - std::fmod(NeonHash(i, 22) * (ScreenHeight + 10.0f) + Time * Speed, ScreenHeight + 10.0f);
+		const float Px = NeonHash(i, 23) * ScreenWidth + 6.0f * std::sin(Time * 0.3f + i);
+		const float Twinkle = 0.5f + 0.5f * std::sin(Time * (0.6f + NeonHash(i, 24)) + i * 2.3f);
+		Graphics()->SetColor(1.0f, 0.35f, 0.45f, 0.12f * Twinkle);
+		Graphics()->DrawCircle(Px, Py, 0.35f + 0.35f * NeonHash(i, 25), 8);
 	}
 	Graphics()->QuadsEnd();
 
-	// a shooting star every few seconds
-	{
-		const float Period = 7.0f;
-		const int Index = (int)(Time / Period);
-		const float Phase = std::fmod(Time, Period) / 1.2f; // the streak lasts 1.2 seconds
-		if(Phase < 1.0f)
-		{
-			const vec2 Start(NeonHash(Index, 31) * ScreenWidth, NeonHash(Index, 32) * ScreenHeight * 0.4f);
-			const vec2 Dir = normalize(vec2(-0.8f - 0.4f * NeonHash(Index, 33), 0.45f));
-			const vec2 Head = Start + Dir * (Phase * 160.0f);
-			const float Fade = std::sin(Phase * pi);
-			Graphics()->QuadsBegin();
-			for(int Seg = 0; Seg < 20; Seg++)
-			{
-				const vec2 P = Head - Dir * (Seg * 2.2f);
-				Graphics()->SetColor(0.8f, 0.95f, 1.0f, 0.5f * Fade * (1.0f - Seg / 20.0f));
-				Graphics()->DrawCircle(P.x, P.y, 0.45f - Seg * 0.015f, 8);
-			}
-			Graphics()->QuadsEnd();
-		}
-	}
-
-	// the four cross pictures float slowly through the background
-	for(int i = 0; i < 8; i++)
+	// the cross pictures float slowly through the background, dimmed
+	for(int i = 0; i < 6; i++)
 	{
 		const IGraphics::CTextureHandle Texture = GameClient()->m_CClient.AuraTexture(i % CCClient::NUM_AURAS);
 		if(!Texture.IsValid())
 			continue;
 		const float Period = ScreenHeight + 160.0f;
-		const float Speed = 1.5f + 2.5f * NeonHash(i, 41);
+		const float Speed = 1.2f + 2.0f * NeonHash(i, 41);
 		const float Py = ScreenHeight + 80.0f - std::fmod(NeonHash(i, 42) * Period + Time * Speed, Period);
 		const float Px = (0.06f + 0.88f * NeonHash(i, 43)) * ScreenWidth + 18.0f * std::sin(Time * (0.08f + 0.06f * NeonHash(i, 44)) + i * 2.0f);
 		const float Size = 34.0f + 34.0f * NeonHash(i, 45);
-		// fade smoothly in at the bottom and out at the top
 		const float EdgeFade = std::clamp(std::min(Py + 60.0f, ScreenHeight + 60.0f - Py) / 90.0f, 0.0f, 1.0f);
 		const float Breath = 0.75f + 0.25f * std::sin(Time * 0.6f + i * 1.7f);
 		Graphics()->TextureSet(Texture);
 		Graphics()->QuadsBegin();
-		Graphics()->SetColor(1.0f, 1.0f, 1.0f, 0.38f * EdgeFade * Breath);
+		Graphics()->SetColor(1.0f, 0.3f, 0.4f, 0.14f * EdgeFade * Breath);
 		Graphics()->QuadsSetRotation(0.15f * std::sin(Time * 0.2f + i));
 		IGraphics::CQuadItem Quad(Px, Py, Size, Size);
 		Graphics()->QuadsDraw(&Quad, 1);
@@ -2633,19 +2610,18 @@ void CMenus::RenderNeonBackground()
 	}
 	Graphics()->TextureClear();
 
-	// floating thin neon crosses
+	// a few thin crosses
 	Graphics()->QuadsBegin();
-	for(int i = 0; i < 12; i++)
+	for(int i = 0; i < 8; i++)
 	{
-		const float Speed = 2.5f + 4.0f * NeonHash(i, 11);
+		const float Speed = 2.0f + 3.0f * NeonHash(i, 11);
 		const float Py = ScreenHeight + 30.0f - std::fmod(NeonHash(i, 12) * (ScreenHeight + 60.0f) + Time * Speed, ScreenHeight + 60.0f);
 		const float Px = NeonHash(i, 13) * ScreenWidth + 12.0f * std::sin(Time * (0.15f + 0.1f * NeonHash(i, 16)) + i);
-		const float Size = 6.0f + 12.0f * NeonHash(i, 14);
+		const float Size = 6.0f + 10.0f * NeonHash(i, 14);
 		const float Angle = 0.25f * std::sin(Time * (0.25f + 0.3f * NeonHash(i, 15)) + i * 1.3f);
 		const float Twinkle = 0.65f + 0.35f * std::sin(Time * 0.9f + i * 2.1f);
-		// fade in at the bottom and out at the top
 		const float EdgeFade = std::clamp(std::min(Py + 20.0f, ScreenHeight + 20.0f - Py) / 40.0f, 0.0f, 1.0f);
-		NeonCross(Graphics(), vec2(Px, Py), Size, Angle, NeonColor(i, 1.0f), Twinkle * EdgeFade * 0.9f);
+		NeonCross(Graphics(), vec2(Px, Py), Size, Angle, ColorRGBA(0.9f, 0.08f, 0.25f, 1.0f), Twinkle * EdgeFade * 0.45f);
 	}
 	Graphics()->QuadsEnd();
 
@@ -2654,7 +2630,7 @@ void CMenus::RenderNeonBackground()
 	// darken the borders a bit
 	Graphics()->TextureSet(m_TextureBlob);
 	Graphics()->QuadsBegin();
-	Graphics()->SetColor(0.0f, 0.0f, 0.0f, 0.75f);
+	Graphics()->SetColor(0.0f, 0.0f, 0.0f, 0.6f);
 	const IGraphics::CQuadItem BlobQuadItem(-100, -100, ScreenWidth + 200, ScreenHeight + 200);
 	Graphics()->QuadsDrawTL(&BlobQuadItem, 1);
 	Graphics()->QuadsEnd();

@@ -16,6 +16,9 @@
 #include <game/client/ui.h>
 #include <game/localization.h>
 
+#include <algorithm>
+#include <cmath>
+
 void CMenus::SetNeedSendInfo()
 {
 	if(m_Dummy)
@@ -77,7 +80,7 @@ void CMenus::RenderSettings(CUIRect MainView)
 		const float TextY = Title.y + (Title.h - TitleSize) / 2.0f - 1.0f;
 		TextRender()->TextColor(CCStyle::TEXT);
 		TextRender()->Text(TextX, TextY, TitleSize, pFirst);
-		TextRender()->TextColor(0.66f, 0.62f, 1.0f, 1.0f);
+		TextRender()->TextColor(CCStyle::ACCENT_TEXT);
 		TextRender()->Text(TextX + FirstW, TextY, TitleSize, "Client");
 		TextRender()->TextColor(TextRender()->DefaultTextColor());
 		TextRender()->SetFontPreset(EFontPreset::DEFAULT_FONT);
@@ -111,21 +114,47 @@ void CMenus::RenderSettings(CUIRect MainView)
 
 		CUIRect Nav;
 		Title.VSplitRight(Total, nullptr, &Nav);
-		Nav.Draw(ColorRGBA(1.0f, 1.0f, 1.0f, 0.05f), IGraphics::CORNER_ALL, Nav.h / 2.0f);
+		Nav.Draw(ColorRGBA(1.0f, 1.0f, 1.0f, 0.045f), IGraphics::CORNER_ALL, Nav.h / 2.0f);
 		Nav.Margin(3.0f, &Nav);
+
+		// where every pill is
+		CUIRect aPills[SETTINGS_LENGTH];
+		CUIRect Rest = Nav;
+		for(int i = 0; i < SETTINGS_LENGTH; i++)
+			Rest.VSplitLeft(aWidths[i], &aPills[i], &Rest);
+
+		// the red highlight slides smoothly to the chosen page
+		static float s_HighlightX = -1.0f;
+		static float s_HighlightW = 0.0f;
+		const CUIRect &Target = aPills[std::clamp(g_Config.m_UiSettingsPage, 0, SETTINGS_LENGTH - 1)];
+		const float Follow = 1.0f - std::exp(-14.0f * std::min(Client()->RenderFrameTime(), 0.1f));
+		if(s_HighlightX < 0.0f || absolute(s_HighlightX - Target.x) > Nav.w)
+		{
+			s_HighlightX = Target.x;
+			s_HighlightW = Target.w;
+		}
+		s_HighlightX += (Target.x - s_HighlightX) * Follow;
+		s_HighlightW += (Target.w - s_HighlightW) * Follow;
+
 		for(int i = 0; i < SETTINGS_LENGTH; i++)
 		{
-			CUIRect Pill;
-			Nav.VSplitLeft(aWidths[i], &Pill, &Nav);
-			const bool Active = g_Config.m_UiSettingsPage == i;
-			if(Active)
-				Pill.Draw(CCStyle::ACCENT, IGraphics::CORNER_ALL, Pill.h / 2.0f);
-			else if(Ui()->HotItem() == &s_aTabButtons[i])
-				Pill.Draw(CCStyle::HOVER, IGraphics::CORNER_ALL, Pill.h / 2.0f);
+			const float HoverA = Ui()->HoverAnim(&s_aTabButtons[i]);
+			if(HoverA > 0.01f && g_Config.m_UiSettingsPage != i)
+				aPills[i].Draw(CCStyle::HOVER.WithMultipliedAlpha(HoverA), IGraphics::CORNER_ALL, aPills[i].h / 2.0f);
+		}
+		CUIRect Highlight = Target;
+		Highlight.x = s_HighlightX;
+		Highlight.w = s_HighlightW;
+		Highlight.Draw(CCStyle::ACCENT, IGraphics::CORNER_ALL, Highlight.h / 2.0f);
+
+		for(int i = 0; i < SETTINGS_LENGTH; i++)
+		{
+			// text turns white while the highlight is under it
+			const float Overlap = std::clamp((std::min(aPills[i].x + aPills[i].w, Highlight.x + Highlight.w) - std::max(aPills[i].x, Highlight.x)) / std::max(aPills[i].w, 1.0f), 0.0f, 1.0f);
 			SLabelProperties Props;
-			Props.SetColor(Active ? ColorRGBA(1.0f, 1.0f, 1.0f, 1.0f) : CCStyle::TEXT_DIM);
-			Ui()->DoLabel(&Pill, apTabs[i], FontSize, TEXTALIGN_MC, Props);
-			if(Ui()->DoButtonLogic(&s_aTabButtons[i], 0, &Pill, BUTTONFLAG_LEFT))
+			Props.SetColor(CCStyle::Mix(CCStyle::Mix(CCStyle::TEXT_DIM, CCStyle::TEXT, Ui()->HoverAnim(&s_aTabButtons[i])), ColorRGBA(1.0f, 1.0f, 1.0f, 1.0f), Overlap));
+			Ui()->DoLabel(&aPills[i], apTabs[i], FontSize, TEXTALIGN_MC, Props);
+			if(Ui()->DoButtonLogic(&s_aTabButtons[i], 0, &aPills[i], BUTTONFLAG_LEFT))
 				g_Config.m_UiSettingsPage = i;
 		}
 	}

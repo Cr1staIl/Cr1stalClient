@@ -68,7 +68,9 @@ public:
 			Card.y = m_Rect.y;
 			Card.w = m_Rect.w;
 			Card.h = s_aCardHeights[Index];
-			CCStyle::DrawCard(Card);
+			// the card under the mouse gets a soft red edge
+			const float Glow = m_pUi->StateAnim(&s_aCardHeights[Index], m_pUi->MouseHovered(&Card), 8.0f);
+			CCStyle::DrawCard(Card, CCStyle::CARD_ROUNDING, CCStyle::CARD, Glow * 0.45f);
 		}
 		m_OuterX = m_Rect.x;
 		m_OuterW = m_Rect.w;
@@ -78,8 +80,8 @@ public:
 		Gap(10.0f);
 		CUIRect Label = Line(18.0f);
 		SLabelProperties Props;
-		Props.SetColor(ColorRGBA(0.82f, 0.8f, 0.95f, 1.0f));
-		m_pUi->DoLabel(&Label, pTitle, 13.5f, TEXTALIGN_ML, Props);
+		Props.SetColor(CCStyle::ACCENT_TEXT);
+		m_pUi->DoLabel(&Label, CCStyle::Upper(pTitle).c_str(), 12.5f, TEXTALIGN_ML, Props);
 		Gap(4.0f);
 	}
 
@@ -110,11 +112,12 @@ public:
 			It->second = Target;
 		const float A = It->second;
 
-		if(m_pUi->HotItem() == pId)
+		const float HoverA = m_pUi->HoverAnim(pId);
+		if(HoverA > 0.01f)
 		{
 			CUIRect Hover = Row;
 			Hover.VMargin(-4.0f, &Hover);
-			Hover.Draw(ColorRGBA(1.0f, 1.0f, 1.0f, 0.04f), IGraphics::CORNER_ALL, 6.0f);
+			Hover.Draw(ColorRGBA(1.0f, 1.0f, 1.0f, 0.045f * HoverA), IGraphics::CORNER_ALL, 6.0f);
 		}
 
 		CUIRect Rest, Switch;
@@ -208,14 +211,18 @@ public:
 			CUIRect Button;
 			Row.VSplitLeft(ButtonW, &Button, &Row);
 			const bool Selected = *pValue == i;
-			if(Selected)
-				Button.Draw(CCStyle::ACCENT, IGraphics::CORNER_ALL, 5.5f);
-			else if(m_pUi->HotItem() == &pButtons[i])
-				Button.Draw(CCStyle::HOVER, IGraphics::CORNER_ALL, 5.5f);
+			// the chosen part fades in, the old one fades out
+			static std::map<const void *, char> s_SelectKeys; // own address per button for the selection fade
+			const float SelectA = m_pUi->StateAnim(&s_SelectKeys[&pButtons[i]], Selected);
+			const float HoverA = m_pUi->HoverAnim(&pButtons[i]);
+			if(HoverA > 0.01f)
+				Button.Draw(CCStyle::HOVER.WithMultipliedAlpha(HoverA), IGraphics::CORNER_ALL, 5.5f);
+			if(SelectA > 0.01f)
+				Button.Draw(CCStyle::ACCENT.WithMultipliedAlpha(SelectA), IGraphics::CORNER_ALL, 5.5f);
 			SLabelProperties Props;
 			Props.m_MaxWidth = Button.w - 4.0f;
 			Props.m_EllipsisAtEnd = true;
-			Props.SetColor(Selected ? ColorRGBA(1.0f, 1.0f, 1.0f, 1.0f) : CCStyle::TEXT_DIM);
+			Props.SetColor(CCStyle::Mix(CCStyle::TEXT_DIM, ColorRGBA(1.0f, 1.0f, 1.0f, 1.0f), SelectA));
 			m_pUi->DoLabel(&Button, ppOptions[i], 11.0f, TEXTALIGN_MC, Props);
 			if(m_pUi->DoButtonLogic(&pButtons[i], 0, &Button, BUTTONFLAG_LEFT))
 				*pValue = i;
@@ -228,7 +235,8 @@ public:
 	{
 		Gap(2.0f);
 		CUIRect Rect = Line(22.0f);
-		Rect.Draw(m_pUi->HotItem() == pId ? ColorRGBA(1.0f, 1.0f, 1.0f, 0.14f) : CCStyle::BUTTON, IGraphics::CORNER_ALL, Rect.h / 2.0f);
+		const float HoverA = m_pUi->HoverAnim(pId);
+		Rect.Draw(CCStyle::Mix(CCStyle::BUTTON, CCStyle::ACCENT.WithAlpha(0.55f), HoverA), IGraphics::CORNER_ALL, Rect.h / 2.0f);
 		SLabelProperties Props;
 		Props.m_MaxWidth = Rect.w - 10.0f;
 		Props.m_EllipsisAtEnd = true;
@@ -412,8 +420,9 @@ void CMenus::RenderSettingsCClient(CUIRect MainView)
 				CButtonContainer *pButton = Side == 0 ? &s_PrevFont : &s_NextFont;
 				CUIRect Arrow = Side == 0 ? Prev : Next;
 				Arrow.Margin(2.0f, &Arrow);
-				if(Ui()->HotItem() == pButton)
-					Arrow.Draw(CCStyle::HOVER, IGraphics::CORNER_ALL, 5.5f);
+				const float HoverA = Ui()->HoverAnim(pButton);
+				if(HoverA > 0.01f)
+					Arrow.Draw(CCStyle::ACCENT.WithAlpha(0.6f * HoverA), IGraphics::CORNER_ALL, 5.5f);
 				Ui()->DoLabel(&Arrow, Side == 0 ? "<" : ">", 12.0f, TEXTALIGN_MC);
 				if(Ui()->DoButtonLogic(pButton, 0, &Arrow, BUTTONFLAG_LEFT))
 					g_Config.m_CcFont = (g_Config.m_CcFont + (Side == 0 ? CCClient::NUM_FONTS - 1 : 1)) % CCClient::NUM_FONTS;
