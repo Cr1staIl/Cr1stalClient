@@ -2568,48 +2568,6 @@ Island size
 Distance from the top
 == 
 
-Skin Builder
-== 
-
-Parts not found
-== 
-
-Ears
-== 
-
-Face
-== 
-
-Body color
-== 
-
-Feet color
-== 
-
-Save and wear
-== 
-
-Saved to your skins and put on
-== 
-
-Could not save the skin
-== 
-
-Others only see it if they have this skin too
-== 
-
-Show team at the top (frozen tees darkened)
-== 
-
-Tee size
-== 
-
-Show alive / total counter
-== 
-
-Only while in a team
-== 
-
 Warn when you are the last one alive
 == 
 

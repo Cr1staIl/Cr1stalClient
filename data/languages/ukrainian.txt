@@ -2768,18 +2768,6 @@ Prediction strength
 Predict freeze
 == Передбачати заморозку
 
-Show team at the top (frozen tees darkened)
-== Команда вгорі екрана (заморожені затемнені)
-
-Tee size
-== Розмір ті
-
-Show alive / total counter
-== Лічильник живих / усього
-
-Only while in a team
-== Лише коли ти в команді
-
 Freeze bars under frozen tees
 == Смужки заморозки під ті
 
@@ -3085,36 +3073,6 @@ Normal DDNet input
 
 Only changes what you see, not what the server gets
 == Змінює лише те, що бачиш ти, а не те, що отримує сервер
-
-Skin Builder
-== Конструктор скінів
-
-Parts not found
-== Деталі не знайдено
-
-Ears
-== Вушка
-
-Face
-== Обличчя
-
-Body color
-== Колір тіла
-
-Feet color
-== Колір ніжок
-
-Save and wear
-== Зберегти й одягнути
-
-Saved to your skins and put on
-== Збережено у твої скіни та одягнено
-
-Could not save the skin
-== Не вдалося зберегти скін
-
-Others only see it if they have this skin too
-== Інші побачать його, лише якщо в них теж є цей скін
 
 Hold Shift to be more precise.
 == 

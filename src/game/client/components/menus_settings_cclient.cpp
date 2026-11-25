@@ -14,10 +14,16 @@
 #include <game/localization.h>
 
 #include <algorithm>
+#include <map>
 
 static constexpr float CC_LINE = 20.0f;
 static constexpr float CC_HEADLINE = 20.0f;
 static constexpr float CC_SECTION_GAP = 12.0f;
+static constexpr float CC_TOGGLE_LINE = 24.0f;
+
+// iPhone style switch colors: gray = off, green = on
+static const ColorRGBA CC_TOGGLE_OFF = ColorRGBA(0.23f, 0.21f, 0.28f, 1.0f);
+static const ColorRGBA CC_TOGGLE_ON = ColorRGBA(0.204f, 0.78f, 0.349f, 1.0f);
 
 // Small helper that lays out one settings column from top to bottom.
 class CCcColumn
@@ -44,29 +50,86 @@ public:
 
 	void Headline(const char *pText)
 	{
-		CUIRect Label = Line(CC_HEADLINE + 6.0f);
-		SLabelProperties Props;
-		Props.SetColor(ColorRGBA(0.55f, 0.85f, 1.0f, 1.0f));
-		m_pUi->DoLabel(&Label, pText, CC_HEADLINE * 0.8f, TEXTALIGN_ML, Props);
 		Gap(2.0f);
+		CUIRect Label = Line(CC_HEADLINE + 4.0f);
+		SLabelProperties Props;
+		Props.SetColor(ColorRGBA(0.73f, 0.65f, 0.86f, 1.0f));
+		m_pUi->DoLabel(&Label, pText, 13.0f, TEXTALIGN_ML, Props);
 	}
 
-	// checkbox for a 0/1 setting
+	// one settings row: text on the left, iPhone style switch on the right.
+	// returns true when the row was clicked
+	bool Toggle(const void *pId, const char *pText, bool On, const char *pTooltip = nullptr)
+	{
+		CUIRect Row = Line(CC_TOGGLE_LINE);
+
+		// smooth knob movement, 0 = off, 1 = on
+		static std::map<const void *, float> s_Anim;
+		auto It = s_Anim.find(pId);
+		if(It == s_Anim.end())
+			It = s_Anim.emplace(pId, On ? 1.0f : 0.0f).first;
+		const float Target = On ? 1.0f : 0.0f;
+		const float Step = std::min(1.0f, m_pMenus->Client()->RenderFrameTime() * 9.0f);
+		It->second += (Target - It->second) * Step;
+		if(absolute(It->second - Target) < 0.002f)
+			It->second = Target;
+		const float A = It->second;
+
+		if(m_pUi->HotItem() == pId)
+			Row.Draw(ColorRGBA(1.0f, 1.0f, 1.0f, 0.04f), IGraphics::CORNER_ALL, 6.0f);
+
+		CUIRect Rest, Switch;
+		Row.VSplitRight(40.0f, &Rest, &Switch);
+		Switch.VMargin(2.0f, &Switch);
+		Switch.HMargin((Switch.h - 18.0f) / 2.0f, &Switch);
+		const ColorRGBA Track(
+			CC_TOGGLE_OFF.r + (CC_TOGGLE_ON.r - CC_TOGGLE_OFF.r) * A,
+			CC_TOGGLE_OFF.g + (CC_TOGGLE_ON.g - CC_TOGGLE_OFF.g) * A,
+			CC_TOGGLE_OFF.b + (CC_TOGGLE_ON.b - CC_TOGGLE_OFF.b) * A, 1.0f);
+		Switch.Draw(Track, IGraphics::CORNER_ALL, Switch.h / 2.0f);
+
+		const float KnobSize = Switch.h - 3.0f;
+		CUIRect Knob;
+		Knob.x = Switch.x + 1.5f + (Switch.w - KnobSize - 3.0f) * A;
+		Knob.y = Switch.y + 1.5f;
+		Knob.w = Knob.h = KnobSize;
+		CUIRect Shadow = Knob;
+		Shadow.y += 0.8f;
+		Shadow.Draw(ColorRGBA(0.0f, 0.0f, 0.0f, 0.25f), IGraphics::CORNER_ALL, KnobSize / 2.0f);
+		Knob.Draw(ColorRGBA(1.0f, 1.0f, 1.0f, 1.0f), IGraphics::CORNER_ALL, KnobSize / 2.0f);
+
+		CUIRect Label;
+		Rest.VSplitLeft(4.0f, nullptr, &Label);
+		Label.VSplitRight(6.0f, &Label, nullptr);
+		SLabelProperties Props;
+		Props.m_MaxWidth = Label.w;
+		Props.m_EllipsisAtEnd = true;
+		Props.SetColor(ColorRGBA(0.95f, 0.93f, 0.98f, 1.0f));
+		m_pUi->DoLabel(&Label, pText, 12.5f, TEXTALIGN_ML, Props);
+
+		// thin divider like the iPhone settings lists
+		CUIRect Divider = Row;
+		Divider.y = Row.y + Row.h - 0.5f;
+		Divider.h = 0.5f;
+		Divider.Draw(ColorRGBA(1.0f, 1.0f, 1.0f, 0.06f), IGraphics::CORNER_NONE, 0.0f);
+
+		if(pTooltip)
+			m_pUi->DoToolTip(pId, &Row, pTooltip);
+		return m_pUi->DoButtonLogic(pId, 0, &Row, BUTTONFLAG_LEFT) != 0;
+	}
+
+	// switch for a 0/1 setting
 	void Check(int *pValue, const char *pText, const char *pTooltip = nullptr)
 	{
-		CUIRect Button = Line();
-		if(m_pMenus->DoButton_CheckBox(pValue, pText, *pValue, &Button))
+		if(Toggle(pValue, pText, *pValue != 0, pTooltip))
 			*pValue ^= 1;
-		if(pTooltip)
-			m_pUi->DoToolTip(pValue, &Button, pTooltip);
 	}
 
-	// checkbox for a setting that has more values than on/off
+	// switch for a setting that has more values than on/off
 	void CheckValue(int *pValue, const char *pText, int OnValue, int OffValue = 0)
 	{
-		CUIRect Button = Line();
 		const bool On = *pValue != OffValue;
-		if(m_pMenus->DoButton_CheckBox(pValue, pText, On, &Button))
+		if(Toggle(pValue, pText, On))
 			*pValue = On ? OffValue : OnValue;
 	}
 
@@ -115,6 +178,45 @@ public:
 
 void CMenus::RenderSettingsCClient(CUIRect MainView)
 {
+	// header: client icon and name
+	{
+		CUIRect Header;
+		MainView.HSplitTop(40.0f, &Header, &MainView);
+		MainView.HSplitTop(8.0f, nullptr, &MainView);
+		Header.Draw(ColorRGBA(0.09f, 0.055f, 0.15f, 0.85f), IGraphics::CORNER_ALL, 12.0f);
+
+		CUIRect Icon, Title;
+		Header.VSplitLeft(8.0f, nullptr, &Header);
+		Header.VSplitLeft(28.0f, &Icon, &Header);
+		Icon.HMargin((Icon.h - 28.0f) / 2.0f, &Icon);
+		Graphics()->TextureSet(GameClient()->m_CClient.IconTexture());
+		Graphics()->QuadsBegin();
+		Graphics()->SetColor(1.0f, 1.0f, 1.0f, 1.0f);
+		IGraphics::CQuadItem IconQuad(Icon.x, Icon.y, Icon.w, Icon.h);
+		Graphics()->QuadsDrawTL(&IconQuad, 1);
+		Graphics()->QuadsEnd();
+
+		Header.VSplitLeft(10.0f, nullptr, &Title);
+		const float FontSize = 18.0f;
+		TextRender()->SetFontPreset(EFontPreset::TITLE_FONT);
+		const float FirstW = TextRender()->TextWidth(FontSize, "Cr\xe2\x99\xb1stal ");
+		const float TextY = Title.y + (Title.h - FontSize) / 2.0f - 1.0f;
+		TextRender()->TextColor(0.95f, 0.92f, 1.0f, 1.0f);
+		TextRender()->Text(Title.x, TextY, FontSize, "Cr\xe2\x99\xb1stal ");
+		TextRender()->TextColor(0.78f, 0.61f, 1.0f, 1.0f);
+		TextRender()->Text(Title.x + FirstW, TextY, FontSize, "Client");
+		TextRender()->TextColor(TextRender()->DefaultTextColor());
+		TextRender()->SetFontPreset(EFontPreset::DEFAULT_FONT);
+
+		char aBuild[32];
+		str_format(aBuild, sizeof(aBuild), "build #%d", GameClient()->m_CClient.CurrentBuild());
+		CUIRect BuildLabel;
+		Title.VSplitRight(12.0f, &BuildLabel, nullptr);
+		SLabelProperties Props;
+		Props.SetColor(ColorRGBA(0.6f, 0.55f, 0.7f, 1.0f));
+		Ui()->DoLabel(&BuildLabel, aBuild, 11.0f, TEXTALIGN_MR, Props);
+	}
+
 	static CScrollRegion s_ScrollRegion;
 	CScrollRegionParams ScrollParams;
 	ScrollParams.m_ScrollUnit = 60.0f;
@@ -318,115 +420,8 @@ void CMenus::RenderSettingsCClient(CUIRect MainView)
 
 	// ================= right column =================
 
-	// ---- skin builder ----
-	Right.Headline(Localize("Skin Builder"));
-	{
-		CCClient &CClient = GameClient()->m_CClient;
-		CUIRect Area = Right.Line(170.0f);
-		CUIRect PreviewBox, Controls;
-		Area.VSplitLeft(130.0f, &PreviewBox, &Controls);
-		Controls.VSplitLeft(10.0f, nullptr, &Controls);
-		PreviewBox.h = 130.0f;
-		PreviewBox.Draw(ColorRGBA(0.06f, 0.02f, 0.12f, 0.8f), IGraphics::CORNER_ALL, 10.0f);
-
-		// preview: the composed skin drawn like a tee (back foot, body, front foot, eyes)
-		const IGraphics::CTextureHandle Texture = CClient.SkinBuilderPreview();
-		if(Texture.IsValid())
-		{
-			const vec2 Center = PreviewBox.Center() + vec2(0.0f, -6.0f);
-			const float Size = 96.0f;
-			Graphics()->TextureSet(Texture);
-			Graphics()->QuadsBegin();
-			Graphics()->SetColor(1.0f, 1.0f, 1.0f, 1.0f);
-			auto Part = [&](float U0, float V0, float U1, float V1, vec2 Pos, float PartW, float PartH) {
-				Graphics()->QuadsSetSubset(U0, V0, U1, V1);
-				IGraphics::CQuadItem Quad(Pos.x, Pos.y, PartW, PartH);
-				Graphics()->QuadsDraw(&Quad, 1);
-			};
-			const vec2 BackFoot = Center + vec2(-Size * 0.11f, Size * 0.3f);
-			const vec2 FrontFoot = Center + vec2(Size * 0.11f, Size * 0.33f);
-			const vec2 BodyPos = Center + vec2(0.0f, -Size * 0.04f);
-			// outlines first
-			Part(0.75f, 0.5f, 1.0f, 0.75f, BackFoot, Size * 0.5f, Size * 0.25f);
-			Part(0.375f, 0.0f, 0.75f, 0.75f, BodyPos, Size, Size);
-			Part(0.75f, 0.5f, 1.0f, 0.75f, FrontFoot, Size * 0.5f, Size * 0.25f);
-			Part(0.75f, 0.25f, 1.0f, 0.5f, BackFoot, Size * 0.5f, Size * 0.25f);
-			Part(0.0f, 0.0f, 0.375f, 0.75f, BodyPos, Size, Size);
-			Part(0.75f, 0.25f, 1.0f, 0.5f, FrontFoot, Size * 0.5f, Size * 0.25f);
-			const float EyeSize = Size * 0.4f;
-			Part(0.25f, 0.75f, 0.375f, 1.0f, BodyPos + vec2(Size * 0.05f, -Size * 0.09f), EyeSize, EyeSize);
-			Part(0.375f, 0.75f, 0.25f, 1.0f, BodyPos + vec2(Size * 0.2f, -Size * 0.09f), EyeSize, EyeSize);
-			Graphics()->QuadsSetSubset(0.0f, 0.0f, 1.0f, 1.0f);
-			Graphics()->QuadsEnd();
-		}
-		else
-		{
-			Ui()->DoLabel(&PreviewBox, Localize("Parts not found"), 11.0f, TEXTALIGN_MC);
-		}
-
-		// arrows for every part
-		static CButtonContainer s_aSbButtons[12];
-		int ButtonIndex = 0;
-		auto ArrowRow = [&](const char *pLabel, int *pValue, int Count, bool IsColor) {
-			CUIRect Row, Label, Prev, Next, Value;
-			Controls.HSplitTop(CC_LINE, &Row, &Controls);
-			Controls.HSplitTop(4.0f, nullptr, &Controls);
-			Row.VSplitLeft(70.0f, &Label, &Row);
-			Ui()->DoLabel(&Label, pLabel, 12.0f, TEXTALIGN_ML);
-			Row.VSplitLeft(22.0f, &Prev, &Row);
-			Row.VSplitRight(22.0f, &Row, &Next);
-			Value = Row;
-			if(DoButton_Menu(&s_aSbButtons[ButtonIndex++], "<", 0, &Prev, BUTTONFLAG_LEFT, nullptr, IGraphics::CORNER_L, 5.0f))
-				*pValue = (*pValue + Count - 1) % Count;
-			if(DoButton_Menu(&s_aSbButtons[ButtonIndex++], ">", 0, &Next, BUTTONFLAG_LEFT, nullptr, IGraphics::CORNER_R, 5.0f))
-				*pValue = (*pValue + 1) % Count;
-			if(IsColor)
-			{
-				Value.Draw(CCClient::SkinBuilderColor(*pValue), IGraphics::CORNER_NONE, 0.0f);
-			}
-			else
-			{
-				Value.Draw(ColorRGBA(0.15f, 0.08f, 0.25f, 0.8f), IGraphics::CORNER_NONE, 0.0f);
-				char aBuf[16];
-				str_format(aBuf, sizeof(aBuf), "%d / %d", *pValue + 1, Count);
-				Ui()->DoLabel(&Value, aBuf, 12.0f, TEXTALIGN_MC);
-			}
-		};
-		ArrowRow(Localize("Body"), &g_Config.m_CcSbBody, CCClient::SB_PARTS, false);
-		ArrowRow(Localize("Ears"), &g_Config.m_CcSbEars, CCClient::SB_PARTS, false);
-		ArrowRow(Localize("Feet"), &g_Config.m_CcSbFeet, CCClient::SB_PARTS, false);
-		ArrowRow(Localize("Face"), &g_Config.m_CcSbEyes, CCClient::SB_PARTS, false);
-		ArrowRow(Localize("Body color"), &g_Config.m_CcSbBodyColor, CCClient::SB_COLORS, true);
-		ArrowRow(Localize("Feet color"), &g_Config.m_CcSbFeetColor, CCClient::SB_COLORS, true);
-
-		// name + save
-		static CLineInput s_SkinNameInput(g_Config.m_CcSbName, sizeof(g_Config.m_CcSbName));
-		CUIRect Row = Right.Line();
-		CUIRect NameBox, SaveButton;
-		Row.VSplitRight(150.0f, &NameBox, &SaveButton);
-		NameBox.VSplitRight(6.0f, &NameBox, nullptr);
-		Ui()->DoEditBox(&s_SkinNameInput, &NameBox, 12.0f);
-		static CButtonContainer s_SaveSkinButton;
-		static float s_SavedTime = -100.0f;
-		static bool s_SaveOk = false;
-		if(DoButton_Menu(&s_SaveSkinButton, Localize("Save and wear"), 0, &SaveButton, BUTTONFLAG_LEFT, nullptr, IGraphics::CORNER_ALL, 6.0f, 0.0f, ColorRGBA(0.45f, 0.2f, 0.75f, 0.8f)))
-		{
-			s_SaveOk = CClient.SkinBuilderSave();
-			s_SavedTime = Client()->GlobalTime();
-		}
-		if(Client()->GlobalTime() - s_SavedTime < 4.0f)
-			Right.Note(s_SaveOk ? Localize("Saved to your skins and put on") : Localize("Could not save the skin"), s_SaveOk ? ColorRGBA(0.5f, 1.0f, 0.6f, 1.0f) : ColorRGBA(1.0f, 0.4f, 0.4f, 1.0f));
-		Right.Note(Localize("Others only see it if they have this skin too"), ColorRGBA(0.6f, 0.6f, 0.75f, 1.0f));
-	}
-	Right.Gap();
-
 	// ---- team ----
 	Right.Headline(Localize("Team"));
-	Right.Check(&g_Config.m_CcFrozenHud, Localize("Show team at the top (frozen tees darkened)"));
-	if(g_Config.m_CcFrozenHud)
-		Right.Slider(&g_Config.m_CcFrozenHudSize, Localize("Tee size"), 8, 24);
-	Right.Check(&g_Config.m_CcFrozenText, Localize("Show alive / total counter"));
-	Right.Check(&g_Config.m_CcFrozenHudTeamOnly, Localize("Only while in a team"));
 	Right.Check(&g_Config.m_CcLastNotify, Localize("Warn when you are the last one alive"));
 	Right.Check(&g_Config.m_ClShowFreezeBars, Localize("Freeze bars under frozen tees"));
 	Right.Check(&g_Config.m_CcPlayerIndicator, Localize("Show teammates that are off screen"));

@@ -1368,46 +1368,6 @@ set(EXPECTED_DATA
   cclient/save_stand_under.png
   cclient/save_thanks.png
   cclient/save_wait.png
-  cclient/skinparts/body_0.png
-  cclient/skinparts/body_1.png
-  cclient/skinparts/body_2.png
-  cclient/skinparts/body_3.png
-  cclient/skinparts/body_4.png
-  cclient/skinparts/body_5.png
-  cclient/skinparts/body_6.png
-  cclient/skinparts/body_7.png
-  cclient/skinparts/body_8.png
-  cclient/skinparts/body_9.png
-  cclient/skinparts/ears_0.png
-  cclient/skinparts/ears_1.png
-  cclient/skinparts/ears_2.png
-  cclient/skinparts/ears_3.png
-  cclient/skinparts/ears_4.png
-  cclient/skinparts/ears_5.png
-  cclient/skinparts/ears_6.png
-  cclient/skinparts/ears_7.png
-  cclient/skinparts/ears_8.png
-  cclient/skinparts/ears_9.png
-  cclient/skinparts/eyes_0.png
-  cclient/skinparts/eyes_1.png
-  cclient/skinparts/eyes_2.png
-  cclient/skinparts/eyes_3.png
-  cclient/skinparts/eyes_4.png
-  cclient/skinparts/eyes_5.png
-  cclient/skinparts/eyes_6.png
-  cclient/skinparts/eyes_7.png
-  cclient/skinparts/eyes_8.png
-  cclient/skinparts/eyes_9.png
-  cclient/skinparts/feet_0.png
-  cclient/skinparts/feet_1.png
-  cclient/skinparts/feet_2.png
-  cclient/skinparts/feet_3.png
-  cclient/skinparts/feet_4.png
-  cclient/skinparts/feet_5.png
-  cclient/skinparts/feet_6.png
-  cclient/skinparts/feet_7.png
-  cclient/skinparts/feet_8.png
-  cclient/skinparts/feet_9.png
   censorlist.txt
   communityicons/none.png
   countryflags/AD.png

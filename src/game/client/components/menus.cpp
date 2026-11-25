@@ -2428,9 +2428,10 @@ void CMenus::UpdateColors()
 {
 	ms_GuiColor = color_cast<ColorRGBA>(ColorHSLA(g_Config.m_UiColor, true));
 
-	ms_ColorTabbarInactiveOutgame = ColorRGBA(0.0f, 0.0f, 0.0f, 0.25f);
-	ms_ColorTabbarActiveOutgame = ColorRGBA(0.0f, 0.0f, 0.0f, 0.5f);
-	ms_ColorTabbarHoverOutgame = ColorRGBA(1.0f, 1.0f, 1.0f, 0.25f);
+	// C-Client: dark tabs, the active one violet
+	ms_ColorTabbarInactiveOutgame = ColorRGBA(0.06f, 0.03f, 0.12f, 0.45f);
+	ms_ColorTabbarActiveOutgame = ColorRGBA(0.48f, 0.22f, 0.84f, 0.75f);
+	ms_ColorTabbarHoverOutgame = ColorRGBA(1.0f, 1.0f, 1.0f, 0.14f);
 
 	const float ColorIngameScaleI = 0.5f;
 	const float ColorIngameScaleA = 0.2f;

@@ -2799,18 +2799,6 @@ Prediction strength
 Predict freeze
 == Предсказывать заморозку
 
-Show team at the top (frozen tees darkened)
-== Команда сверху экрана (замороженные затемнены)
-
-Tee size
-== Размер ти
-
-Show alive / total counter
-== Счётчик живых / всего
-
-Only while in a team
-== Только когда ты в команде
-
 Freeze bars under frozen tees
 == Полоски заморозки под ти
 
@@ -3116,36 +3104,6 @@ Normal DDNet input
 
 Only changes what you see, not what the server gets
 == Меняет только то, что видишь ты, а не то, что получает сервер
-
-Skin Builder
-== Конструктор скинов
-
-Parts not found
-== Детали не найдены
-
-Ears
-== Ушки
-
-Face
-== Лицо
-
-Body color
-== Цвет тела
-
-Feet color
-== Цвет ножек
-
-Save and wear
-== Сохранить и надеть
-
-Saved to your skins and put on
-== Сохранено в твои скины и надето
-
-Could not save the skin
-== Не удалось сохранить скин
-
-Others only see it if they have this skin too
-== Другие увидят его, только если у них тоже есть этот скин
 
 Virtual joystick which only aims and moves the mouse pointer relatively.
 == 

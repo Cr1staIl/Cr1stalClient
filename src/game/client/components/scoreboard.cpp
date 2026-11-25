@@ -1337,18 +1337,25 @@ CUi::EPopupMenuFunctionResult CScoreboard::CScoreboardPopupContext::Render(void 
 	constexpr float FontSize = 12.0f;
 	constexpr float ButtonSize = 17.5f;
 
-	// C-Client: soft dark popup
-	View.Draw(ColorRGBA(0.07f, 0.03f, 0.13f, 0.97f), IGraphics::CORNER_ALL, 8.0f);
+	// C-Client: dark card with pill buttons (new design)
+	View.Draw(ColorRGBA(0.07f, 0.047f, 0.125f, 0.96f), IGraphics::CORNER_ALL, 10.0f);
 	View.Margin(Margin, &View);
 
 	auto SoftColor = [pUi](const CButtonContainer *pButton, bool Checked = false) {
-		if(pUi->HotItem() == pButton)
-			return ColorRGBA(0.45f, 0.25f, 0.75f, 0.95f);
-		return Checked ? ColorRGBA(0.32f, 0.16f, 0.55f, 0.9f) : ColorRGBA(0.18f, 0.10f, 0.30f, 0.9f);
+		if(Checked)
+			return pUi->HotItem() == pButton ? ColorRGBA(0.6f, 0.3f, 1.0f, 0.55f) : ColorRGBA(0.6f, 0.3f, 1.0f, 0.38f);
+		return pUi->HotItem() == pButton ? ColorRGBA(1.0f, 1.0f, 1.0f, 0.16f) : ColorRGBA(1.0f, 1.0f, 1.0f, 0.07f);
 	};
-	auto SoftButton = [pUi, &SoftColor](CButtonContainer *pButton, const char *pText, const CUIRect *pRect, float Size, bool Checked = false) {
-		pRect->Draw(SoftColor(pButton, Checked), IGraphics::CORNER_ALL, 6.0f);
-		pUi->DoLabel(pRect, pText, Size, TEXTALIGN_MC);
+	auto SoftButton = [pUi, &SoftColor](CButtonContainer *pButton, const char *pText, const CUIRect *pRect, float Size, bool Checked = false, bool Danger = false) {
+		ColorRGBA Color = SoftColor(pButton, Checked);
+		SLabelProperties Props;
+		if(Danger)
+		{
+			Color = pUi->HotItem() == pButton ? ColorRGBA(1.0f, 0.31f, 0.31f, 0.3f) : ColorRGBA(1.0f, 0.31f, 0.31f, 0.14f);
+			Props.SetColor(ColorRGBA(1.0f, 0.54f, 0.54f, 1.0f));
+		}
+		pRect->Draw(Color, IGraphics::CORNER_ALL, pRect->h / 2.0f);
+		pUi->DoLabel(pRect, pText, Size, TEXTALIGN_MC, Props);
 		return pUi->DoButtonLogic(pButton, 0, pRect, BUTTONFLAG_LEFT);
 	};
 
@@ -1369,7 +1376,7 @@ CUi::EPopupMenuFunctionResult CScoreboard::CScoreboardPopupContext::Render(void 
 
 		Container.VSplitLeft(ActionSize, &Action, &Container);
 
-		ColorRGBA FriendActionColor = Client.m_Friend ? ColorRGBA(0.85f, 0.2f, 0.45f, 0.9f) : SoftColor(&pPopupContext->m_FriendAction);
+		ColorRGBA FriendActionColor = Client.m_Friend ? ColorRGBA(1.0f, 0.15f, 0.85f, 0.55f) : SoftColor(&pPopupContext->m_FriendAction);
 		const char *pFriendActionIcon = pUi->HotItem() == &pPopupContext->m_FriendAction && Client.m_Friend ? FontIcon::HEART_CRACK : FontIcon::HEART;
 		if(pUi->DoButton_FontIcon(&pPopupContext->m_FriendAction, pFriendActionIcon, Client.m_Friend, &Action, BUTTONFLAG_LEFT, ActionCorners, true, FriendActionColor))
 		{
@@ -1486,7 +1493,7 @@ CUi::EPopupMenuFunctionResult CScoreboard::CScoreboardPopupContext::Render(void 
 
 		View.HSplitTop(ItemSpacing * 2, nullptr, &View);
 		View.HSplitTop(ButtonSize, &Container, &View);
-		if(SoftButton(&pPopupContext->m_VoteKickButton, Localize("Vote kick"), &Container, FontSize))
+		if(SoftButton(&pPopupContext->m_VoteKickButton, Localize("Vote kick"), &Container, FontSize, false, true))
 		{
 			pScoreboard->GameClient()->m_Voting.CallvoteKick(pPopupContext->m_ClientId, "");
 			pUi->ClosePopupMenus();
