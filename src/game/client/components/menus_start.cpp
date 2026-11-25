@@ -71,7 +71,6 @@ void CMenusStart::RenderNeonTitle(float CenterX, float Y)
 	}
 
 	float X = CenterX - TotalWidth / 2.0f;
-	const ColorRGBA NoOutline(0.0f, 0.0f, 0.0f, 0.0f);
 	for(int Index = 0; Index < NumChars; Index++)
 	{
 		const SChar &Char = aChars[Index];
@@ -93,16 +92,16 @@ void CMenusStart::RenderNeonTitle(float CenterX, float Y)
 			Graphics()->TextureClear();
 			Graphics()->BlendAdditive();
 			Graphics()->QuadsBegin();
-			for(int Ring = 14; Ring >= 1; Ring--)
+			for(int Ring = 20; Ring >= 1; Ring--)
 			{
-				Graphics()->SetColor(Color.WithAlpha(0.012f));
-				Graphics()->DrawCircle(HaloCenter.x, HaloCenter.y, Char.m_Size * 0.62f * Ring / 14.0f, 32);
+				Graphics()->SetColor(Color.WithAlpha(0.006f));
+				Graphics()->DrawCircle(HaloCenter.x, HaloCenter.y, Char.m_Size * 0.55f * Ring / 20.0f, 48);
 			}
 			Graphics()->QuadsEnd();
 			Graphics()->BlendNormal();
 		}
 
-		// one text container per letter, drawn several times: a tight smooth glow plus the core
+		// crisp letter with a thin neon outline (no shifted copies, so no jagged steps)
 		CTextCursor Cursor;
 		Cursor.SetPosition(vec2(CharX, CharY));
 		Cursor.m_FontSize = Char.m_Size;
@@ -110,17 +109,7 @@ void CMenusStart::RenderNeonTitle(float CenterX, float Y)
 		TextRender()->CreateTextContainer(Container, &Cursor, Char.m_aText);
 		if(Container.Valid())
 		{
-			const float aDist[] = {0.6f, 1.2f, 1.9f, 2.7f};
-			const float aAlpha[] = {0.16f, 0.09f, 0.05f, 0.025f};
-			for(int Ring = 0; Ring < 4; Ring++)
-			{
-				for(int i = 0; i < 12; i++)
-				{
-					const float Angle = i * pi / 6.0f + Ring * 0.26f;
-					TextRender()->RenderTextContainer(Container, Color.WithAlpha(aAlpha[Ring]), NoOutline, std::cos(Angle) * aDist[Ring], std::sin(Angle) * aDist[Ring]);
-				}
-			}
-			TextRender()->RenderTextContainer(Container, LerpColor(Color, ColorRGBA(1.0f, 1.0f, 1.0f, 1.0f), 0.35f), NoOutline, 0.0f, 0.0f);
+			TextRender()->RenderTextContainer(Container, LerpColor(Color, ColorRGBA(1.0f, 1.0f, 1.0f, 1.0f), 0.45f), Color.WithAlpha(0.55f), 0.0f, 0.0f);
 			TextRender()->DeleteTextContainer(Container);
 		}
 

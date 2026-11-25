@@ -75,6 +75,7 @@ public:
 	// glowing picture behind your tee (cc_aura 1..NUM_AURAS)
 	static constexpr int NUM_AURAS = 4;
 	void RenderAura(vec2 Pos);
+	IGraphics::CTextureHandle AuraTexture(int Index) const { return m_aAuraTextures[Index]; }
 
 	// music island at the top of the screen (called by the HUD, HUD coordinates)
 	void RenderMusicIsland(float ScreenWidth);

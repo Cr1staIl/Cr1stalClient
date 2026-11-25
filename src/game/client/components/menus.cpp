@@ -30,6 +30,7 @@
 
 #include <game/client/animstate.h>
 #include <game/client/components/binds.h>
+#include <game/client/components/cclient.h>
 #include <game/client/components/console.h>
 #include <game/client/components/key_binder.h>
 #include <game/client/components/menu_background.h>
@@ -2497,12 +2498,12 @@ static void NeonCross(IGraphics *pGraphics, vec2 Pos, float Size, float Angle, C
 	const vec2 Up = direction(Angle - pi / 2.0f);
 	const vec2 BarCenter = Pos + Up * (Size * 0.28f);
 	// glow layers from wide and faint to thin and bright
-	const float aWidth[] = {3.2f, 1.9f, 1.0f, 0.45f};
-	const float aAlpha[] = {0.05f, 0.10f, 0.22f, 0.9f};
-	for(int Layer = 0; Layer < 4; Layer++)
+	const float aWidth[] = {1.1f, 0.65f, 0.3f};
+	const float aAlpha[] = {0.07f, 0.16f, 0.95f};
+	for(int Layer = 0; Layer < 3; Layer++)
 	{
-		const float W = aWidth[Layer] * std::max(0.6f, Size / 18.0f);
-		ColorRGBA C = Layer == 3 ? ColorRGBA(Color.r * 0.6f + 0.4f, Color.g * 0.6f + 0.4f, Color.b * 0.6f + 0.4f, 1.0f) : Color;
+		const float W = aWidth[Layer];
+		ColorRGBA C = Layer == 2 ? ColorRGBA(Color.r * 0.6f + 0.4f, Color.g * 0.6f + 0.4f, Color.b * 0.6f + 0.4f, 1.0f) : Color;
 		pGraphics->SetColor(C.WithAlpha(aAlpha[Layer] * Alpha));
 		IGraphics::CFreeformItem aItems[2] = {
 			NeonRotatedRect(Pos, W, Size, Angle), // vertical bar
@@ -2562,12 +2563,10 @@ void CMenus::RenderNeonBackground()
 		const float Size = 0.25f + 0.25f * Layer + 0.3f * NeonHash(i, 23);
 		const float Twinkle = 0.45f + 0.55f * (0.5f + 0.5f * std::sin(Time * (0.8f + 2.2f * NeonHash(i, 24)) + i * 2.7f));
 		const ColorRGBA Tint = NeonHash(i, 25) < 0.7f ? ColorRGBA(0.85f, 0.9f, 1.0f, 1.0f) : NeonColor(i, 1.0f);
-		Graphics()->SetColor(Tint.WithAlpha(0.12f * Twinkle));
-		IGraphics::CQuadItem Halo(Px, Py, Size * 5.0f, Size * 5.0f);
-		Graphics()->QuadsDraw(&Halo, 1);
-		Graphics()->SetColor(Tint.WithAlpha(0.85f * Twinkle));
-		IGraphics::CQuadItem Star(Px, Py, Size, Size);
-		Graphics()->QuadsDraw(&Star, 1);
+		Graphics()->SetColor(Tint.WithAlpha(0.06f * Twinkle));
+		Graphics()->DrawCircle(Px, Py, Size * 1.6f, 10);
+		Graphics()->SetColor(Tint.WithAlpha(0.8f * Twinkle));
+		Graphics()->DrawCircle(Px, Py, Size * 0.5f, 8);
 	}
 	Graphics()->QuadsEnd();
 
@@ -2587,16 +2586,40 @@ void CMenus::RenderNeonBackground()
 			{
 				const vec2 P = Head - Dir * (Seg * 2.2f);
 				Graphics()->SetColor(0.8f, 0.95f, 1.0f, 0.5f * Fade * (1.0f - Seg / 20.0f));
-				IGraphics::CQuadItem Dot(P.x, P.y, 1.1f - Seg * 0.03f, 1.1f - Seg * 0.03f);
-				Graphics()->QuadsDraw(&Dot, 1);
+				Graphics()->DrawCircle(P.x, P.y, 0.45f - Seg * 0.015f, 8);
 			}
 			Graphics()->QuadsEnd();
 		}
 	}
 
+	// the four cross pictures float slowly through the background
+	for(int i = 0; i < 8; i++)
+	{
+		const IGraphics::CTextureHandle Texture = GameClient()->m_CClient.AuraTexture(i % CCClient::NUM_AURAS);
+		if(!Texture.IsValid())
+			continue;
+		const float Period = ScreenHeight + 160.0f;
+		const float Speed = 1.5f + 2.5f * NeonHash(i, 41);
+		const float Py = ScreenHeight + 80.0f - std::fmod(NeonHash(i, 42) * Period + Time * Speed, Period);
+		const float Px = (0.06f + 0.88f * NeonHash(i, 43)) * ScreenWidth + 18.0f * std::sin(Time * (0.08f + 0.06f * NeonHash(i, 44)) + i * 2.0f);
+		const float Size = 34.0f + 34.0f * NeonHash(i, 45);
+		// fade smoothly in at the bottom and out at the top
+		const float EdgeFade = std::clamp(std::min(Py + 60.0f, ScreenHeight + 60.0f - Py) / 90.0f, 0.0f, 1.0f);
+		const float Breath = 0.75f + 0.25f * std::sin(Time * 0.6f + i * 1.7f);
+		Graphics()->TextureSet(Texture);
+		Graphics()->QuadsBegin();
+		Graphics()->SetColor(1.0f, 1.0f, 1.0f, 0.38f * EdgeFade * Breath);
+		Graphics()->QuadsSetRotation(0.15f * std::sin(Time * 0.2f + i));
+		IGraphics::CQuadItem Quad(Px, Py, Size, Size);
+		Graphics()->QuadsDraw(&Quad, 1);
+		Graphics()->QuadsSetRotation(0.0f);
+		Graphics()->QuadsEnd();
+	}
+	Graphics()->TextureClear();
+
 	// floating thin neon crosses
 	Graphics()->QuadsBegin();
-	for(int i = 0; i < 16; i++)
+	for(int i = 0; i < 12; i++)
 	{
 		const float Speed = 2.5f + 4.0f * NeonHash(i, 11);
 		const float Py = ScreenHeight + 30.0f - std::fmod(NeonHash(i, 12) * (ScreenHeight + 60.0f) + Time * Speed, ScreenHeight + 60.0f);
