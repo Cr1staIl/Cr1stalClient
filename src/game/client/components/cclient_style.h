@@ -53,6 +53,9 @@ namespace CCStyle
 	// slow, smooth breathing between 0.65 and 1 (Phase shifts it per element)
 	float NeonPulse(float Time, float Phase = 0.0f);
 
+	// the current texture on a rectangle with round corners (call between nothing, it does its own QuadsBegin/End)
+	void TexturedRoundRect(IGraphics *pGraphics, float X, float Y, float W, float H, float Rounding, ColorRGBA Color = ColorRGBA(1.0f, 1.0f, 1.0f, 1.0f));
+
 	// upper case for latin and cyrillic text, for small titles like PLAYTIME
 	std::string Upper(const char *pText);
 

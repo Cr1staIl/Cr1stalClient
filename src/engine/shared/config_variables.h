@@ -753,7 +753,7 @@ MACRO_CONFIG_INT(CcAutoVoteWhenFarTime, cc_auto_vote_when_far_time, 5, 0, 20, CF
 MACRO_CONFIG_STR(CcExecuteOnConnect, cc_execute_on_connect, 100, "", CFGFLAG_CLIENT | CFGFLAG_SAVE, "Console command to run before connecting to a server")
 MACRO_CONFIG_STR(CcExecuteOnJoin, cc_execute_on_join, 100, "", CFGFLAG_CLIENT | CFGFLAG_SAVE, "Console command to run after joining a server, after cc_execute_on_join_delay ticks")
 MACRO_CONFIG_INT(CcExecuteOnJoinDelay, cc_execute_on_join_delay, 7, 7, 50000, CFGFLAG_CLIENT | CFGFLAG_SAVE, "Tick delay before executing cc_execute_on_join")
-MACRO_CONFIG_INT(CcClientBadge, cc_client_badge, 1, 0, 1, CFGFLAG_CLIENT | CFGFLAG_SAVE, "C-Client: show a diamond before the names of Cr1stal Client players")
+MACRO_CONFIG_INT(CcClientBadge, cc_client_badge, 1, 0, 1, CFGFLAG_CLIENT | CFGFLAG_SAVE, "C-Client: show the client avatar before the names of Cr1stal Client players")
 MACRO_CONFIG_INT(CcOthersPacks, cc_others_packs, 1, 0, 1, CFGFLAG_CLIENT | CFGFLAG_SAVE, "C-Client: show other Cr1stal Client players with their own game texture pack")
 MACRO_CONFIG_INT(CcSharePresence, cc_share_presence, 1, 0, 1, CFGFLAG_CLIENT | CFGFLAG_SAVE, "C-Client: let other Cr1stal Client players see that you use it and see your game pack")
 MACRO_CONFIG_STR(CcAssetSounds, cc_asset_sounds, 50, "default", CFGFLAG_CLIENT | CFGFLAG_SAVE, "C-Client: sound pack, a folder in assets/sounds")

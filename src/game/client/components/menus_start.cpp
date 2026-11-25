@@ -136,17 +136,18 @@ void CMenusStart::RenderStartMenu(CUIRect MainView)
 		if(State == CCClient::EUpdateState::AVAILABLE || State == CCClient::EUpdateState::FAILED ||
 			State == CCClient::EUpdateState::DOWNLOADING || State == CCClient::EUpdateState::INSTALLING)
 		{
+			// small and quiet in the top right corner
 			CUIRect UpdateButton;
-			UpdateButton.x = MainView.w / 2.0f - 120.0f;
-			UpdateButton.y = 150.0f;
-			UpdateButton.w = 240.0f;
-			UpdateButton.h = 26.0f;
+			UpdateButton.w = 150.0f;
+			UpdateButton.h = 18.0f;
+			UpdateButton.x = MainView.x + MainView.w - UpdateButton.w - 12.0f;
+			UpdateButton.y = MainView.y + 10.0f;
 			char aLabel[128];
 			if(State == CCClient::EUpdateState::DOWNLOADING || State == CCClient::EUpdateState::INSTALLING)
 			{
 				Ui()->RenderProgressBar(UpdateButton, CClient.UpdateProgress());
 				str_format(aLabel, sizeof(aLabel), "%s %d%%", Localize("Downloading update"), round_to_int(CClient.UpdateProgress() * 100.0f));
-				Ui()->DoLabel(&UpdateButton, aLabel, 12.0f, TEXTALIGN_MC);
+				Ui()->DoLabel(&UpdateButton, aLabel, 9.0f, TEXTALIGN_MC);
 			}
 			else
 			{
@@ -155,8 +156,10 @@ void CMenusStart::RenderStartMenu(CUIRect MainView)
 				else
 					str_format(aLabel, sizeof(aLabel), "%s (#%d)", Localize("Update Cr1stal Client"), CClient.LatestBuild());
 				static CButtonContainer s_UpdateButton;
-				const float Pulse = 0.5f + 0.5f * std::sin(Client()->GlobalTime() * 3.0f);
-				if(GameClient()->m_Menus.DoButton_Menu(&s_UpdateButton, aLabel, 0, &UpdateButton, BUTTONFLAG_LEFT, nullptr, IGraphics::CORNER_ALL, 13.0f, 0.0f, ColorRGBA(0.204f, 0.78f, 0.349f, 0.3f + 0.2f * Pulse)))
+				TextRender()->TextColor(ColorRGBA(1.0f, 1.0f, 1.0f, 0.7f));
+				const bool Pressed = GameClient()->m_Menus.DoButton_Menu(&s_UpdateButton, aLabel, 0, &UpdateButton, BUTTONFLAG_LEFT, nullptr, IGraphics::CORNER_ALL, 9.0f, 0.35f, ColorRGBA(0.55f, 0.55f, 0.58f, 0.25f));
+				TextRender()->TextColor(TextRender()->DefaultTextColor());
+				if(Pressed)
 					CClient.StartUpdate();
 			}
 		}

@@ -835,12 +835,12 @@ void CScoreboard::RenderScoreboard(CUIRect Scoreboard, int Team, int CountStart,
 
 			// name
 			{
-				// C-Client: the diamond of Cr1stal Client players, like an avatar of the client
+				// C-Client: the client avatar of Cr1stal Client players
 				float BadgeWidth = 0.0f;
 				if(g_Config.m_CcClientBadge && GameClient()->m_CPresence.IsCrystal(pInfo->m_ClientId))
 				{
-					BadgeWidth = FontSize * 1.2f;
-					GameClient()->m_CPresence.RenderDiamond(vec2(NameOffset + FontSize * 0.5f, Row.y + Row.h / 2.0f - FontSize * 0.04f), FontSize * 0.95f, TextColor.a);
+					BadgeWidth = FontSize * 1.4f;
+					GameClient()->m_CPresence.RenderBadge(vec2(NameOffset + FontSize * 0.55f, Row.y + Row.h / 2.0f), FontSize * 1.1f, TextColor.a);
 				}
 				if(g_Config.m_ClShowIds)
 				{

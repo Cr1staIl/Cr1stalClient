@@ -3480,9 +3480,6 @@ no
 Cr1stal players
 == Игроки Cr1stal
 
-Diamond before their names
-== Алмаз перед их ником
-
 In the scoreboard and above the tees
 == В табе и над ти
 
@@ -3494,12 +3491,6 @@ Their hook and weapons are drawn with their own game pack
 
 Show that I use Cr1stal Client
 == Показывать, что я с Cr1stal Client
-
-Others with Cr1stal Client see your diamond and your game pack
-== Другие с Cr1stal Client видят твой алмаз и твой game-пак
-
-Virtual joystick which only aims and moves the mouse pointer relatively.
-== 
 
 Skins
 == Скины
@@ -3545,3 +3536,18 @@ Default
 
 Neon
 == Неон
+
+Virtual joystick which only aims and moves the mouse pointer relatively.
+== 
+
+Show my own name
+== Показывать свой ник
+
+Your name above your own tee
+== Твой ник над твоим ти
+
+Client avatar before their names
+== Аватарка клиента перед их ником
+
+Others with Cr1stal Client see your avatar and your game pack
+== Другие с Cr1stal Client видят твою аватарку и твой game-пак

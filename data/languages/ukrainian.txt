@@ -3216,6 +3216,12 @@ Other prediction margin while frozen
 Margin while frozen
 == 
 
+Show my own name
+== 
+
+Your name above your own tee
+== 
+
 Ping colored circle next to names
 == 
 
@@ -3273,7 +3279,7 @@ Moving tiles in entities
 Cr1stal players
 == 
 
-Diamond before their names
+Client avatar before their names
 == 
 
 In the scoreboard and above the tees
@@ -3288,7 +3294,7 @@ Their hook and weapons are drawn with their own game pack
 Show that I use Cr1stal Client
 == 
 
-Others with Cr1stal Client see your diamond and your game pack
+Others with Cr1stal Client see your avatar and your game pack
 == 
 
 Rainbow

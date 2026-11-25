@@ -1,6 +1,8 @@
 /* Cr1stal Client: who on the server also uses Cr1stal Client, and their game packs. Based on DDNet, see licence.txt. */
 #include "cclient_presence.h"
 
+#include "cclient_style.h"
+
 #include <base/hash.h>
 #include <base/io.h>
 #include <base/math.h>
@@ -425,62 +427,12 @@ void CCPresence::OnUpdate()
 	}
 }
 
-void CCPresence::RenderDiamond(vec2 Center, float Size, float Alpha) const
+void CCPresence::RenderBadge(vec2 Center, float Size, float Alpha) const
 {
-	// a cut gem: three crown facets on top, three pavilion facets to the tip
-	const float s = Size;
-	const vec2 TopL = Center + vec2(-0.26f, -0.36f) * s, TopML = Center + vec2(-0.08f, -0.36f) * s;
-	const vec2 TopMR = Center + vec2(0.08f, -0.36f) * s, TopR = Center + vec2(0.26f, -0.36f) * s;
-	const vec2 GirL = Center + vec2(-0.5f, -0.06f) * s, GirML = Center + vec2(-0.18f, -0.06f) * s;
-	const vec2 GirMR = Center + vec2(0.18f, -0.06f) * s, GirR = Center + vec2(0.5f, -0.06f) * s;
-	const vec2 Tip = Center + vec2(0.0f, 0.5f) * s;
-
-	Graphics()->TextureClear();
-	Graphics()->QuadsBegin();
-
-	// dark edge so it reads on bright maps
-	{
-		const float o = s * 0.09f;
-		Graphics()->SetColor(0.02f, 0.05f, 0.1f, 0.55f * Alpha);
-		IGraphics::CFreeformItem aShadow[] = {
-			IGraphics::CFreeformItem(TopL + vec2(-o, -o), TopR + vec2(o, -o), GirL + vec2(-o * 1.4f, 0.0f), GirR + vec2(o * 1.4f, 0.0f)),
-			IGraphics::CFreeformItem(GirL + vec2(-o * 1.4f, 0.0f), GirR + vec2(o * 1.4f, 0.0f), Tip + vec2(0.0f, o * 1.6f), Tip + vec2(0.0f, o * 1.6f)),
-		};
-		Graphics()->QuadsDrawFreeform(aShadow, std::size(aShadow));
-	}
-
-	struct SFacet
-	{
-		vec2 m_A, m_B, m_C, m_D;
-		ColorRGBA m_Color;
-	};
-	const SFacet aFacets[] = {
-		{TopL, TopML, GirL, GirML, ColorRGBA(0.62f, 0.9f, 1.0f, 1.0f)},
-		{TopML, TopMR, GirML, GirMR, ColorRGBA(0.9f, 0.98f, 1.0f, 1.0f)},
-		{TopMR, TopR, GirMR, GirR, ColorRGBA(0.48f, 0.8f, 0.98f, 1.0f)},
-		{GirL, GirML, Tip, Tip, ColorRGBA(0.36f, 0.72f, 0.96f, 1.0f)},
-		{GirML, GirMR, Tip, Tip, ColorRGBA(0.58f, 0.88f, 1.0f, 1.0f)},
-		{GirMR, GirR, Tip, Tip, ColorRGBA(0.24f, 0.55f, 0.9f, 1.0f)},
-	};
-	for(const SFacet &Facet : aFacets)
-	{
-		Graphics()->SetColor(Facet.m_Color.r, Facet.m_Color.g, Facet.m_Color.b, Alpha);
-		IGraphics::CFreeformItem Item(Facet.m_A, Facet.m_B, Facet.m_C, Facet.m_D);
-		Graphics()->QuadsDrawFreeform(&Item, 1);
-	}
-
-	// a slow glint that runs over the top
-	const float Glint = std::fmod(Client()->LocalTime() * 0.35f, 1.0f);
-	if(Glint < 0.3f)
-	{
-		const float k = Glint / 0.3f;
-		const float x = -0.2f + 0.4f * k;
-		const float a = std::sin(k * pi) * 0.85f * Alpha;
-		Graphics()->SetColor(1.0f, 1.0f, 1.0f, a);
-		IGraphics::CFreeformItem Shine(
-			Center + vec2(x - 0.02f, -0.34f) * s, Center + vec2(x + 0.06f, -0.34f) * s,
-			Center + vec2(x - 0.1f, -0.08f) * s, Center + vec2(x - 0.02f, -0.08f) * s);
-		Graphics()->QuadsDrawFreeform(&Shine, 1);
-	}
-	Graphics()->QuadsEnd();
+	// the client icon, like a small avatar of Cr1stal Client
+	const IGraphics::CTextureHandle Icon = GameClient()->m_CClient.IconTexture();
+	if(!Icon.IsValid() || Icon.IsNullTexture())
+		return;
+	Graphics()->TextureSet(Icon);
+	CCStyle::TexturedRoundRect(Graphics(), Center.x - Size / 2.0f, Center.y - Size / 2.0f, Size, Size, Size * 0.22f, ColorRGBA(1.0f, 1.0f, 1.0f, Alpha));
 }

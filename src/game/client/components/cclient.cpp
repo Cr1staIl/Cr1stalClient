@@ -1,6 +1,8 @@
 /* Cr1stal Client (C-Client): save wheel and map markers. Based on DDNet, see licence.txt. */
 #include "cclient.h"
 
+#include "cclient_style.h"
+
 #include <base/io.h>
 #include <base/log.h>
 #include <base/process.h>
@@ -861,11 +863,7 @@ void CCClient::RenderMusicIsland(float ScreenWidth)
 	// left picture: cover when music plays, client icon otherwise
 	const bool UseCover = Music && ShowCover && m_CoverTexture.IsValid() && MusicBlend > 0.5f;
 	Graphics()->TextureSet(UseCover ? m_CoverTexture : m_IconTexture);
-	Graphics()->QuadsBegin();
-	Graphics()->SetColor(1.0f, 1.0f, 1.0f, 1.0f);
-	IGraphics::CQuadItem Picture(CursorX, CenterY - IconSize / 2.0f, IconSize, IconSize);
-	Graphics()->QuadsDrawTL(&Picture, 1);
-	Graphics()->QuadsEnd();
+	CCStyle::TexturedRoundRect(Graphics(), CursorX, CenterY - IconSize / 2.0f, IconSize, IconSize, IconSize * 0.24f);
 	CursorX += IconSize + Pad * 1.8f;
 
 	// time on the right side

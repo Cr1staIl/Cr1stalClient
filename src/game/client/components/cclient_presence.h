@@ -36,8 +36,8 @@ public:
 	// hash of the other player's game pack when it is downloaded, else nullptr
 	const char *PackOf(int ClientId) const;
 
-	// a small diamond, the badge of Cr1stal Client players
-	void RenderDiamond(vec2 Center, float Size, float Alpha) const;
+	// the client icon as a small avatar, the badge of Cr1stal Client players
+	void RenderBadge(vec2 Center, float Size, float Alpha) const;
 
 private:
 	struct SEntry

@@ -489,6 +489,7 @@ void CMenus::RenderSettingsCClient(CUIRect MainView)
 	{
 		CCcColumn &C = Col(CARD_TEES);
 		C.BeginCard(CARD_TEES, Localize("Tees"));
+		C.Check(&g_Config.m_ClNamePlatesOwn, Localize("Show my own name"), Localize("Your name above your own tee"));
 		C.Check(&g_Config.m_CcShowHitbox, Localize("Show real hitbox of tees"));
 		C.Check(&g_Config.m_CcNameplatePingCircle, Localize("Ping colored circle next to names"));
 		C.Check(&g_Config.m_CcNameplateCountry, Localize("Country flag next to names"));
@@ -540,9 +541,9 @@ void CMenus::RenderSettingsCClient(CUIRect MainView)
 		C.Check(&g_Config.m_CrNeonBackground, Localize("Neon menu background"));
 		C.Gap(4.0f);
 		C.Caption(Localize("Cr1stal players"));
-		C.Check(&g_Config.m_CcClientBadge, Localize("Diamond before their names"), Localize("In the scoreboard and above the tees"));
+		C.Check(&g_Config.m_CcClientBadge, Localize("Client avatar before their names"), Localize("In the scoreboard and above the tees"));
 		C.Check(&g_Config.m_CcOthersPacks, Localize("See their texture packs"), Localize("Their hook and weapons are drawn with their own game pack"));
-		C.Check(&g_Config.m_CcSharePresence, Localize("Show that I use Cr1stal Client"), Localize("Others with Cr1stal Client see your diamond and your game pack"));
+		C.Check(&g_Config.m_CcSharePresence, Localize("Show that I use Cr1stal Client"), Localize("Others with Cr1stal Client see your avatar and your game pack"));
 		C.Gap(4.0f);
 		C.Caption(Localize("Rainbow"));
 		C.Check(&g_Config.m_CcRainbowTee, Localize("Rainbow tee"));

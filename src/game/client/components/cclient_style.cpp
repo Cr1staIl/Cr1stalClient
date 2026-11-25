@@ -57,4 +57,36 @@ namespace CCStyle
 		return 0.825f + 0.175f * std::sin(1.6f * Time + Phase);
 	}
 
+	void TexturedRoundRect(IGraphics *pGraphics, float X, float Y, float W, float H, float Rounding, ColorRGBA Color)
+	{
+		Rounding = std::clamp(Rounding, 0.0f, std::min(W, H) / 2.0f);
+		// thin rows, each one as wide as the rounded shape is at its height
+		constexpr int Rows = 24;
+		auto Inset = [&](float LocalY) {
+			float Dy = 0.0f;
+			if(LocalY < Rounding)
+				Dy = Rounding - LocalY;
+			else if(LocalY > H - Rounding)
+				Dy = LocalY - (H - Rounding);
+			else
+				return 0.0f;
+			return Rounding - std::sqrt(std::max(0.0f, Rounding * Rounding - Dy * Dy));
+		};
+		pGraphics->QuadsBegin();
+		pGraphics->SetColor(Color);
+		for(int i = 0; i < Rows; i++)
+		{
+			const float Y0 = H * i / Rows, Y1 = H * (i + 1) / Rows;
+			const float I0 = Inset(Y0), I1 = Inset(Y1);
+			pGraphics->QuadsSetSubsetFree(
+				I0 / W, Y0 / H, 1.0f - I0 / W, Y0 / H,
+				I1 / W, Y1 / H, 1.0f - I1 / W, Y1 / H);
+			const IGraphics::CFreeformItem Item(
+				X + I0, Y + Y0, X + W - I0, Y + Y0,
+				X + I1, Y + Y1, X + W - I1, Y + Y1);
+			pGraphics->QuadsDrawFreeform(&Item, 1);
+		}
+		pGraphics->QuadsEnd();
+	}
+
 } // namespace CCStyle
