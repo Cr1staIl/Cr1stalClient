@@ -96,6 +96,10 @@ void CMenusStart::RenderNeonTitle(float CenterX, float Y)
 			const float CharX = X + SwayX;
 			const float CharY = Y - (Size - FontSize) * 0.55f + BobY;
 
+			// thin crimson neon around the letter, breathing slowly
+			CCStyle::NeonGlow([&](vec2 Offset, ColorRGBA Color) { TextRender()->RenderTextContainer(m_aTitleContainers[Index], Color, NoOutline, CharX + Offset.x, CharY + Offset.y); },
+				ColorRGBA(1.0f, 0.12f, 0.3f, 1.0f), CCStyle::NeonPulse(Time, Index * 0.35f), 1.5f);
+
 			// smooth white -> red gradient from top to bottom, no outline, so no hard edges
 			const float InkTop = CharY + Size * 0.18f;
 			const float InkHeight = Size * 0.78f;
@@ -217,6 +221,17 @@ void CMenusStart::RenderStartMenu(CUIRect MainView)
 		const float L = 0.1f * HoverA;
 		Play.Draw4(ColorRGBA(1.0f, 0.24f + L, 0.38f + L, 1.0f), ColorRGBA(0.9f + L, 0.08f + L, 0.24f + L, 1.0f), ColorRGBA(0.86f + L, 0.08f + L, 0.24f + L, 1.0f), ColorRGBA(0.68f + L, 0.03f + L, 0.16f + L, 1.0f), IGraphics::CORNER_ALL, Play.h / 2.0f);
 		SLabelProperties Props;
+		TextRender()->TextOutlineColor(0.0f, 0.0f, 0.0f, 0.0f); // no dark edge around the glow
+		CCStyle::NeonGlow([&](vec2 Offset, ColorRGBA Color) {
+			CUIRect Shifted = Play;
+			Shifted.x += Offset.x;
+			Shifted.y += Offset.y;
+			SLabelProperties GlowProps;
+			GlowProps.SetColor(Color);
+			Ui()->DoLabel(&Shifted, Localize("Play", "Start menu"), 17.0f + HoverA, TEXTALIGN_MC, GlowProps);
+		},
+			ColorRGBA(1.0f, 0.85f, 0.9f, 1.0f), CCStyle::NeonPulse(Client()->GlobalTime(), 1.0f) * (0.6f + 0.4f * HoverA), 1.2f);
+		TextRender()->TextOutlineColor(TextRender()->DefaultTextOutlineColor());
 		Props.SetColor(ColorRGBA(1.0f, 1.0f, 1.0f, 1.0f));
 		Ui()->DoLabel(&Play, Localize("Play", "Start menu"), 17.0f + HoverA, TEXTALIGN_MC, Props);
 		if(Ui()->DoButtonLogic(&s_PlayButton, 0, &Play, BUTTONFLAG_LEFT) || Ui()->ConsumeHotkey(CUi::HOTKEY_ENTER) || CheckHotKey(KEY_P))
@@ -465,6 +480,17 @@ int CMenusStart::RenderDock(const CUIRect &MainView, const char *const *ppIcons,
 		TextRender()->SetRenderFlags(ETextRenderFlags::TEXT_RENDER_FLAG_ONLY_ADVANCE_WIDTH | ETextRenderFlags::TEXT_RENDER_FLAG_NO_X_BEARING | ETextRenderFlags::TEXT_RENDER_FLAG_NO_Y_BEARING | ETextRenderFlags::TEXT_RENDER_FLAG_NO_PIXEL_ALIGNMENT | ETextRenderFlags::TEXT_RENDER_FLAG_NO_OVERSIZE);
 		SLabelProperties IconProps;
 		IconProps.SetColor(CCStyle::Mix(ColorRGBA(0.85f, 0.12f, 0.3f, 0.85f), ColorRGBA(1.0f, 0.38f, 0.5f, 1.0f), HoverA));
+		TextRender()->TextOutlineColor(0.0f, 0.0f, 0.0f, 0.0f); // no dark edge around the glow
+		CCStyle::NeonGlow([&](vec2 Offset, ColorRGBA Color) {
+			CUIRect Shifted = Icon;
+			Shifted.x += Offset.x;
+			Shifted.y += Offset.y;
+			SLabelProperties GlowProps;
+			GlowProps.SetColor(Color);
+			Ui()->DoLabel(&Shifted, ppIcons[i], Size * 0.42f, TEXTALIGN_MC, GlowProps);
+		},
+			ColorRGBA(1.0f, 0.15f, 0.32f, 1.0f), (0.45f + 0.55f * HoverA) * CCStyle::NeonPulse(Client()->GlobalTime(), i * 0.7f), 1.0f);
+		TextRender()->TextOutlineColor(TextRender()->DefaultTextOutlineColor());
 		Ui()->DoLabel(&Icon, ppIcons[i], Size * 0.42f, TEXTALIGN_MC, IconProps);
 		TextRender()->SetRenderFlags(0);
 		TextRender()->SetFontPreset(EFontPreset::DEFAULT_FONT);
@@ -481,6 +507,17 @@ int CMenusStart::RenderDock(const CUIRect &MainView, const char *const *ppIcons,
 			Label.x = Icon.x + Icon.w / 2.0f - Label.w / 2.0f;
 			Label.y = Icon.y - Label.h - 5.0f - 4.0f * LabelA;
 			Label.Draw(ColorRGBA(0.12f, 0.03f, 0.06f, 0.95f * LabelA), IGraphics::CORNER_ALL, 4.0f);
+			TextRender()->TextOutlineColor(0.0f, 0.0f, 0.0f, 0.0f); // no dark edge around the glow
+			CCStyle::NeonGlow([&](vec2 Offset, ColorRGBA Color) {
+				CUIRect Shifted = Label;
+				Shifted.x += Offset.x;
+				Shifted.y += Offset.y;
+				SLabelProperties GlowProps;
+				GlowProps.SetColor(Color);
+				Ui()->DoLabel(&Shifted, Text.c_str(), FontSize, TEXTALIGN_MC, GlowProps);
+			},
+				CCStyle::ACCENT_TEXT, LabelA * CCStyle::NeonPulse(Client()->GlobalTime(), i * 0.5f), 0.9f);
+			TextRender()->TextOutlineColor(TextRender()->DefaultTextOutlineColor());
 			SLabelProperties Props;
 			Props.SetColor(CCStyle::ACCENT_TEXT.WithAlpha(LabelA));
 			Ui()->DoLabel(&Label, Text.c_str(), FontSize, TEXTALIGN_MC, Props);

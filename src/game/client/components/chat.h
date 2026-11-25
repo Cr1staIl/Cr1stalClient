@@ -206,6 +206,14 @@ public:
 	// @param Team MODE_ALL=0 MODE_TEAM=1
 	// @param pLine the chat message
 	void SendChat(int Team, const char *pLine);
+	// C-Client: the server has this chat command (like "w")
+	bool ServerCommandExists(const char *pCommand) const
+	{
+		for(const auto &Command : m_vServerCommands)
+			if(str_comp_nocase(pCommand, Command.m_aName) == 0)
+				return true;
+		return false;
+	}
 
 	// Sends a chat message to the server.
 	//

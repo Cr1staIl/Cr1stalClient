@@ -217,8 +217,9 @@ class CRenderTools
 	static void GetRenderTeeBodyScale(float BaseSize, float &BodyScale);
 	static void GetRenderTeeFeetScale(float BaseSize, float &FeetScaleWidth, float &FeetScaleHeight);
 
-	void RenderTee6(const CAnimState *pAnim, const CTeeRenderInfo *pInfo, int Emote, vec2 Dir, vec2 Pos, float Alpha = 1.0f) const;
-	void RenderTee7(const CAnimState *pAnim, const CTeeRenderInfo *pInfo, int Emote, vec2 Dir, vec2 Pos, float Alpha = 1.0f) const;
+	void RenderTee6(const CAnimState *pAnim, const CTeeRenderInfo *pInfo, int Emote, vec2 Dir, vec2 Pos, float Alpha = 1.0f, bool IsLocal = false) const;
+	void RenderTee7(const CAnimState *pAnim, const CTeeRenderInfo *pInfo, int Emote, vec2 Dir, vec2 Pos, float Alpha = 1.0f, bool IsLocal = false) const;
+	const class CSkin *m_pWhiteFeetSkin = nullptr;
 
 public:
 	class IGraphics *Graphics() const { return m_pGraphics; }
@@ -237,7 +238,10 @@ public:
 	// returns the offset to use, to render the tee with @see RenderTee exactly in the mid
 	static void GetRenderTeeOffsetToRenderedTee(const CAnimState *pAnim, const CTeeRenderInfo *pInfo, vec2 &TeeOffsetToMid);
 	// object render methods
-	void RenderTee(const CAnimState *pAnim, const CTeeRenderInfo *pInfo, int Emote, vec2 Dir, vec2 Pos, float Alpha = 1.0f) const;
+	// IsLocal: the tee is you (for C-Client tiny tees)
+	void RenderTee(const CAnimState *pAnim, const CTeeRenderInfo *pInfo, int Emote, vec2 Dir, vec2 Pos, float Alpha = 1.0f, bool IsLocal = false) const;
+	// C-Client: skin whose feet are used for cc_white_feet
+	void SetWhiteFeetSkin(const class CSkin *pSkin) { m_pWhiteFeetSkin = pSkin; }
 	// renders an idle tee so that it is visually centered at Center
 	void RenderIdleTeeAtCenter(const CTeeRenderInfo *pInfo, vec2 Center, int Emote = EMOTE_NORMAL, vec2 Dir = vec2(1.0f, 0.0f), float Alpha = 1.0f) const;
 

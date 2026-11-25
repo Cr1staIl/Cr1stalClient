@@ -78,6 +78,14 @@ void CMenus::RenderSettings(CUIRect MainView)
 		const float TitleW = FirstW + TextRender()->TextWidth(TitleSize, "Client");
 		const float TextX = Title.x + 9.0f;
 		const float TextY = Title.y + (Title.h - TitleSize) / 2.0f - 1.0f;
+		TextRender()->TextOutlineColor(0.0f, 0.0f, 0.0f, 0.0f); // no dark edge around the glow
+		CCStyle::NeonGlow([&](vec2 Offset, ColorRGBA Color) {
+			TextRender()->TextColor(Color);
+			TextRender()->Text(TextX + Offset.x, TextY + Offset.y, TitleSize, pFirst);
+			TextRender()->Text(TextX + FirstW + Offset.x, TextY + Offset.y, TitleSize, "Client");
+		},
+			ColorRGBA(1.0f, 0.12f, 0.3f, 1.0f), CCStyle::NeonPulse(Client()->GlobalTime()), 1.1f);
+		TextRender()->TextOutlineColor(TextRender()->DefaultTextOutlineColor());
 		TextRender()->TextColor(CCStyle::TEXT);
 		TextRender()->Text(TextX, TextY, TitleSize, pFirst);
 		TextRender()->TextColor(CCStyle::ACCENT_TEXT);

@@ -596,6 +596,59 @@ void CHud::RenderTextInfo()
 		str_format(aBuf, sizeof(aBuf), "%d", Client()->GetPredictionTime());
 		TextRender()->Text(m_Width - 10 - TextRender()->TextWidth(12, aBuf, -1, -1.0f), Showfps ? 20 : 5, 12, aBuf, -1.0f);
 	}
+
+	// C-Client (from TClient): position and aim angle, cursor while spectating in free view
+	if(g_Config.m_CcMiniDebug)
+	{
+		float FontSize = 8.0f;
+		float TextHeight = 11.0f;
+		char aBuf[64];
+		float OffsetY = 3.0f;
+
+		int PlayerId = GameClient()->m_Snap.m_LocalClientId;
+		if(GameClient()->m_Snap.m_SpecInfo.m_Active)
+			PlayerId = GameClient()->m_Snap.m_SpecInfo.m_SpectatorId;
+
+		if(g_Config.m_ClShowhudDDRace && PlayerId >= 0 && GameClient()->m_Snap.m_aCharacters[PlayerId].m_HasExtendedData && GameClient()->m_Snap.m_SpecInfo.m_SpectatorId != SPEC_FREEVIEW)
+			OffsetY += 50.0f;
+		else if(g_Config.m_ClShowhudHealthAmmo && GameClient()->m_Snap.m_SpecInfo.m_SpectatorId != SPEC_FREEVIEW)
+			OffsetY += 27.0f;
+
+		vec2 Pos;
+		if(GameClient()->m_Snap.m_SpecInfo.m_SpectatorId == SPEC_FREEVIEW || PlayerId < 0)
+			Pos = vec2(GameClient()->m_Controls.m_aMousePos[g_Config.m_ClDummy].x, GameClient()->m_Controls.m_aMousePos[g_Config.m_ClDummy].y);
+		else
+			Pos = GameClient()->m_aClients[PlayerId].m_RenderPos;
+
+		str_format(aBuf, sizeof(aBuf), "X: %.2f", Pos.x / 32.0f);
+		TextRender()->Text(4, OffsetY, FontSize, aBuf, -1.0f);
+
+		OffsetY += TextHeight;
+		str_format(aBuf, sizeof(aBuf), "Y: %.2f", Pos.y / 32.0f);
+		TextRender()->Text(4, OffsetY, FontSize, aBuf, -1.0f);
+		if(GameClient()->m_Snap.m_SpecInfo.m_SpectatorId != SPEC_FREEVIEW && PlayerId >= 0)
+		{
+			OffsetY += TextHeight;
+			str_format(aBuf, sizeof(aBuf), "Angle: %d", GameClient()->m_aClients[PlayerId].m_RenderCur.m_Angle);
+			TextRender()->Text(4.0f, OffsetY, FontSize, aBuf, -1.0f);
+
+			OffsetY += TextHeight;
+			str_format(aBuf, sizeof(aBuf), "VelY: %.2f", GameClient()->m_Snap.m_aCharacters[PlayerId].m_Cur.m_VelY / 256.0f * 50.0f / 32.0f);
+			TextRender()->Text(4.0f, OffsetY, FontSize, aBuf, -1.0f);
+
+			OffsetY += TextHeight;
+
+			str_format(aBuf, sizeof(aBuf), "VelX: %.2f", GameClient()->m_Snap.m_aCharacters[PlayerId].m_Cur.m_VelX / 256.0f * 50.0f / 32.0f);
+			TextRender()->Text(4.0f, OffsetY, FontSize, aBuf, -1.0f);
+		}
+	}
+	if(g_Config.m_CcRenderCursorSpec && GameClient()->m_Snap.m_SpecInfo.m_SpectatorId == SPEC_FREEVIEW)
+	{
+		int CurWeapon = 1;
+		Graphics()->SetColor(1.f, 1.f, 1.f, g_Config.m_CcRenderCursorSpecAlpha / 100.0f);
+		Graphics()->TextureSet(GameClient()->m_GameSkin.m_aSpriteWeaponCursors[CurWeapon]);
+		Graphics()->RenderQuadContainerAsSprite(m_HudQuadContainerIndex, m_aCursorOffset[CurWeapon], m_Width / 2.0f, m_Height / 2.0f, 0.36f, 0.36f);
+	}
 }
 
 void CHud::RenderConnectionWarning()
@@ -1991,58 +2044,19 @@ void CHud::RenderRecord()
 	}
 }
 
-// C-Client: things drawn in world coordinates (trail, hitboxes, teammate indicators)
+// C-Client: things drawn in world coordinates (hitboxes, teammate indicators)
 void CHud::RenderCClientWorld()
 {
 	const int LocalId = GameClient()->m_Snap.m_LocalClientId;
 	const bool HasLocal = LocalId >= 0 && GameClient()->m_Snap.m_aCharacters[LocalId].m_Active && !GameClient()->m_Snap.m_SpecInfo.m_Active;
 
-	// update the trail every frame, even while it is hidden, so it starts clean
-	if(HasLocal && g_Config.m_CcTrail)
-	{
-		const vec2 Pos = GameClient()->m_aClients[LocalId].m_RenderPos;
-		const vec2 Last = m_CcTrailCount > 0 ? m_aCcTrail[(m_CcTrailHead + CC_TRAIL_MAX - 1) % CC_TRAIL_MAX] : vec2(-99999.0f, -99999.0f);
-		if(distance(Pos, Last) > 600.0f)
-			m_CcTrailCount = 0; // teleported or respawned
-		if(m_CcTrailCount == 0 || distance(Pos, Last) > 3.0f)
-		{
-			m_aCcTrail[m_CcTrailHead] = Pos;
-			m_CcTrailHead = (m_CcTrailHead + 1) % CC_TRAIL_MAX;
-			m_CcTrailCount = std::min(m_CcTrailCount + 1, CC_TRAIL_MAX);
-		}
-	}
-	else
-	{
-		m_CcTrailCount = 0;
-	}
-
-	if(!g_Config.m_CcTrail && !g_Config.m_CcShowHitbox && !g_Config.m_CcPlayerIndicator)
+	if(!g_Config.m_CcShowHitbox && !g_Config.m_CcPlayerIndicator)
 		return;
 
 	const vec2 Center = GameClient()->m_Camera.m_Center;
 	CScreenRect ScreenRect = Graphics()->MapScreenToWorld(Center.x, Center.y, 100.0f, 100.0f, 100.0f, 0, 0, Graphics()->ScreenAspect(), GameClient()->m_Camera.m_Zoom);
 	Graphics()->MapScreen(ScreenRect);
 	Graphics()->TextureClear();
-
-	// trail
-	if(g_Config.m_CcTrail && m_CcTrailCount > 1)
-	{
-		const int Count = std::min(m_CcTrailCount, g_Config.m_CcTrailLength);
-		const float Time = Client()->GlobalTime();
-		Graphics()->QuadsBegin();
-		for(int i = 0; i < Count; i++)
-		{
-			const int Index = (m_CcTrailHead + CC_TRAIL_MAX - 1 - i) % CC_TRAIL_MAX;
-			const float Age = i / (float)Count; // 0 = newest
-			const float Radius = g_Config.m_CcTrailWidth * 0.5f * (1.0f - Age * 0.7f);
-			ColorRGBA Color = g_Config.m_CcTrailRainbow ?
-						  color_cast<ColorRGBA>(ColorHSLA(std::fmod(Time * 0.2f + i * 0.02f, 1.0f), 0.9f, 0.6f, 1.0f)) :
-						  ColorRGBA(0.0f, 0.95f, 1.0f, 1.0f);
-			Graphics()->SetColor(Color.WithAlpha(0.55f * (1.0f - Age)));
-			Graphics()->DrawCircle(m_aCcTrail[Index].x, m_aCcTrail[Index].y, Radius, 12);
-		}
-		Graphics()->QuadsEnd();
-	}
 
 	// hitboxes: the real physical size of tees
 	if(g_Config.m_CcShowHitbox)
@@ -2085,11 +2099,24 @@ void CHud::RenderCClientWorld()
 				continue;
 			const CGameClient::CClientData &Data = GameClient()->m_aClients[i];
 			const bool Frozen = Data.m_FreezeEnd > 0 || Data.m_DeepFrozen;
+			if(g_Config.m_CcIndicatorFreezeOnly && !Frozen)
+				continue;
 			const vec2 Dir = normalize(Pos - LocalPos);
 			const vec2 DotPos = LocalPos + Dir * (float)g_Config.m_CcIndicatorOffset;
 			const float Size = (float)g_Config.m_CcIndicatorSize;
-			const ColorRGBA Color = Frozen ? ColorRGBA(0.45f, 0.6f, 1.0f, 0.85f) : ColorRGBA(0.3f, 1.0f, 0.55f, 0.9f);
-			Graphics()->SetColor(Color.WithAlpha(0.2f));
+			const ColorRGBA Color = color_cast<ColorRGBA>(ColorHSLA(Frozen ? g_Config.m_CcIndicatorColorFrozen : g_Config.m_CcIndicatorColorAlive, true));
+			if(g_Config.m_CcIndicatorTees)
+			{
+				// a small tee instead of the dot
+				Graphics()->QuadsEnd();
+				CTeeRenderInfo TeeInfo = Data.m_RenderInfo;
+				TeeInfo.m_Size = Size * 2.6f;
+				RenderTools()->RenderTee(CAnimState::GetIdle(), &TeeInfo, Frozen ? EMOTE_PAIN : EMOTE_NORMAL, Dir, DotPos, Color.a);
+				Graphics()->TextureClear();
+				Graphics()->QuadsBegin();
+				continue;
+			}
+			Graphics()->SetColor(Color.WithMultipliedAlpha(0.22f));
 			Graphics()->DrawCircle(DotPos.x, DotPos.y, Size * 1.6f, 16);
 			Graphics()->SetColor(Color);
 			Graphics()->DrawCircle(DotPos.x, DotPos.y, Size, 16);

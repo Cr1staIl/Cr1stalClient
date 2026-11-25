@@ -3,12 +3,14 @@
 #define GAME_CLIENT_COMPONENTS_CCLIENT_STYLE_H
 
 #include <base/color.h>
+#include <base/vmath.h>
 
 #include <engine/graphics.h>
 
 #include <game/client/ui_rect.h>
 
 #include <algorithm>
+#include <functional>
 #include <string>
 
 namespace CCStyle
@@ -43,6 +45,13 @@ namespace CCStyle
 	{
 		Rect.Draw(Mix(Color, ColorRGBA(0.2f, 0.05f, 0.09f, Color.a), std::clamp(Glow, 0.0f, 1.0f) * 0.7f), IGraphics::CORNER_ALL, Rounding);
 	}
+
+	// thin neon light around text or a shape: Draw is called with small offsets in a circle and a
+	// faint color, so the copies blend into a soft edge of about one to two millimeters.
+	// Strength 0..1 (use NeonPulse for a slow breathing).
+	void NeonGlow(const std::function<void(vec2 Offset, ColorRGBA Color)> &Draw, ColorRGBA Glow, float Strength, float Radius = 1.6f);
+	// slow, smooth breathing between 0.65 and 1 (Phase shifts it per element)
+	float NeonPulse(float Time, float Phase = 0.0f);
 
 	// upper case for latin and cyrillic text, for small titles like PLAYTIME
 	std::string Upper(const char *pText);

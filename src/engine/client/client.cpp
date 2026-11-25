@@ -5459,6 +5459,9 @@ int CClient::MaxLatencyTicks() const
 
 int CClient::PredictionMargin() const
 {
+	// C-Client (from TClient): another prediction margin while you are frozen
+	if(g_Config.m_CcPredMarginInFreeze && m_IsLocalFrozen)
+		return g_Config.m_CcPredMarginInFreezeAmount;
 	return m_ServerCapabilities.m_SyncWeaponInput ? g_Config.m_ClPredictionMargin : 10;
 }
 

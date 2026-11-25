@@ -79,10 +79,6 @@ private:
 	void RenderCClientOverlay();
 	void RenderCClientIndicators();
 
-	static constexpr int CC_TRAIL_MAX = 128;
-	vec2 m_aCcTrail[CC_TRAIL_MAX];
-	int m_CcTrailHead = 0;
-	int m_CcTrailCount = 0;
 	void RenderConnectionWarning();
 	void RenderTeambalanceWarning();
 

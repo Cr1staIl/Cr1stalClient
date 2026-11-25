@@ -111,6 +111,9 @@ protected:
 	int64_t m_ReconnectTime = 0;
 
 public:
+	// C-Client: your tee is frozen right now (set by the game every frame)
+	bool m_IsLocalFrozen = false;
+
 	class CSnapItem
 	{
 	public:

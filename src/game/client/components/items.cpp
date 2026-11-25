@@ -778,3 +778,15 @@ void CItems::ReconstructSmokeTrail(const CProjectileData *pCurrent, int DestroyT
 			GameClient()->m_Effects.BulletTrail(Pos, Alpha, TimePassed);
 	}
 }
+
+void CItems::RenderFakeCtfFlag(vec2 Pos, float Alpha, int Team)
+{
+	const float Size = 42.0f;
+	if(Team == TEAM_RED)
+		Graphics()->TextureSet(GameClient()->m_GameSkin.m_SpriteFlagRed);
+	else
+		Graphics()->TextureSet(GameClient()->m_GameSkin.m_SpriteFlagBlue);
+	Graphics()->QuadsSetRotation(0.0f);
+	Graphics()->SetColor(1.0f, 1.0f, 1.0f, Alpha);
+	Graphics()->RenderQuadContainerAsSprite(m_ItemsQuadContainerIndex, Team == TEAM_RED ? m_RedFlagOffset : m_BlueFlagOffset, Pos.x, Pos.y - Size * 0.75f);
+}

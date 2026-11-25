@@ -247,6 +247,16 @@ public:
 		return Clicked;
 	}
 
+	// caption and a text field
+	void Edit(CLineInput *pInput, const char *pCaption)
+	{
+		Gap(2.0f);
+		Caption(pCaption);
+		CUIRect Field = Line();
+		m_pUi->DoClearableEditBox(pInput, &Field, 12.0f);
+		Gap(2.0f);
+	}
+
 	void Note(const char *pText, ColorRGBA Color = CCStyle::TEXT_DIM)
 	{
 		CUIRect Label = Line(16.0f);
@@ -275,6 +285,9 @@ enum
 	CARD_UPDATES,
 	CARD_ON_JOIN,
 	CARD_PERF,
+	CARD_AUTOMATION,
+	CARD_GHOSTS,
+	CARD_FUN,
 	NUM_CARDS,
 };
 
@@ -300,8 +313,8 @@ void CMenus::RenderSettingsCClient(CUIRect MainView)
 		vColumns.emplace_back(this, Ui(), Rect);
 	}
 	// which column every card goes to, for 3 and for 2 columns
-	static const int s_aColumnOf3[NUM_CARDS] = {0, 0, 0, 0, 1, 1, 1, 1, 2, 2, 2, 2, 2, 2, 2};
-	static const int s_aColumnOf2[NUM_CARDS] = {0, 0, 0, 0, 0, 0, 1, 1, 1, 1, 1, 1, 1, 1, 1};
+	static const int s_aColumnOf3[NUM_CARDS] = {0, 0, 0, 0, 1, 1, 1, 1, 2, 2, 2, 2, 2, 2, 2, 2, 0, 1};
+	static const int s_aColumnOf2[NUM_CARDS] = {0, 0, 0, 0, 0, 0, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 0, 1};
 	auto Col = [&](int Card) -> CCcColumn & {
 		return vColumns[NumColumns == 3 ? s_aColumnOf3[Card] : s_aColumnOf2[Card]];
 	};
@@ -358,6 +371,27 @@ void CMenus::RenderSettingsCClient(CUIRect MainView)
 			C.Slider(&g_Config.m_ClAntiPingPercent, Localize("Prediction strength"), 0, 100, "%");
 		}
 		C.CheckValue(&g_Config.m_ClPredictFreeze, Localize("Predict freeze"), 1);
+		C.Gap(4.0f);
+		C.Caption(Localize("Smooth antiping (TClient)"));
+		C.Check(&g_Config.m_CcAntiPingImproved, Localize("New antiping smoothing"), Localize("Trusts the prediction of other tees only as far as they moved steadily before"));
+		if(g_Config.m_CcAntiPingImproved)
+		{
+			C.Check(&g_Config.m_CcAntiPingStableDirection, Localize("Optimistic along the stable direction"));
+			C.Check(&g_Config.m_CcAntiPingNegativeBuffer, Localize("Remember instability for longer"));
+			C.Slider(&g_Config.m_CcAntiPingUncertaintyScale, Localize("Uncertainty duration"), 25, 400, "%");
+		}
+		C.Gap(4.0f);
+		C.Caption(Localize("While frozen"));
+		C.Check(&g_Config.m_CcRemoveAnti, Localize("Less prediction of your tee in freeze"));
+		if(g_Config.m_CcRemoveAnti)
+		{
+			C.Slider(&g_Config.m_CcUnfreezeLagTicks, Localize("Ticks taken away"), 0, 20);
+			C.Slider(&g_Config.m_CcUnfreezeLagDelayTicks, Localize("Ticks until all is taken away"), 5, 150);
+		}
+		C.Check(&g_Config.m_CcUnpredOthersInFreeze, Localize("Don't predict others while frozen"));
+		C.Check(&g_Config.m_CcPredMarginInFreeze, Localize("Other prediction margin while frozen"));
+		if(g_Config.m_CcPredMarginInFreeze)
+			C.Slider(&g_Config.m_CcPredMarginInFreezeAmount, Localize("Margin while frozen"), 0, 100, "ms");
 		C.EndCard();
 	}
 
@@ -456,11 +490,45 @@ void CMenus::RenderSettingsCClient(CUIRect MainView)
 		CCcColumn &C = Col(CARD_TEES);
 		C.BeginCard(CARD_TEES, Localize("Tees"));
 		C.Check(&g_Config.m_CcShowHitbox, Localize("Show real hitbox of tees"));
+		C.Check(&g_Config.m_CcNameplatePingCircle, Localize("Ping colored circle next to names"));
+		C.Check(&g_Config.m_CcNameplateCountry, Localize("Country flag next to names"));
+		C.Check(&g_Config.m_CcNameplateSkins, Localize("Skin name under names"));
+		C.Check(&g_Config.m_ClFreezeStars, Localize("Stars over frozen tees"));
+		C.Check(&g_Config.m_CcColorFreeze, Localize("Frozen tees keep their color"));
+		if(g_Config.m_CcColorFreeze)
+		{
+			C.Slider(&g_Config.m_CcColorFreezeDarken, Localize("Darker when frozen"), 0, 100, "%");
+			C.Check(&g_Config.m_CcColorFreezeFeet, Localize("Also color the feet"));
+		}
+		C.Check(&g_Config.m_CcFrozenKatana, Localize("Katana in the hand of frozen tees"));
+		C.CheckValue(&g_Config.m_CcRenderWeaponsAsGun, Localize("All weapons look like the gun"), 1);
+		C.Check(&g_Config.m_CcWhiteFeet, Localize("White feet for custom colored tees"));
+		if(g_Config.m_CcWhiteFeet)
+		{
+			static CLineInput s_WhiteFeetInput(g_Config.m_CcWhiteFeetSkin, sizeof(g_Config.m_CcWhiteFeetSkin));
+			C.Edit(&s_WhiteFeetInput, Localize("Skin for the white feet"));
+		}
+		{
+			static CButtonContainer s_aTinyButtons[3];
+			int Tiny = g_Config.m_CcTinyTees ? (g_Config.m_CcTinyTeesOthers ? 2 : 1) : 0;
+			const char *apTiny[] = {Localize("Off"), Localize("Own"), Localize("All")};
+			C.Choice(&Tiny, Localize("Small tees"), apTiny, 3, s_aTinyButtons);
+			g_Config.m_CcTinyTees = Tiny > 0;
+			g_Config.m_CcTinyTeesOthers = Tiny > 1;
+			if(Tiny)
+				C.Slider(&g_Config.m_CcTinyTeeSize, Localize("Size of small tees"), 85, 115, "%");
+		}
+		{
+			static CButtonContainer s_aFlagButtons[3];
+			const char *apFlags[] = {Localize("Off"), Localize("Red"), Localize("Blue")};
+			C.Choice(&g_Config.m_CcFakeCtfFlags, Localize("Fake CTF flags"), apFlags, 3, s_aFlagButtons);
+		}
 		C.Check(&g_Config.m_ClShowNinja, Localize("Ninja skin"));
 		C.Check(&g_Config.m_ClShowEmotes, Localize("Show emotes"));
 		C.CheckValue(&g_Config.m_ClShowDirection, Localize("Show pressed keys of all tees"), 2, 0);
 		C.CheckValue(&g_Config.m_ClShowHookCollOwn, Localize("Own hook line"), 1);
 		C.CheckValue(&g_Config.m_ClShowHookCollOther, Localize("Hook lines of others"), 1);
+		C.Check(&g_Config.m_CcMovingTilesEntities, Localize("Moving tiles in entities"));
 		C.Slider(&g_Config.m_ClShowOthersAlpha, Localize("Tees of other teams"), 0, 100, "%");
 		C.EndCard();
 	}
@@ -470,15 +538,39 @@ void CMenus::RenderSettingsCClient(CUIRect MainView)
 		CCcColumn &C = Col(CARD_LOOKS);
 		C.BeginCard(CARD_LOOKS, Localize("Looks"));
 		C.Check(&g_Config.m_CrNeonBackground, Localize("Neon menu background"));
-		C.Check(&g_Config.m_CcRainbowTee, Localize("Rainbow tee (only you see it)"));
-		if(g_Config.m_CcRainbowTee)
-			C.Slider(&g_Config.m_CcRainbowSpeed, Localize("Rainbow speed"), 10, 500, "%");
-		C.Check(&g_Config.m_CcTrail, Localize("Trail behind your tee"));
-		if(g_Config.m_CcTrail)
+		C.Gap(4.0f);
+		C.Caption(Localize("Rainbow"));
+		C.Check(&g_Config.m_CcRainbowTee, Localize("Rainbow tee"));
+		C.Check(&g_Config.m_CcRainbowHook, Localize("Rainbow hook"));
+		C.Check(&g_Config.m_CcRainbowWeapon, Localize("Rainbow weapon"));
+		C.Check(&g_Config.m_CcRainbowOthers, Localize("Also for other tees"));
+		if(g_Config.m_CcRainbowTee || g_Config.m_CcRainbowHook || g_Config.m_CcRainbowWeapon)
 		{
-			C.Check(&g_Config.m_CcTrailRainbow, Localize("Rainbow trail"));
-			C.Slider(&g_Config.m_CcTrailLength, Localize("Trail length"), 5, 120);
-			C.Slider(&g_Config.m_CcTrailWidth, Localize("Trail width"), 2, 40);
+			static CButtonContainer s_aModeButtons[4];
+			int Mode = g_Config.m_CcRainbowMode - 1;
+			const char *apModes[] = {Localize("Rainbow"), Localize("Pulse"), Localize("Dark"), Localize("Random")};
+			C.Choice(&Mode, Localize("Rainbow mode"), apModes, 4, s_aModeButtons);
+			g_Config.m_CcRainbowMode = Mode + 1;
+			C.Slider(&g_Config.m_CcRainbowSpeed, Localize("Rainbow speed"), 10, 500, "%");
+		}
+		C.Gap(4.0f);
+		C.Caption(Localize("Trail"));
+		C.Check(&g_Config.m_CcTeeTrail, Localize("Trail behind tees"));
+		if(g_Config.m_CcTeeTrail)
+		{
+			C.Check(&g_Config.m_CcTeeTrailOthers, Localize("Trails of other tees"));
+			C.Check(&g_Config.m_CcTeeTrailFade, Localize("Trail fades out"));
+			C.Check(&g_Config.m_CcTeeTrailTaper, Localize("Trail gets thinner"));
+			static CButtonContainer s_aTrailModeButtons[4];
+			int Mode = std::clamp(g_Config.m_CcTeeTrailColorMode - 1, 0, 3);
+			const char *apModes[] = {Localize("Color"), Localize("Tee"), Localize("Rainbow"), Localize("Speed")};
+			C.Choice(&Mode, Localize("Trail color"), apModes, 4, s_aTrailModeButtons);
+			g_Config.m_CcTeeTrailColorMode = Mode + 1;
+			if(g_Config.m_CcTeeTrailColorMode == 1)
+				C.Color(Localize("Trail color"), &g_Config.m_CcTeeTrailColor, 255);
+			C.Slider(&g_Config.m_CcTeeTrailWidth, Localize("Trail width"), 0, 20);
+			C.Slider(&g_Config.m_CcTeeTrailLength, Localize("Trail length"), 5, 200);
+			C.Slider(&g_Config.m_CcTeeTrailAlpha, Localize("Trail opacity"), 1, 100, "%");
 		}
 		C.EndCard();
 	}
@@ -503,6 +595,10 @@ void CMenus::RenderSettingsCClient(CUIRect MainView)
 			C.Check(&g_Config.m_CcOutlineSolid, Localize("Walls"));
 			if(g_Config.m_CcOutlineSolid)
 				C.Color(Localize("Wall color"), &g_Config.m_CcOutlineColorSolid, 0xFFBFC8AA);
+			C.Check(&g_Config.m_CcOutlineTele, Localize("Teleporters"));
+			if(g_Config.m_CcOutlineTele)
+				C.Color(Localize("Teleporter color"), &g_Config.m_CcOutlineColorTele, 0xFFBFFFAA);
+			C.Check(&g_Config.m_CcOutlineEntities, Localize("Only in entities view"));
 		}
 		C.EndCard();
 	}
@@ -547,9 +643,12 @@ void CMenus::RenderSettingsCClient(CUIRect MainView)
 		C.Check(&g_Config.m_CcPlayerIndicator, Localize("Show teammates that are off screen"));
 		if(g_Config.m_CcPlayerIndicator)
 		{
+			C.Check(&g_Config.m_CcIndicatorFreezeOnly, Localize("Only frozen teammates"));
+			C.Check(&g_Config.m_CcIndicatorTees, Localize("Small tees instead of dots"));
 			C.Slider(&g_Config.m_CcIndicatorOffset, Localize("Indicator distance"), 50, 400);
 			C.Slider(&g_Config.m_CcIndicatorSize, Localize("Indicator size"), 4, 30);
-			C.Note(Localize("Green: alive, blue: frozen"));
+			C.Color(Localize("Not frozen"), &g_Config.m_CcIndicatorColorAlive, 0xFF66FF99);
+			C.Color(Localize("Frozen"), &g_Config.m_CcIndicatorColorFrozen, 0xFF99FFB3);
 		}
 		C.EndCard();
 	}
@@ -567,6 +666,11 @@ void CMenus::RenderSettingsCClient(CUIRect MainView)
 		C.Check(&g_Config.m_ClShowhudPlayerAngle, Localize("Show your aim angle"));
 		C.Check(&g_Config.m_ClShowhudJumpsIndicator, Localize("Show jumps you have left"));
 		C.Check(&g_Config.m_ClShowhudDummyActions, Localize("Show dummy actions"));
+		C.Check(&g_Config.m_CcMiniVoteHud, Localize("Small vote window"));
+		C.Check(&g_Config.m_CcMiniDebug, Localize("Show position and aim angle"));
+		C.Check(&g_Config.m_CcRenderCursorSpec, Localize("Cursor while spectating"));
+		if(g_Config.m_CcRenderCursorSpec)
+			C.Slider(&g_Config.m_CcRenderCursorSpecAlpha, Localize("Cursor opacity"), 0, 100, "%");
 		C.Slider(&g_Config.m_ClOverlayEntities, Localize("Game tiles over the map"), 0, 100, "%");
 		C.EndCard();
 	}
@@ -628,9 +732,88 @@ void CMenus::RenderSettingsCClient(CUIRect MainView)
 		CCcColumn &C = Col(CARD_ON_JOIN);
 		C.BeginCard(CARD_ON_JOIN, Localize("On join"));
 		static CLineInput s_RunOnJoinInput(g_Config.m_ClRunOnJoin, sizeof(g_Config.m_ClRunOnJoin));
-		C.Caption(Localize("Console command when you join a server"));
-		CUIRect Field = C.Line();
-		Ui()->DoClearableEditBox(&s_RunOnJoinInput, &Field, 12.0f);
+		C.Edit(&s_RunOnJoinInput, Localize("Console command when you join a server"));
+		static CLineInput s_OnConnectInput(g_Config.m_CcExecuteOnConnect, sizeof(g_Config.m_CcExecuteOnConnect));
+		C.Edit(&s_OnConnectInput, Localize("Command before connecting"));
+		static CLineInput s_OnJoinLateInput(g_Config.m_CcExecuteOnJoin, sizeof(g_Config.m_CcExecuteOnJoin));
+		C.Edit(&s_OnJoinLateInput, Localize("Command a bit after joining"));
+		C.Slider(&g_Config.m_CcExecuteOnJoinDelay, Localize("Delay (ticks)"), 7, 500);
+		C.EndCard();
+	}
+
+	// ---- automation ----
+	{
+		CCcColumn &C = Col(CARD_AUTOMATION);
+		C.BeginCard(CARD_AUTOMATION, Localize("Automation"));
+		C.Check(&g_Config.m_CcAutoVoteWhenFar, Localize("Vote no to map changes when you are far"), Localize("Not when a friend, your team or you yourself started the vote"));
+		if(g_Config.m_CcAutoVoteWhenFar)
+		{
+			C.Slider(&g_Config.m_CcAutoVoteWhenFarTime, Localize("Far means after"), 0, 20, " min");
+			static CLineInput s_FarMessage(g_Config.m_CcAutoVoteWhenFarMessage, sizeof(g_Config.m_CcAutoVoteWhenFarMessage));
+			C.Edit(&s_FarMessage, Localize("Message in chat (empty: none)"));
+		}
+		C.Check(&g_Config.m_CcAutoReplyMuted, Localize("Auto reply to muted players"));
+		if(g_Config.m_CcAutoReplyMuted)
+		{
+			static CLineInput s_MutedMessage(g_Config.m_CcAutoReplyMutedMessage, sizeof(g_Config.m_CcAutoReplyMutedMessage));
+			C.Edit(&s_MutedMessage, Localize("Reply"));
+		}
+		C.Check(&g_Config.m_CcAutoReplyMinimized, Localize("Auto reply when the game is minimized"));
+		if(g_Config.m_CcAutoReplyMinimized)
+		{
+			static CLineInput s_MinimizedMessage(g_Config.m_CcAutoReplyMinimizedMessage, sizeof(g_Config.m_CcAutoReplyMinimizedMessage));
+			C.Edit(&s_MinimizedMessage, Localize("Reply"));
+		}
+		C.Check(&g_Config.m_CcChangeNameNearFinish, Localize("Other name near the finish"));
+		if(g_Config.m_CcChangeNameNearFinish)
+		{
+			static CLineInput s_FinishName(g_Config.m_CcFinishName, sizeof(g_Config.m_CcFinishName));
+			C.Edit(&s_FinishName, Localize("Name near the finish"));
+		}
+		C.EndCard();
+	}
+
+	// ---- ghosts ----
+	{
+		CCcColumn &C = Col(CARD_GHOSTS);
+		C.BeginCard(CARD_GHOSTS, Localize("Ghosts"));
+		C.Check(&g_Config.m_CcShowOthersGhosts, Localize("Ghosts of other tees (without prediction)"));
+		if(g_Config.m_CcShowOthersGhosts)
+		{
+			C.Check(&g_Config.m_CcSwapGhosts, Localize("Swap ghosts and tees"));
+			C.Check(&g_Config.m_CcHideFrozenGhosts, Localize("No ghosts of frozen tees"));
+			C.Check(&g_Config.m_CcRenderGhostAsCircle, Localize("Ghosts as circles"));
+			C.Slider(&g_Config.m_CcPredGhostsAlpha, Localize("Predicted tees"), 0, 100, "%");
+			C.Slider(&g_Config.m_CcUnpredGhostsAlpha, Localize("Ghosts"), 0, 100, "%");
+		}
+		C.EndCard();
+	}
+
+	// ---- just for fun ----
+	{
+		CCcColumn &C = Col(CARD_FUN);
+		C.BeginCard(CARD_FUN, Localize("Just for fun"));
+		C.Check(&g_Config.m_CcPetShow, Localize("Pet next to your tee"));
+		if(g_Config.m_CcPetShow)
+		{
+			static CLineInput s_PetSkin(g_Config.m_CcPetSkin, sizeof(g_Config.m_CcPetSkin));
+			C.Edit(&s_PetSkin, Localize("Skin of the pet"));
+			C.Slider(&g_Config.m_CcPetSize, Localize("Pet size"), 10, 500, "%");
+			C.Slider(&g_Config.m_CcPetAlpha, Localize("Pet opacity"), 10, 100, "%");
+		}
+		C.Gap(4.0f);
+		C.Caption(Localize("Drawing on the map"));
+		static CButtonContainer s_BindDrawButton;
+		if(C.Button(&s_BindDrawButton, Localize("Draw with mouse button 4, erase with 5")))
+			Console()->ExecuteLine("bind mouse4 +bg_draw; bind mouse5 +bg_draw_erase", IConsole::CLIENT_ID_UNSPECIFIED);
+		static CButtonContainer s_ClearDrawButton;
+		if(C.Button(&s_ClearDrawButton, Localize("Clear all drawings")))
+			Console()->ExecuteLine("bg_draw_reset", IConsole::CLIENT_ID_UNSPECIFIED);
+		C.Color(Localize("Drawing color"), &g_Config.m_CcBgDrawColor, 14024576);
+		C.Slider(&g_Config.m_CcBgDrawWidth, Localize("Line width"), 1, 50);
+		C.Slider(&g_Config.m_CcBgDrawFadeTime, Localize("Lines disappear after"), 0, 600, "s");
+		C.Slider(&g_Config.m_CcBgDrawMaxItems, Localize("Most lines"), 0, 2048);
+		C.Check(&g_Config.m_CcBgDrawAutoSaveLoad, Localize("Keep drawings for every map"));
 		C.EndCard();
 	}
 

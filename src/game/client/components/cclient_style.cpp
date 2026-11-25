@@ -1,7 +1,10 @@
 /* Cr1stal Client: shared colors and shapes of the menu design. Based on DDNet, see licence.txt. */
 #include "cclient_style.h"
 
+#include <base/math.h>
 #include <base/str.h>
+
+#include <cmath>
 
 namespace CCStyle
 {

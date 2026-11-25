@@ -101,6 +101,7 @@ public:
 	void ResetDoorCollision();
 	void NetObjEnd();
 	void CopyWorld(CGameWorld *pFrom);
+	void CopyWorldClean(CGameWorld *pFrom); // C-Client: like CopyWorld, but keeps the parent/child links of the other world
 	CEntity *FindMatch(int ObjId, int ObjType, const void *pObjData);
 	void Clear();
 

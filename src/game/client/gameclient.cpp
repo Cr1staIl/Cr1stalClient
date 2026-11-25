@@ -138,13 +138,18 @@ void CGameClient::OnConsoleInit()
 					      &m_Censor,
 					      &m_Background, // render instead of m_MapLayersBackground when g_Config.m_ClOverlayEntities == 100
 					      &m_MapLayersBackground, // first to render
+					      &m_CBgDraw,
 					      &m_Particles.m_RenderTrail,
 					      &m_Particles.m_RenderTrailExtra,
 					      &m_Items,
+					      &m_CTrails,
 					      &m_Ghost,
 					      &m_Players,
+					      &m_CMovingTilesBackground,
 					      &m_MapLayersForeground,
+					      &m_CMovingTilesForeground,
 					      &m_COutlines,
+					      &m_CPet,
 					      &m_Particles.m_RenderExplosions,
 					      &m_NamePlates,
 					      &m_Particles.m_RenderExtra,
@@ -156,6 +161,8 @@ void CGameClient::OnConsoleInit()
 					      &m_Emoticon,
 					      &m_CClient,
 					      &m_CPlaytime,
+					      &m_CRainbow,
+					      &m_CAutomation,
 					      &m_InfoMessages,
 					      &m_Chat,
 					      &m_Broadcast,
@@ -2654,6 +2661,7 @@ void CGameClient::OnPredict()
 	const int FastInputTicks = m_Controls.FastInputTicks();
 	const int FinalTickSelf = FinalTickRegular + FastInputTicks;
 	const int LocalTee = g_Config.m_ClDummy ^ m_IsDummySwapping;
+	bool RealPredTick = false; // C-Client (from TClient): a new regular tick was predicted this frame
 
 	// predict
 	for(int Tick = Client()->GameTick(g_Config.m_ClDummy) + 1; Tick <= FinalTickSelf; Tick++)
@@ -2753,6 +2761,12 @@ void CGameClient::OnPredict()
 		{
 			m_aLastNewPredictedTick[Dummy] = Tick;
 			m_NewPredictedTick = true;
+			RealPredTick = true;
+			// C-Client: how long you have been frozen, for cc_remove_anti
+			if(pLocalChar->m_FreezeTime > 0)
+				m_FreezeAccumulation = std::min(m_FreezeAccumulation + 1, g_Config.m_CcUnfreezeLagDelayTicks);
+			else
+				m_FreezeAccumulation = std::max(m_FreezeAccumulation - 3, 0);
 			vec2 Pos = pLocalChar->Core()->m_Pos;
 			int Events = pLocalChar->Core()->m_TriggeredEvents;
 			if(g_Config.m_ClPredict && !m_SuppressEvents)
@@ -2788,7 +2802,7 @@ void CGameClient::OnPredict()
 			HandlePredictedEvents(Tick);
 
 		if(FastInputTicks > 0 && Tick == FinalTickRegular)
-			m_RegularPredictedWorld.CopyWorld(&m_PredictedWorld);
+			m_RegularPredictedWorld.CopyWorldClean(&m_PredictedWorld);
 	}
 
 	// the rest of the client works with the regular predicted world
@@ -2856,6 +2870,223 @@ void CGameClient::OnPredict()
 			}
 		}
 	}
+
+	// C-Client (from TClient by Tater): improved antiping smoothing of other players.
+	// It compares where the last predicted world thinks a tee goes with where it really went and
+	// only trusts the prediction as far as the tee moved steadily before.
+	CCharacter *pSmoothLocalChar = m_PredSmoothingWorld.GetCharacterById(m_Snap.m_LocalClientId);
+	if(g_Config.m_CcAntiPingImproved &&
+		Predict() && AntiPingPlayers() &&
+		pSmoothLocalChar &&
+		RealPredTick && m_PredictedTick >= MIN_TICK)
+	{
+		int PredTime = std::clamp(Client()->GetPredictionTime(), 0, 8000); // Milliseconds for some reason?? TODO: Use more precision
+		const int PredEndTick = FinalTickRegular;
+		const int SmoothTick = PredEndTick;
+
+		// Nightmare: in order to get 100% accurate comparison to detect mispredictions we must
+		// tick the PREVIOUS predicted world with our CURRENT predicted inputs
+		CCharacter *pSmoothDummyChar = nullptr;
+		CCharacter *pPredDummyChar = nullptr;
+		if(PredictDummy())
+		{
+			pSmoothDummyChar = m_PredSmoothingWorld.GetCharacterById(m_aLocalIds[!g_Config.m_ClDummy]);
+			pPredDummyChar = m_PredictedWorld.GetCharacterById(m_aLocalIds[!g_Config.m_ClDummy]);
+		}
+		CNetObj_PlayerInput *pInputData = m_PredictedWorld.GetCharacterById(m_Snap.m_LocalClientId)->LatestInput();
+		CNetObj_PlayerInput *pDummyInputData = !pPredDummyChar ? nullptr : m_PredictedWorld.GetCharacterById(m_aLocalIds[!g_Config.m_ClDummy])->LatestInput();
+		bool DummyFirst = pSmoothLocalChar && pSmoothDummyChar && pSmoothDummyChar->GetCid() < pSmoothLocalChar->GetCid();
+
+		if(DummyFirst && pSmoothDummyChar && pDummyInputData)
+			pSmoothDummyChar->OnDirectInput(pDummyInputData);
+
+		if(pInputData && pSmoothLocalChar)
+			pSmoothLocalChar->OnDirectInput(pInputData);
+
+		if(!DummyFirst && pSmoothDummyChar && pDummyInputData)
+			pSmoothDummyChar->OnDirectInput(pDummyInputData);
+
+		ApplyPreInputs(SmoothTick, true, m_PredSmoothingWorld);
+		m_PredSmoothingWorld.m_GameTick = SmoothTick;
+
+		if(pInputData && pSmoothLocalChar)
+			pSmoothLocalChar->OnPredictedInput(pInputData);
+
+		if(pDummyInputData && pSmoothDummyChar)
+			pSmoothDummyChar->OnPredictedInput(pDummyInputData);
+		ApplyPreInputs(SmoothTick, false, m_PredSmoothingWorld);
+		m_PredSmoothingWorld.Tick();
+
+		for(int i = 0; i < MAX_CLIENTS; i++)
+		{
+			if(!m_Snap.m_aCharacters[i].m_Active || !m_aLastActive[i])
+			{
+				m_aClients[i].m_ValidAntipingSmooth = false;
+				continue;
+			}
+
+			if(i == m_aLocalIds[!g_Config.m_ClDummy] || i == m_Snap.m_LocalClientId)
+			{
+				m_aClients[i].m_PrevImprovedPredPos = m_aClients[i].m_PrevPredicted.m_Pos;
+				m_aClients[i].m_ImprovedPredPos = m_aClients[i].m_Predicted.m_Pos;
+				continue;
+			}
+
+			CCharacter *pChar = m_PredSmoothingWorld.GetCharacterById(i);
+			if(!pChar)
+				continue;
+
+			vec2 PredPos = m_aClients[i].m_Predicted.m_Pos;
+
+			vec2 PrevPredPos = pChar->GetCore().m_Pos;
+
+			// Cursed hack to get the game tick consistently
+			int GameTick = Client()->GameTick(g_Config.m_ClDummy) + (int)Client()->IntraGameTick(g_Config.m_ClDummy);
+			static int s_PrevGameTick = 0;
+			if(s_PrevGameTick == GameTick)
+				GameTick++;
+			s_PrevGameTick = Client()->GameTick(g_Config.m_ClDummy) + (int)Client()->IntraGameTick(g_Config.m_ClDummy);
+
+			vec2 ServerPos = m_aClients[i].m_aPredPos[GameTick % 200];
+			vec2 PrevServerPos = m_aClients[i].m_aPredPos[(GameTick - 1) % 200];
+
+			vec2 PredDir = normalize(PredPos - ServerPos);
+			vec2 LastDir = normalize(PrevPredPos - ServerPos);
+
+			vec2 MaxPos = vec2(0, 0);
+			vec2 MinPos = vec2(0, 0);
+			bool FoundBoundingBox = false;
+			// Get a bounding box for our final prediction position to minimize going through walls
+			for(int Tick = GameTick - 1; Tick <= PredEndTick; Tick++)
+			{
+				if(m_aClients[i].m_aPredTick[Tick % 200] != Tick)
+					continue;
+				vec2 Pos = m_aClients[i].m_aPredPos[Tick % 200];
+				if(!FoundBoundingBox)
+				{
+					MaxPos = Pos;
+					MinPos = Pos;
+					FoundBoundingBox = true;
+				}
+				else
+				{
+					MaxPos.x = std::max(Pos.x, MaxPos.x);
+					MaxPos.y = std::max(Pos.y, MaxPos.y);
+					MinPos.x = std::min(Pos.x, MinPos.x);
+					MinPos.y = std::min(Pos.y, MinPos.y);
+				}
+			}
+			int PredStartTick = GameTick;
+			int HistoryStartTick = PredStartTick - (PredEndTick - PredStartTick);
+			HistoryStartTick = std::max(1, HistoryStartTick);
+			vec2 HistoryVector = vec2(0, 0);
+			float HistoryDistance = 0.0f;
+			int HistoryCount = 0;
+			// Find the average history vector
+			for(int Tick = HistoryStartTick; Tick <= PredStartTick; Tick++)
+			{
+				if(m_aClients[i].m_aPredTick[Tick % 200] != Tick || m_aClients[i].m_aPredTick[(Tick - 1) % 200] != Tick - 1)
+					continue;
+				vec2 DirVector = m_aClients[i].m_aPredPos[Tick % 200] - m_aClients[i].m_aPredPos[(Tick - 1) % 200];
+				HistoryVector += DirVector;
+				HistoryDistance += length(DirVector);
+				HistoryCount++;
+			}
+
+			bool ValidRecentPositions = m_aClients[i].m_aPredTick[GameTick % 200] == GameTick && m_aClients[i].m_aPredTick[(GameTick - 1) % 200] == GameTick - 1;
+			// Not enough history data
+			if(!ValidRecentPositions || !FoundBoundingBox || HistoryCount == 0 || /*HistoryDistance <= 0.0f ||*/ GameTick <= 0)
+			{
+				m_aClients[i].m_PrevImprovedPredPos = PrevPredPos;
+				m_aClients[i].m_ImprovedPredPos = PredPos;
+				continue;
+			}
+
+			HistoryVector = HistoryVector / HistoryCount;
+			HistoryVector = normalize(HistoryVector);
+			float Variance = 0.0f;
+			// Find the variance over the history window
+			if(length(HistoryVector) > 0.0f)
+			{
+				for(int Tick = HistoryStartTick; Tick <= PredStartTick; Tick++)
+				{
+					if(m_aClients[i].m_aPredTick[Tick % 200] != Tick || m_aClients[i].m_aPredTick[(Tick - 1) % 200] != Tick - 1)
+						continue;
+					vec2 DirVector = m_aClients[i].m_aPredPos[Tick % 200] - m_aClients[i].m_aPredPos[(Tick - 1) % 200];
+					vec2 Diff = normalize(DirVector) - HistoryVector;
+					Variance += dot(Diff, Diff);
+				}
+				Variance /= HistoryCount;
+			}
+			else
+			{
+				Variance = 0.0f;
+			}
+			float Sigma = 1.5f; // Can be adjusted
+			float SigmaScale = length(PredPos - ServerPos) / HistoryDistance;
+			if(SigmaScale > 0)
+				Sigma /= SigmaScale;
+			float TrustFactor = std::max(0.0f, 1.0f - (std::sqrt(Variance) / Sigma));
+			vec2 TrustedVector = HistoryVector;
+
+			// Detect mispredictions
+			float Confidence = 1.0f;
+			if(PredDir == vec2(0, 0))
+				Confidence = 1.0f;
+			else
+			{
+				Confidence = std::max(0.0f, dot(LastDir, PredDir));
+				Confidence = std::pow(Confidence, 4.0f); // Can be adjusted
+			}
+			float Uncertainty = 1.0f - Confidence;
+			float TickDuration = (float)1000 / (float)Client()->GameTickSpeed();
+
+			// Manage uncertainty value
+			float PredTimeScale = (float)g_Config.m_CcAntiPingUncertaintyScale / 100.0f;
+			float TickSize = TickDuration / ((float)PredTime * PredTimeScale); // 20ms / PredTime
+			float PrevConfidence = 1.0f - m_aClients[i].m_Uncertainty;
+			float NewConfidence = PrevConfidence - Uncertainty + TickSize;
+			float MinConfidence = g_Config.m_CcAntiPingNegativeBuffer ? -1.0f : 0.0f;
+			NewConfidence = std::clamp(NewConfidence, MinConfidence, 1.0f); // A certain about of "negative buffer" is allowed
+			m_aClients[i].m_Uncertainty = 1.0f - NewConfidence;
+			NewConfidence = std::max(0.0f, NewConfidence);
+
+			// Decompose prediction vector into 2 components based on the trusted vector
+			vec2 PredVector = PredPos - ServerPos;
+			vec2 Forward = normalize(TrustedVector);
+			float DotPf = std::max(0.0f, dot(normalize(PredVector), Forward));
+			vec2 ConfidenceParallel = Forward * DotPf * length(PredVector);
+			if(DotPf == 0.0f)
+				ConfidenceParallel = vec2(0, 0);
+			vec2 ConfidencePerp = PredVector - ConfidenceParallel;
+
+			if(!g_Config.m_CcAntiPingStableDirection)
+				TrustFactor = 0.0f;
+
+			vec2 ConfidenceVector = ConfidenceParallel * std::max(TrustFactor, NewConfidence) + ConfidencePerp * NewConfidence;
+
+			// Minor safe guard against insane predictions
+			if(length(ConfidenceVector) > HistoryDistance)
+				ConfidenceVector = mix(normalize(ConfidenceVector) * HistoryDistance, ConfidenceVector, NewConfidence);
+
+			vec2 ConfidencePos = ServerPos + ConfidenceVector;
+
+			// Clamp final position to bounding box
+			ConfidencePos.x = std::clamp(ConfidencePos.x, MinPos.x, MaxPos.x);
+			ConfidencePos.y = std::clamp(ConfidencePos.y, MinPos.y, MaxPos.y);
+
+			m_aClients[i].m_PrevImprovedPredPos = m_aClients[i].m_ImprovedPredPos;
+			m_aClients[i].m_ImprovedPredPos = ConfidencePos;
+			if(distance(ServerPos, PrevServerPos) > 600.0f || distance(m_aClients[i].m_PrevImprovedPredPos, m_aClients[i].m_ImprovedPredPos) > 600.0f)
+			{
+				m_aClients[i].m_PrevImprovedPredPos = m_aClients[i].m_ImprovedPredPos;
+			}
+			m_aClients[i].m_ValidAntipingSmooth = true;
+		}
+	}
+	// keep this world, next tick it is moved on and compared again
+	if(m_NewPredictedTick && g_Config.m_CcAntiPingImproved)
+		m_PredSmoothingWorld.CopyWorldClean(&m_PredictedWorld);
 
 	for(int i = 0; i < MAX_CLIENTS; i++)
 	{
@@ -3820,6 +4051,8 @@ void CGameClient::UpdateRenderedCharacters()
 		vec2 Pos = UnpredPos;
 
 		CCharacter *pChar = m_PredictedWorld.GetCharacterById(i);
+		if(i == m_Snap.m_LocalClientId)
+			Client()->m_IsLocalFrozen = pChar && pChar->m_FreezeTime > 0;
 		const bool IsDummy = PredictDummy() && i == m_aLocalIds[!g_Config.m_ClDummy];
 		bool AntiPingPlayer = AntiPingPlayers() == 1 || (AntiPingPlayers() >= 2 && (IsDummy || (pChar && pChar->IsInterfering())));
 		if(Predict() && (i == m_Snap.m_LocalClientId || (AntiPingPlayer && !IsOtherTeam(i))) && pChar)
@@ -3833,6 +4066,10 @@ void CGameClient::UpdateRenderedCharacters()
 				vec2(m_aClients[i].m_RenderPrev.m_X, m_aClients[i].m_RenderPrev.m_Y),
 				vec2(m_aClients[i].m_RenderCur.m_X, m_aClients[i].m_RenderCur.m_Y),
 				m_aClients[i].m_IsPredicted ? Client()->PredIntraGameTick(g_Config.m_ClDummy) : Client()->IntraGameTick(g_Config.m_ClDummy));
+
+			// C-Client (from TClient): less prediction of your tee while you are frozen
+			if(g_Config.m_CcRemoveAnti && i == m_Snap.m_LocalClientId)
+				Pos = GetFreezePos(i);
 
 			if(i == m_Snap.m_LocalClientId || IsDummy)
 			{
@@ -3852,12 +4089,42 @@ void CGameClient::UpdateRenderedCharacters()
 
 				if(g_Config.m_ClAntiPingSmooth)
 					Pos = GetSmoothPos(i);
+
+				// C-Client (from TClient)
+				if(g_Config.m_CcAntiPingImproved && m_aClients[i].m_ValidAntipingSmooth)
+					Pos = mix(m_aClients[i].m_PrevImprovedPredPos, m_aClients[i].m_ImprovedPredPos, Client()->PredIntraGameTick(g_Config.m_ClDummy));
+				if(g_Config.m_CcRemoveAnti && Client()->m_IsLocalFrozen)
+					Pos = GetFreezePos(i);
+				if(g_Config.m_CcShowOthersGhosts && g_Config.m_CcSwapGhosts && !(m_aClients[i].m_FreezeEnd > 0 && g_Config.m_CcHideFrozenGhosts))
+					Pos = UnpredPos;
+				if(g_Config.m_CcUnpredOthersInFreeze && Client()->m_IsLocalFrozen)
+					Pos = UnpredPos;
 			}
 		}
 		m_aClients[i].m_RenderPos = Pos;
 		if(Predict() && i == m_Snap.m_LocalClientId)
 			m_LocalCharacterPos = Pos;
 	}
+}
+
+vec2 CGameClient::GetFreezePos(int ClientId)
+{
+	vec2 Pos = mix(m_aClients[ClientId].m_PrevPredicted.m_Pos, m_aClients[ClientId].m_Predicted.m_Pos, Client()->PredIntraGameTick(g_Config.m_ClDummy));
+	if(!Client()->m_IsLocalFrozen || m_FreezeAccumulation <= 0 || g_Config.m_CcUnfreezeLagDelayTicks <= 0)
+		return Pos;
+
+	// the longer you are frozen, the more predicted ticks are taken away (up to cc_remove_anti_ticks)
+	const float Amount = std::min(1.0f, m_FreezeAccumulation / (float)g_Config.m_CcUnfreezeLagDelayTicks);
+	const int RemoveTicks = round_to_int(g_Config.m_CcUnfreezeLagTicks * Amount);
+	if(RemoveTicks <= 0)
+		return Pos;
+	const int Tick = Client()->PredGameTick(g_Config.m_ClDummy) - RemoveTicks;
+	if(Tick <= 1)
+		return Pos;
+	const CClientData &Data = m_aClients[ClientId];
+	if(Data.m_aPredTick[(Tick - 1) % 200] != Tick - 1 || Data.m_aPredTick[Tick % 200] != Tick)
+		return Pos;
+	return mix(Data.m_aPredPos[(Tick - 1) % 200], Data.m_aPredPos[Tick % 200], Client()->PredIntraGameTick(g_Config.m_ClDummy));
 }
 
 void CGameClient::HandlePredictedEvents(const int Tick)

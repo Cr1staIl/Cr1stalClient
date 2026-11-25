@@ -2522,6 +2522,27 @@ Save me
 How to save you?
 == 
 
+Failed to create bgdraw folder
+== 
+
+No items to write
+== 
+
+No changes since last save
+== 
+
+Writing item %d failed
+== 
+
+Written %d items
+== 
+
+Loaded %d items
+== 
+
+Loaded %d items (discarded %d items)
+== 
+
 [Playtime category]
 Easy
 == 
@@ -2556,6 +2577,9 @@ Solo
 
 [Playtime category]
 Other
+== 
+
+Changing name to %s near finish
 == 
 
 Dummy is not connected
@@ -2802,6 +2826,45 @@ Prediction strength
 Predict freeze
 == 
 
+Smooth antiping (TClient)
+== 
+
+New antiping smoothing
+== 
+
+Trusts the prediction of other tees only as far as they moved steadily before
+== 
+
+Optimistic along the stable direction
+== 
+
+Remember instability for longer
+== 
+
+Uncertainty duration
+== 
+
+While frozen
+== 
+
+Less prediction of your tee in freeze
+== 
+
+Ticks taken away
+== 
+
+Ticks until all is taken away
+== 
+
+Don't predict others while frozen
+== 
+
+Other prediction margin while frozen
+== 
+
+Margin while frozen
+== 
+
 Cursor
 == 
 
@@ -2856,6 +2919,57 @@ Tees
 Show real hitbox of tees
 == 
 
+Ping colored circle next to names
+== 
+
+Country flag next to names
+== 
+
+Skin name under names
+== 
+
+Stars over frozen tees
+== 
+
+Frozen tees keep their color
+== 
+
+Darker when frozen
+== 
+
+Also color the feet
+== 
+
+Katana in the hand of frozen tees
+== 
+
+All weapons look like the gun
+== 
+
+White feet for custom colored tees
+== 
+
+Skin for the white feet
+== 
+
+Own
+== 
+
+Small tees
+== 
+
+Size of small tees
+== 
+
+Red
+== 
+
+Blue
+== 
+
+Fake CTF flags
+== 
+
 Ninja skin
 == 
 
@@ -2871,6 +2985,9 @@ Own hook line
 Hook lines of others
 == 
 
+Moving tiles in entities
+== 
+
 Tees of other teams
 == 
 
@@ -2880,22 +2997,64 @@ Looks
 Neon menu background
 == 
 
-Rainbow tee (only you see it)
+Rainbow
+== 
+
+Rainbow tee
+== 
+
+Rainbow hook
+== 
+
+Rainbow weapon
+== 
+
+Also for other tees
+== 
+
+Pulse
+== 
+
+Dark
+== 
+
+Random
+== 
+
+Rainbow mode
 == 
 
 Rainbow speed
 == 
 
-Trail behind your tee
+Trail
 == 
 
-Rainbow trail
+Trail behind tees
+== 
+
+Trails of other tees
+== 
+
+Trail fades out
+== 
+
+Trail gets thinner
+== 
+
+Color
+== 
+
+Trail color
+== 
+
+Trail width
 == 
 
 Trail length
 == 
 
-Trail width
+Trail opacity
 == 
 
 Tile outlines
@@ -2929,6 +3088,15 @@ Walls
 == 
 
 Wall color
+== 
+
+Teleporters
+== 
+
+Teleporter color
+== 
+
+Only in entities view
 == 
 
 Music island
@@ -2985,13 +3153,22 @@ Freeze bars under frozen tees
 Show teammates that are off screen
 == 
 
+Only frozen teammates
+== 
+
+Small tees instead of dots
+== 
+
 Indicator distance
 == 
 
 Indicator size
 == 
 
-Green: alive, blue: frozen
+Not frozen
+== 
+
+Frozen
 == 
 
 Status bar (FPS, ping, team, time)
@@ -3013,6 +3190,18 @@ Show your aim angle
 == 
 
 Show jumps you have left
+== 
+
+Small vote window
+== 
+
+Show position and aim angle
+== 
+
+Cursor while spectating
+== 
+
+Cursor opacity
 == 
 
 Game tiles over the map
@@ -3067,6 +3256,102 @@ On join
 == 
 
 Console command when you join a server
+== 
+
+Command before connecting
+== 
+
+Command a bit after joining
+== 
+
+Delay (ticks)
+== 
+
+Automation
+== 
+
+Vote no to map changes when you are far
+== 
+
+Not when a friend, your team or you yourself started the vote
+== 
+
+Far means after
+== 
+
+Message in chat (empty: none)
+== 
+
+Auto reply to muted players
+== 
+
+Reply
+== 
+
+Auto reply when the game is minimized
+== 
+
+Other name near the finish
+== 
+
+Name near the finish
+== 
+
+Ghosts
+== 
+
+Ghosts of other tees (without prediction)
+== 
+
+Swap ghosts and tees
+== 
+
+No ghosts of frozen tees
+== 
+
+Ghosts as circles
+== 
+
+Predicted tees
+== 
+
+Just for fun
+== 
+
+Pet next to your tee
+== 
+
+Skin of the pet
+== 
+
+Pet size
+== 
+
+Pet opacity
+== 
+
+Drawing on the map
+== 
+
+Draw with mouse button 4, erase with 5
+== 
+
+Clear all drawings
+== 
+
+Drawing color
+== 
+
+Line width
+== 
+
+Lines disappear after
+== 
+
+Most lines
+== 
+
+Keep drawings for every map
 == 
 
 Teleport to cursor
@@ -3187,4 +3472,10 @@ Join team %d
 == 
 
 Vote kick
+== 
+
+yes
+== 
+
+no
 == 

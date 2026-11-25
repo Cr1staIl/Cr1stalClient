@@ -2763,9 +2763,6 @@ Looks
 Neon menu background
 == Неоновый фон меню
 
-Rainbow tee (only you see it)
-== Радужный ти (видишь только ты)
-
 Rainbow speed
 == Скорость радуги
 
@@ -2829,12 +2826,6 @@ Own hook line
 Hook lines of others
 == Линии хука других
 
-Trail behind your tee
-== След за твоим ти
-
-Rainbow trail
-== Радужный след
-
 Trail length
 == Длина следа
 
@@ -2852,9 +2843,6 @@ Indicator distance
 
 Indicator size
 == Размер индикаторов
-
-Green: alive, blue: frozen
-== Зелёный: живой, синий: заморожен
 
 Status bar (FPS, ping, team, time)
 == Строка состояния (FPS, пинг, команда, время)
@@ -3165,9 +3153,6 @@ Country
 Profile
 == Профиль
 
-Virtual joystick which only aims and moves the mouse pointer relatively.
-== 
-
 Optimization
 == Оптимизация
 
@@ -3188,3 +3173,309 @@ Light mode: your PC is fast
 
 Turning it off brings your settings back
 == Если выключить, настройки вернутся
+
+Failed to create bgdraw folder
+== Не удалось создать папку для рисунков
+
+No items to write
+== Нечего сохранять
+
+No changes since last save
+== Нет изменений с последнего сохранения
+
+Writing item %d failed
+== Не удалось сохранить линию %d
+
+Written %d items
+== Сохранено линий: %d
+
+Loaded %d items
+== Загружено линий: %d
+
+Loaded %d items (discarded %d items)
+== Загружено линий: %d (отброшено: %d)
+
+Changing name to %s near finish
+== Меняю ник на %s у финиша
+
+Virtual joystick which only aims and moves the mouse pointer relatively.
+== 
+
+Smooth antiping (TClient)
+== Плавный антипинг (TClient)
+
+New antiping smoothing
+== Новый плавный антипинг
+
+Trusts the prediction of other tees only as far as they moved steadily before
+== Доверяет предсказанию других тишек настолько, насколько ровно они двигались
+
+Optimistic along the stable direction
+== Смелее по устойчивому направлению
+
+Remember instability for longer
+== Дольше помнить нестабильность
+
+Uncertainty duration
+== Длительность неуверенности
+
+While frozen
+== Во фризе
+
+Less prediction of your tee in freeze
+== Меньше предсказания себя во фризе
+
+Ticks taken away
+== Сколько тиков убрать
+
+Ticks until all is taken away
+== За сколько тиков убрать
+
+Don't predict others while frozen
+== Не предсказывать других во фризе
+
+Other prediction margin while frozen
+== Другой запас предсказания во фризе
+
+Margin while frozen
+== Запас во фризе
+
+Ping colored circle next to names
+== Цветной кружок пинга у ника
+
+Country flag next to names
+== Флаг страны у ника
+
+Skin name under names
+== Название скина под ником
+
+Stars over frozen tees
+== Звёзды над замороженными
+
+Frozen tees keep their color
+== Замороженные сохраняют свой цвет
+
+Darker when frozen
+== Темнее во фризе
+
+Also color the feet
+== Красить и ножки
+
+Katana in the hand of frozen tees
+== Катана у замороженных
+
+All weapons look like the gun
+== Всё оружие как пистолет
+
+White feet for custom colored tees
+== Белые ножки у цветных тишек
+
+Skin for the white feet
+== Скин для белых ножек
+
+Own
+== Свои
+
+Small tees
+== Маленькие тишки
+
+Size of small tees
+== Размер маленьких тишек
+
+Red
+== Красный
+
+Blue
+== Синий
+
+Fake CTF flags
+== Фейковые CTF-флаги
+
+Moving tiles in entities
+== Движущиеся тайлы в entities
+
+Rainbow
+== Радуга
+
+Rainbow tee
+== Радужный тишка
+
+Rainbow hook
+== Радужный крюк
+
+Rainbow weapon
+== Радужное оружие
+
+Also for other tees
+== И для других тишек
+
+Pulse
+== Пульс
+
+Dark
+== Тьма
+
+Random
+== Случайно
+
+Rainbow mode
+== Режим радуги
+
+Trail
+== След
+
+Trail behind tees
+== След за тишками
+
+Trails of other tees
+== Следы других тишек
+
+Trail fades out
+== След затухает
+
+Trail gets thinner
+== След сужается
+
+Color
+== Цвет
+
+Trail color
+== Цвет следа
+
+Trail opacity
+== Прозрачность следа
+
+Teleporters
+== Телепорты
+
+Teleporter color
+== Цвет телепортов
+
+Only in entities view
+== Только в entities
+
+Only frozen teammates
+== Только замороженные
+
+Small tees instead of dots
+== Тишки вместо кружков
+
+Not frozen
+== Не во фризе
+
+Frozen
+== Во фризе
+
+Small vote window
+== Маленькое окно голосования
+
+Show position and aim angle
+== Позиция и угол прицела
+
+Cursor while spectating
+== Курсор в наблюдении
+
+Cursor opacity
+== Прозрачность курсора
+
+Command before connecting
+== Команда перед подключением
+
+Command a bit after joining
+== Команда чуть после захода
+
+Delay (ticks)
+== Задержка (тики)
+
+Automation
+== Автоматизация
+
+Vote no to map changes when you are far
+== Голосовать «нет» за смену карты, если ты далеко
+
+Not when a friend, your team or you yourself started the vote
+== Кроме голосований от друзей, своей команды и тебя самого
+
+Far means after
+== Далеко — это после
+
+Message in chat (empty: none)
+== Сообщение в чат (пусто — без него)
+
+Auto reply to muted players
+== Автоответ замьюченным
+
+Reply
+== Ответ
+
+Auto reply when the game is minimized
+== Автоответ, когда игра свёрнута
+
+Other name near the finish
+== Другой ник у финиша
+
+Name near the finish
+== Ник у финиша
+
+Ghosts
+== Призраки
+
+Ghosts of other tees (without prediction)
+== Призраки других тишек (без предсказания)
+
+Swap ghosts and tees
+== Поменять призраков и тишек местами
+
+No ghosts of frozen tees
+== Без призраков у замороженных
+
+Ghosts as circles
+== Призраки кружками
+
+Predicted tees
+== Предсказанные тишки
+
+Just for fun
+== Для души
+
+Pet next to your tee
+== Питомец рядом
+
+Skin of the pet
+== Скин питомца
+
+Pet size
+== Размер питомца
+
+Pet opacity
+== Прозрачность питомца
+
+Drawing on the map
+== Рисование на карте
+
+Draw with mouse button 4, erase with 5
+== Рисовать кнопкой мыши 4, стирать 5
+
+Clear all drawings
+== Стереть все рисунки
+
+Drawing color
+== Цвет рисунка
+
+Line width
+== Толщина линии
+
+Lines disappear after
+== Линии исчезают через
+
+Most lines
+== Максимум линий
+
+Keep drawings for every map
+== Хранить рисунки для каждой карты
+
+yes
+== да
+
+no
+== нет

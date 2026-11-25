@@ -575,7 +575,7 @@ void CCClient::UpdateOptimize()
 	Set("gfx_backgroundrender", &g_Config.m_GfxBackgroundRender, 0);
 	Set("cl_refresh_rate_inactive", &g_Config.m_ClRefreshRateInactive, 30);
 	Set("cl_unpredicted_shadow", &g_Config.m_ClUnpredictedShadow, 0);
-	Set("cc_trail", &g_Config.m_CcTrail, 0);
+	Set("cc_tee_trail", &g_Config.m_CcTeeTrail, 0);
 	Set("cc_aura", &g_Config.m_CcAura, 0);
 	// a weaker PC (under 144 fps right now) also hides the decoration quads of the map
 	m_OptimizeStrong = m_Fps > 0 && m_Fps < 144;
@@ -589,6 +589,9 @@ void CCClient::OnUpdate()
 	ApplyFont();
 	UpdateMedia();
 	UpdateOptimize();
+
+	// skin whose feet are used for cc_white_feet
+	RenderTools()->SetWhiteFeetSkin(g_Config.m_CcWhiteFeet ? GameClient()->m_Skins.Find(g_Config.m_CcWhiteFeetSkin) : nullptr);
 
 	if(m_UpdateState == EUpdateState::CHECKING && m_pVersionRequest && m_pVersionRequest->Done())
 	{
@@ -657,6 +660,7 @@ enum
 	OUTLINE_FREEZE,
 	OUTLINE_UNFREEZE,
 	OUTLINE_DEATH,
+	OUTLINE_TELE,
 	NUM_OUTLINE_KINDS,
 };
 
@@ -674,12 +678,16 @@ static int OutlineKind(const CCollision *pCollision, int Index)
 		return OUTLINE_FREEZE;
 	if(IsUnfreeze(Game) || IsUnfreeze(Front))
 		return OUTLINE_UNFREEZE;
+	if(pCollision->TeleLayer() && pCollision->TeleLayer()[Index].m_Type != 0)
+		return OUTLINE_TELE;
 	return OUTLINE_NONE;
 }
 
 void CCOutlines::OnRender()
 {
 	if(!g_Config.m_CcOutline)
+		return;
+	if(g_Config.m_CcOutlineEntities && g_Config.m_ClOverlayEntities != 100)
 		return;
 	if(Client()->State() != IClient::STATE_ONLINE && Client()->State() != IClient::STATE_DEMOPLAYBACK)
 		return;
@@ -689,13 +697,14 @@ void CCOutlines::OnRender()
 	if(Width <= 0 || Height <= 0)
 		return;
 
-	const bool aEnabled[NUM_OUTLINE_KINDS] = {false, (bool)g_Config.m_CcOutlineSolid, (bool)g_Config.m_CcOutlineFreeze, (bool)g_Config.m_CcOutlineUnfreeze, (bool)g_Config.m_CcOutlineDeath};
+	const bool aEnabled[NUM_OUTLINE_KINDS] = {false, (bool)g_Config.m_CcOutlineSolid, (bool)g_Config.m_CcOutlineFreeze, (bool)g_Config.m_CcOutlineUnfreeze, (bool)g_Config.m_CcOutlineDeath, (bool)g_Config.m_CcOutlineTele};
 	const ColorRGBA aColors[NUM_OUTLINE_KINDS] = {
 		ColorRGBA(0, 0, 0, 0),
 		color_cast<ColorRGBA>(ColorHSLA(g_Config.m_CcOutlineColorSolid, true)),
 		color_cast<ColorRGBA>(ColorHSLA(g_Config.m_CcOutlineColorFreeze, true)),
 		color_cast<ColorRGBA>(ColorHSLA(g_Config.m_CcOutlineColorUnfreeze, true)),
 		color_cast<ColorRGBA>(ColorHSLA(g_Config.m_CcOutlineColorDeath, true)),
+		color_cast<ColorRGBA>(ColorHSLA(g_Config.m_CcOutlineColorTele, true)),
 	};
 
 	const CScreenRect OldScreen = Graphics()->GetScreen();

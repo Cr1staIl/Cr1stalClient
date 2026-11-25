@@ -2685,12 +2685,24 @@ if(CLIENT)
     components/camera.h
     components/cclient.cpp
     components/cclient.h
+    components/cclient_bg_draw.cpp
+    components/cclient_bg_draw.h
+    components/cclient_bg_draw_file.cpp
+    components/cclient_bg_draw_file.h
     components/cclient_media.cpp
     components/cclient_media.h
+    components/cclient_moving_tiles.cpp
+    components/cclient_moving_tiles.h
     components/cclient_playtime.cpp
     components/cclient_playtime.h
+    components/cclient_spt.cpp
+    components/cclient_spt.h
     components/cclient_style.cpp
     components/cclient_style.h
+    components/cclient_tc.cpp
+    components/cclient_tc.h
+    components/cclient_trails.cpp
+    components/cclient_trails.h
     components/censor.cpp
     components/censor.h
     components/chat.cpp

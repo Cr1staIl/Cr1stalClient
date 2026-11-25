@@ -29,6 +29,8 @@ public:
 	void OnInit() override;
 
 	void ReconstructSmokeTrail(const CProjectileData *pCurrent, int DestroyTick);
+	// C-Client (from TClient): a CTF flag above a tee, only drawn for you
+	void RenderFakeCtfFlag(vec2 Pos, float Alpha, int Team);
 	void RenderLaser(vec2 From, vec2 Pos, ColorRGBA OuterColor, ColorRGBA InnerColor, float TicksBody, float TicksHead, int Type) const;
 
 private:

@@ -346,6 +346,46 @@ void CVoting::Render()
 		return;
 	}
 
+	// C-Client: small vote window (cc_mini_vote_hud): what, time left, bars and keys, nothing more
+	if(g_Config.m_CcMiniVoteHud)
+	{
+		CUIRect Mini = {0.0f, 60.0f, 78.0f, 21.0f};
+		Mini.Draw(ColorRGBA(0.06f, 0.055f, 0.065f, 0.75f), IGraphics::CORNER_R, 4.0f);
+		Mini.Margin(vec2(3.0f, 2.5f), &Mini);
+
+		CUIRect Line, Left, Right;
+		char aMini[64];
+		str_format(aMini, sizeof(aMini), "%ds", Seconds);
+		Mini.HSplitTop(5.5f, &Line, &Mini);
+		Line.VSplitRight(TextRender()->TextWidth(4.5f, aMini) + 1.0f, &Left, &Right);
+		SLabelProperties MiniProps;
+		MiniProps.m_EllipsisAtEnd = true;
+		MiniProps.m_MaxWidth = Left.w - 2.0f;
+		Ui()->DoLabel(&Left, VoteDescription(), 5.0f, TEXTALIGN_ML, MiniProps);
+		SLabelProperties TimeProps;
+		TimeProps.SetColor(ColorRGBA(0.7f, 0.7f, 0.75f, 1.0f));
+		Ui()->DoLabel(&Right, aMini, 4.5f, TEXTALIGN_MR, TimeProps);
+
+		Mini.HSplitTop(2.0f, nullptr, &Mini);
+		Mini.HSplitTop(3.0f, &Line, &Mini);
+		RenderBars(Line);
+
+		Mini.HSplitTop(2.0f, nullptr, &Mini);
+		Mini.HSplitTop(4.5f, &Line, &Mini);
+		Line.VSplitMid(&Left, &Right, 2.0f);
+		char aKeyMini[64];
+		GameClient()->m_Binds.GetKey("vote yes", aKeyMini, sizeof(aKeyMini));
+		str_format(aMini, sizeof(aMini), "%s %s", aKeyMini, Localize("yes"));
+		TextRender()->TextColor(TakenChoice() == 1 ? ColorRGBA(0.2f, 0.9f, 0.2f, 0.9f) : ColorRGBA(0.85f, 0.85f, 0.85f, 0.8f));
+		Ui()->DoLabel(&Left, aMini, 4.0f, TEXTALIGN_ML);
+		GameClient()->m_Binds.GetKey("vote no", aKeyMini, sizeof(aKeyMini));
+		str_format(aMini, sizeof(aMini), "%s %s", Localize("no"), aKeyMini);
+		TextRender()->TextColor(TakenChoice() == -1 ? ColorRGBA(0.95f, 0.25f, 0.25f, 0.9f) : ColorRGBA(0.85f, 0.85f, 0.85f, 0.8f));
+		Ui()->DoLabel(&Right, aMini, 4.0f, TEXTALIGN_MR);
+		TextRender()->TextColor(TextRender()->DefaultTextColor());
+		return;
+	}
+
 	CUIRect View = {0.0f, 60.0f, 120.0f, 38.0f};
 	View.Draw(ColorRGBA(0.0f, 0.0f, 0.0f, 0.4f), IGraphics::CORNER_R, 3.0f);
 	View.Margin(3.0f, &View);

@@ -33,7 +33,11 @@
 #include "components/broadcast.h"
 #include "components/camera.h"
 #include "components/cclient.h"
+#include "components/cclient_bg_draw.h"
+#include "components/cclient_moving_tiles.h"
 #include "components/cclient_playtime.h"
+#include "components/cclient_tc.h"
+#include "components/cclient_trails.h"
 #include "components/censor.h"
 #include "components/chat.h"
 #include "components/console.h"
@@ -179,7 +183,14 @@ public:
 	CEmoticon m_Emoticon;
 	CCClient m_CClient;
 	CCOutlines m_COutlines;
+	CCMovingTiles m_CMovingTilesBackground = CCMovingTiles{false};
+	CCMovingTiles m_CMovingTilesForeground = CCMovingTiles{true};
 	CCPlaytime m_CPlaytime;
+	CCRainbow m_CRainbow;
+	CCTrails m_CTrails;
+	CCBgDraw m_CBgDraw;
+	CCPet m_CPet;
+	CCAutomation m_CAutomation;
 	CDamageInd m_DamageInd;
 	CTouchControls m_TouchControls;
 	CVoting m_Voting;
@@ -534,6 +545,12 @@ public:
 		bool m_IsPredictedLocal;
 		int64_t m_aSmoothStart[2];
 		int64_t m_aSmoothLen[2];
+		// C-Client (from TClient): improved antiping
+		float m_Uncertainty = 0.0f;
+		vec2 m_ImprovedPredPos = vec2(0.0f, 0.0f);
+		vec2 m_PrevImprovedPredPos = vec2(0.0f, 0.0f);
+		bool m_ValidAntipingSmooth = false;
+
 		vec2 m_aPredPos[200];
 		int m_aPredTick[200];
 		bool m_SpecCharPresent;
@@ -727,12 +744,18 @@ public:
 	CGameWorld m_PredictedWorld;
 	CGameWorld m_PrevPredictedWorld;
 	CGameWorld m_RegularPredictedWorld; // C-Client fast input: world at the regular prediction tick
+	CGameWorld m_PredSmoothingWorld; // C-Client (from TClient): last predicted world, to find mispredictions of others
+	int m_FreezeAccumulation = 0; // C-Client: ticks you have been frozen, for cc_remove_anti
+	vec2 GetFreezePos(int ClientId);
 
 	std::vector<SSwitchers> &Switchers() { return m_GameWorld.m_Core.m_vSwitchers; }
 	std::vector<SSwitchers> &PredSwitchers() { return m_PredictedWorld.m_Core.m_vSwitchers; }
 
 	void DummyResetInput() override;
 	void Echo(const char *pString) override;
+	// C-Client: check (and fix) our player info again after this many ticks
+	void SetCheckInfo(int Conn, int Ticks) { m_aCheckInfo[Conn] = Ticks; }
+	vec2 GetSmoothPos(int ClientId);
 	bool IsOtherTeam(int ClientId) const;
 	int SwitchStateTeam() const;
 	bool IsLocalCharSuper() const;
@@ -956,8 +979,6 @@ private:
 
 	int m_aLastUpdateTick[MAX_CLIENTS] = {0};
 	void DetectStrongHook();
-
-	vec2 GetSmoothPos(int ClientId);
 
 	int m_IsDummySwapping;
 	CCharOrder m_CharOrder;

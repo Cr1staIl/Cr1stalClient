@@ -271,6 +271,11 @@ int CControls::SnapInput(int *pData)
 		break;
 	}
 
+	// C-Client (from TClient): with the ping circle the server has to send everyone's ping, like with the scoreboard open
+	if(g_Config.m_CcNameplatePingCircle)
+		for(auto &InputData : m_aInputData)
+			InputData.m_PlayerFlags |= PLAYERFLAG_SCOREBOARD;
+
 	bool Send = m_aLastData[g_Config.m_ClDummy].m_PlayerFlags != m_aInputData[g_Config.m_ClDummy].m_PlayerFlags;
 
 	m_aLastData[g_Config.m_ClDummy].m_PlayerFlags = m_aInputData[g_Config.m_ClDummy].m_PlayerFlags;
