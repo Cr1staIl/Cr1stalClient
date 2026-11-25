@@ -76,14 +76,12 @@ jobs:
 
     # rolling pre-release used by the in-game update button (not shown as the latest release)
     - name: Publish test update
-      uses: softprops/action-gh-release@v2
-      with:
-        tag_name: test-latest
-        name: Cr♱stal Client test build (not for everyone yet)
-        body: Test build ${{ github.run_number }} from ${{ github.sha }}. Used by the in-game update button.
-        prerelease: true
-        make_latest: false
-        overwrite_files: true
-        files: |
-          installer-out/Cr1stalClient-Setup.exe
-          installer-out/version.json
+      shell: bash
+      env:
+        GH_TOKEN: ${{ github.token }}
+      run: |
+        if ! gh release view test-latest >/dev/null 2>&1; then
+          gh release create test-latest --prerelease --latest=false --title "Cr♱stal Client test build (not for everyone yet)" --notes "Used by the in-game update button."
+        fi
+        gh release upload test-latest installer-out/Cr1stalClient-Setup.exe installer-out/version.json --clobber
+        gh release edit test-latest --notes "Test build ${{ github.run_number }} from ${{ github.sha }}. Used by the in-game update button."
