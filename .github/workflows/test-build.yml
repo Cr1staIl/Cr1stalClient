@@ -84,4 +84,4 @@ jobs:
           gh release create test-latest --prerelease --latest=false --title "Cr♱stal Client test build (not for everyone yet)" --notes "Used by the in-game update button."
         fi
         gh release upload test-latest installer-out/Cr1stalClient-Setup.exe installer-out/version.json --clobber
-        gh release edit test-latest --notes "Test build ${{ github.run_number }} from ${{ github.sha }}. Used by the in-game update button."
+        gh release edit test-latest --notes "Test build ${{ github.run_number }} from ${{ github.sha }}. Used by the in-game update button." || echo "Could not update the release notes, the files are uploaded"
