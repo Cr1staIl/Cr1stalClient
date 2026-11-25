@@ -31,4 +31,30 @@ namespace CCStyle
 		return Result;
 	}
 
+	void NeonGlow(const std::function<void(vec2 Offset, ColorRGBA Color)> &Draw, ColorRGBA Glow, float Strength, float Radius)
+	{
+		if(Strength <= 0.0f)
+			return;
+		// inner ring: 8 soft copies, outer ring: 6 fainter copies further out
+		for(int i = 0; i < 8; i++)
+		{
+			const float Angle = i * pi / 4.0f;
+			ColorRGBA Color = Glow;
+			Color.a = Glow.a * 0.10f * Strength;
+			Draw(vec2(std::cos(Angle), std::sin(Angle)) * Radius, Color);
+		}
+		for(int i = 0; i < 6; i++)
+		{
+			const float Angle = i * pi / 3.0f + pi / 6.0f;
+			ColorRGBA Color = Glow;
+			Color.a = Glow.a * 0.05f * Strength;
+			Draw(vec2(std::cos(Angle), std::sin(Angle)) * Radius * 1.9f, Color);
+		}
+	}
+
+	float NeonPulse(float Time, float Phase)
+	{
+		return 0.825f + 0.175f * std::sin(1.6f * Time + Phase);
+	}
+
 } // namespace CCStyle
