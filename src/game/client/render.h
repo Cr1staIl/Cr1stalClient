@@ -209,6 +209,11 @@ enum
 
 class CRenderTools
 {
+public:
+	// C-Client: squash and stretch of the next tee body (jelly tees)
+	mutable vec2 m_JellyScale = vec2(1.0f, 1.0f);
+
+private:
 	class IGraphics *m_pGraphics;
 	class ITextRender *m_pTextRender;
 

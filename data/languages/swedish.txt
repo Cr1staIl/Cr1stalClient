@@ -2566,6 +2566,12 @@ Dummy is not connected
 You are the last one!
 == 
 
+Checkpoint:
+== 
+
+Player below you
+== 
+
 [Important alert message]
 Tap to dismiss…
 == 
@@ -3304,6 +3310,114 @@ Cursor opacity
 == 
 
 Game tiles over the map
+== 
+
+Show your checkpoint
+== 
+
+X tile above every tee
+== 
+
+Hint when a tee is straight below you
+== 
+
+FPS counter shows the best frame
+== 
+
+Vote in percent
+== 
+
+Heart after friends in the scoreboard
+== 
+
+Names of the spectators
+== 
+
+Scoreboard size
+== 
+
+Emote wheel size
+== 
+
+Interface size
+== 
+
+Effects
+== 
+
+Jelly tees
+== 
+
+Also other tees
+== 
+
+Wobble
+== 
+
+Weapon glow
+== 
+
+Classic
+== 
+
+Prism
+== 
+
+Crystal
+== 
+
+Glow look
+== 
+
+Glow strength
+== 
+
+Glow color
+== 
+
+Hook and hammer
+== 
+
+Ring when jumping in the air
+== 
+
+Hammer swing
+== 
+
+No hammer hit flash
+== 
+
+Lasso on the hooked tee
+== 
+
+Box on the hooked tee
+== 
+
+Light along the hook while holding
+== 
+
+Ice around frozen tees
+== 
+
+Lightning when a tee gets frozen
+== 
+
+Lightning color
+== 
+
+Snow
+== 
+
+Rain
+== 
+
+Fireflies
+== 
+
+Dust
+== 
+
+Weather
 == 
 
 Saves and markers

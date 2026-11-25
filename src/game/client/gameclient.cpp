@@ -150,6 +150,7 @@ void CGameClient::OnConsoleInit()
 					      &m_CMovingTilesForeground,
 					      &m_COutlines,
 					      &m_CPet,
+					      &m_CEffects,
 					      &m_Particles.m_RenderExplosions,
 					      &m_NamePlates,
 					      &m_Particles.m_RenderExtra,

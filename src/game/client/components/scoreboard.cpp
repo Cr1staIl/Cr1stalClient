@@ -862,6 +862,16 @@ void CScoreboard::RenderScoreboard(CUIRect Scoreboard, int Team, int CountStart,
 				}
 				Player.m_Name.Render(TextRender(), vec2(NameOffset + BadgeWidth, TextY), NameColor);
 
+				// C-Client: a small heart after the names of your friends
+				if(g_Config.m_CcScoreboardFriend && ClientData.m_Friend)
+				{
+					TextRender()->SetFontPreset(EFontPreset::ICON_FONT);
+					TextRender()->TextColor(ColorRGBA(0.95f, 0.18f, 0.33f, TextColor.a));
+					TextRender()->Text(NameOffset + BadgeWidth + Player.m_Name.Width() + 3.0f, TextY + FontSize * 0.15f, FontSize * 0.7f, FontIcon::HEART, -1.0f);
+					TextRender()->TextColor(TextRender()->DefaultTextColor());
+					TextRender()->SetFontPreset(EFontPreset::DEFAULT_FONT);
+				}
+
 				// ready / watching
 				if(Client()->IsSixup() && Client()->m_TranslationContext.m_aClients[pInfo->m_ClientId].m_PlayerFlags7 & protocol7::PLAYERFLAG_READY)
 				{
@@ -1034,6 +1044,7 @@ void CScoreboard::OnRender()
 	if(GameClient()->m_Motd.IsActive())
 		GameClient()->m_Motd.Clear();
 
+	const CUi::CScreenScaleGuard ScaleGuard(Ui(), std::clamp(g_Config.m_CcScoreboardScale, 50, 100) / 100.0f); // C-Client
 	const CUIRect Screen = *Ui()->Screen();
 	Ui()->MapScreen();
 

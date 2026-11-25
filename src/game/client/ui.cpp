@@ -492,7 +492,8 @@ float CUi::HoverAnim(const void *pId, float Speed)
 
 const CUIRect *CUi::Screen()
 {
-	m_Screen.h = 600.0f;
+	// C-Client: the whole interface scale and the scale of the part drawn right now
+	m_Screen.h = 600.0f / (std::clamp(g_Config.m_CcUiScale, 50, 150) / 100.0f) / m_ScreenScale;
 	m_Screen.w = Graphics()->ScreenAspect() * m_Screen.h;
 	return &m_Screen;
 }

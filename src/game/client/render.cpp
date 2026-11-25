@@ -549,7 +549,7 @@ void CRenderTools::RenderTee6(const CAnimState *pAnim, const CTeeRenderInfo *pIn
 				float BodyScale;
 				GetRenderTeeBodyScale(BaseSize, BodyScale);
 				Graphics()->TextureSet(OutLine == 1 ? pSkinTextures->m_BodyOutline : pSkinTextures->m_Body);
-				Graphics()->RenderQuadContainerAsSprite(m_TeeQuadContainerIndex, OutLine, BodyPos.x, BodyPos.y, BodyScale, BodyScale);
+				Graphics()->RenderQuadContainerAsSprite(m_TeeQuadContainerIndex, OutLine, BodyPos.x, BodyPos.y + BodyScale * 32.0f * (1.0f - m_JellyScale.y) * 0.5f, BodyScale * m_JellyScale.x, BodyScale * m_JellyScale.y);
 
 				// draw eyes
 				if(Pass == 1)

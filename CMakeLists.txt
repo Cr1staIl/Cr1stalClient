@@ -2689,6 +2689,8 @@ if(CLIENT)
     components/cclient_bg_draw.h
     components/cclient_bg_draw_file.cpp
     components/cclient_bg_draw_file.h
+    components/cclient_effects.cpp
+    components/cclient_effects.h
     components/cclient_media.cpp
     components/cclient_media.h
     components/cclient_moving_tiles.cpp

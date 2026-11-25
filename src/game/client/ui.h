@@ -444,6 +444,7 @@ private:
 	vec2 m_UpdatedMouseDelta = vec2(0.0f, 0.0f); // in window screen space
 	vec2 m_MousePos = vec2(0.0f, 0.0f); // in gui space
 	vec2 m_MouseDelta = vec2(0.0f, 0.0f); // in gui space
+	float m_ScreenScale = 1.0f; // C-Client: temporary scale of one part (scoreboard, wheel)
 	unsigned m_UpdatedMouseButtons = 0;
 	unsigned m_MouseButtons = 0;
 	unsigned m_LastMouseButtons = 0;
@@ -555,6 +556,23 @@ public:
 	float MouseX() const { return m_MousePos.x; }
 	float MouseY() const { return m_MousePos.y; }
 	vec2 MouseDelta() const { return m_MouseDelta; }
+	// C-Client: draw the next things bigger or smaller (Scale < 1 is smaller), the mouse stays right
+	void SetScreenScale(float Scale)
+	{
+		const float Factor = m_ScreenScale / Scale;
+		m_MousePos *= Factor;
+		m_MouseDelta *= Factor;
+		m_ScreenScale = Scale;
+	}
+	class CScreenScaleGuard
+	{
+		CUi *m_pUi;
+
+	public:
+		CScreenScaleGuard(CUi *pUi, float Scale) :
+			m_pUi(pUi) { m_pUi->SetScreenScale(Scale); }
+		~CScreenScaleGuard() { m_pUi->SetScreenScale(1.0f); }
+	};
 	float MouseDeltaX() const { return m_MouseDelta.x; }
 	float MouseDeltaY() const { return m_MouseDelta.y; }
 	vec2 UpdatedMousePos() const { return m_UpdatedMousePos; }

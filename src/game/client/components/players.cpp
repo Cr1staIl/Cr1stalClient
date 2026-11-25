@@ -977,7 +977,9 @@ void CPlayers::RenderPlayer(
 		RenderTools()->RenderTee(&State, &RenderInfo, Player.m_Emote, Direction, ShadowPosition, g_Config.m_ClUnpredictedShadowAlpha / 100.f, Local); // render ghost
 	}
 
+	RenderTools()->m_JellyScale = GameClient()->m_CEffects.JellyScale(ClientId); // C-Client
 	RenderTools()->RenderTee(&State, &RenderInfo, Player.m_Emote, Direction, Position, Alpha, Local);
+	RenderTools()->m_JellyScale = vec2(1.0f, 1.0f);
 
 	float TeeAnimScale, TeeBaseSize;
 	CRenderTools::GetRenderTeeAnimScaleAndBaseSize(&RenderInfo, TeeAnimScale, TeeBaseSize);

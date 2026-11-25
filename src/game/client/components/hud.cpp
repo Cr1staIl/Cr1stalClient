@@ -563,7 +563,22 @@ void CHud::RenderTextInfo()
 	if(Showfps)
 	{
 		char aBuf[16];
-		const int FramesPerSecond = round_to_int(1.0f / Client()->FrameTimeAverage());
+		int FramesPerSecond = round_to_int(1.0f / Client()->FrameTimeAverage());
+		if(g_Config.m_CcMaxFps)
+		{
+			// C-Client: the best frame of the last half second instead of the average
+			const float FrameTime = std::max(Client()->RenderFrameTime(), 0.000001f);
+			m_CcFpsShortest = std::min(m_CcFpsShortest, FrameTime);
+			m_CcFpsWindow += FrameTime;
+			if(m_CcFpsWindow >= 0.5f)
+			{
+				m_CcFpsMax = std::clamp(round_to_int(1.0f / m_CcFpsShortest), 1, 99999);
+				m_CcFpsWindow = 0.0f;
+				m_CcFpsShortest = 1.0f;
+			}
+			if(m_CcFpsMax > 0)
+				FramesPerSecond = m_CcFpsMax;
+		}
 		str_format(aBuf, sizeof(aBuf), "%d", FramesPerSecond);
 
 		static float s_TextWidth0 = TextRender()->TextWidth(12.f, "0", -1, -1.0f);
@@ -1443,6 +1458,47 @@ void CHud::RenderSpectatorCount()
 	TextRender()->Text(x, y, Fontsize, FontIcon::EYE, -1.0f);
 	TextRender()->SetFontPreset(EFontPreset::DEFAULT_FONT);
 	TextRender()->Text(x + Fontsize + 3.f, y, Fontsize, aBuf, -1.0f);
+
+	// C-Client: the names of the players who watch (spectators and paused players)
+	if(g_Config.m_CcSpectatorNames)
+	{
+		const char *apNames[5];
+		int NumNames = 0;
+		int More = 0;
+		for(int i = 0; i < MAX_CLIENTS; i++)
+		{
+			const CNetObj_PlayerInfo *pInfo = GameClient()->m_Snap.m_apPlayerInfos[i];
+			if(!pInfo || pInfo->m_Local)
+				continue;
+			const auto &Data = GameClient()->m_aClients[i];
+			if(pInfo->m_Team != TEAM_SPECTATORS && !Data.m_Paused && !Data.m_Spec)
+				continue;
+			if(NumNames < 5)
+				apNames[NumNames++] = Data.m_aName;
+			else
+				More++;
+		}
+		const float NameSize = 5.0f;
+		float NameY = StartY;
+		for(int i = NumNames - 1; i >= -1; i--)
+		{
+			char aLine[64];
+			if(i == -1)
+			{
+				if(More == 0)
+					break;
+				str_format(aLine, sizeof(aLine), "+%d", More);
+			}
+			else
+				str_copy(aLine, apNames[i]);
+			NameY -= NameSize + 2.0f;
+			const float W = TextRender()->TextWidth(NameSize, aLine) + 6.0f;
+			Graphics()->DrawRect(m_Width - W, NameY - 1.0f, W, NameSize + 2.0f, ColorRGBA(0.0f, 0.0f, 0.0f, 0.3f), IGraphics::CORNER_L, 2.5f);
+			TextRender()->TextColor(1.0f, 1.0f, 1.0f, 0.8f);
+			TextRender()->Text(m_Width - W + 3.0f, NameY, NameSize, aLine, -1.0f);
+			TextRender()->TextColor(TextRender()->DefaultTextColor());
+		}
+	}
 }
 
 void CHud::RenderDummyActions()
@@ -1511,8 +1567,8 @@ inline float CHud::GetMovementInformationBoxHeight()
 {
 	if(GameClient()->m_Snap.m_SpecInfo.m_Active && (GameClient()->m_Snap.m_SpecInfo.m_SpectatorId == SPEC_FREEVIEW || GameClient()->m_aClients[GameClient()->m_Snap.m_SpecInfo.m_SpectatorId].m_SpecCharPresent))
 		return g_Config.m_ClShowhudPlayerPosition ? 3.0f * MOVEMENT_INFORMATION_LINE_HEIGHT + 2.0f : 0.0f;
-	float BoxHeight = 3.0f * MOVEMENT_INFORMATION_LINE_HEIGHT * (g_Config.m_ClShowhudPlayerPosition + g_Config.m_ClShowhudPlayerSpeed) + 2.0f * MOVEMENT_INFORMATION_LINE_HEIGHT * g_Config.m_ClShowhudPlayerAngle;
-	if(g_Config.m_ClShowhudPlayerPosition || g_Config.m_ClShowhudPlayerSpeed || g_Config.m_ClShowhudPlayerAngle)
+	float BoxHeight = 3.0f * MOVEMENT_INFORMATION_LINE_HEIGHT * (g_Config.m_ClShowhudPlayerPosition + g_Config.m_ClShowhudPlayerSpeed) + 2.0f * MOVEMENT_INFORMATION_LINE_HEIGHT * g_Config.m_ClShowhudPlayerAngle + MOVEMENT_INFORMATION_LINE_HEIGHT * g_Config.m_CcShowCheckpoint;
+	if(g_Config.m_ClShowhudPlayerPosition || g_Config.m_ClShowhudPlayerSpeed || g_Config.m_ClShowhudPlayerAngle || g_Config.m_CcShowCheckpoint)
 	{
 		BoxHeight += 2.0f;
 	}
@@ -1599,7 +1655,7 @@ void CHud::RenderMovementInformation()
 	const bool PosOnly = ClientId == SPEC_FREEVIEW || (GameClient()->m_aClients[ClientId].m_SpecCharPresent);
 	// Draw the information depending on settings: Position, speed and target angle
 	// This display is only to present the available information from the last snapshot, not to interpolate or predict
-	if(!g_Config.m_ClShowhudPlayerPosition && (PosOnly || (!g_Config.m_ClShowhudPlayerSpeed && !g_Config.m_ClShowhudPlayerAngle)))
+	if(!g_Config.m_ClShowhudPlayerPosition && (PosOnly || (!g_Config.m_ClShowhudPlayerSpeed && !g_Config.m_ClShowhudPlayerAngle && !g_Config.m_CcShowCheckpoint)))
 	{
 		return;
 	}
@@ -1672,6 +1728,17 @@ void CHud::RenderMovementInformation()
 
 		UpdateMovementInformationTextContainer(m_PlayerAngleTextContainerIndex, Fontsize, Info.m_Angle, m_PlayerPrevAngle);
 		RenderMovementInformationTextContainer(m_PlayerAngleTextContainerIndex, TextRender()->DefaultTextColor(), RightX, y);
+		y += MOVEMENT_INFORMATION_LINE_HEIGHT;
+	}
+
+	// C-Client: the tele checkpoint you touched last
+	if(g_Config.m_CcShowCheckpoint)
+	{
+		char aCp[16] = "-";
+		if(ClientId >= 0 && ClientId < MAX_CLIENTS && GameClient()->m_Snap.m_aCharacters[ClientId].m_HasExtendedData && GameClient()->m_Snap.m_aCharacters[ClientId].m_ExtendedData.m_TeleCheckpoint > 0)
+			str_format(aCp, sizeof(aCp), "%d", GameClient()->m_Snap.m_aCharacters[ClientId].m_ExtendedData.m_TeleCheckpoint);
+		TextRender()->Text(LeftX, y, Fontsize, Localize("Checkpoint:"), -1.0f);
+		TextRender()->Text(RightX - TextRender()->TextWidth(Fontsize, aCp), y, Fontsize, aCp, -1.0f);
 	}
 }
 
@@ -2209,6 +2276,39 @@ void CHud::RenderCClientWorld()
 // C-Client: center lines and status bar (HUD coordinates)
 void CHud::RenderCClientOverlay()
 {
+	// C-Client: a small hint when a tee is straight below you (same X tile)
+	if(g_Config.m_CcPlayerBelow)
+	{
+		const int LocalId = GameClient()->m_Snap.m_SpecInfo.m_Active ? GameClient()->m_Snap.m_SpecInfo.m_SpectatorId : GameClient()->m_Snap.m_LocalClientId;
+		bool Below = false;
+		if(LocalId >= 0 && LocalId < MAX_CLIENTS && GameClient()->m_Snap.m_aCharacters[LocalId].m_Active)
+		{
+			const vec2 Pos = GameClient()->m_aClients[LocalId].m_RenderPos;
+			for(int i = 0; i < MAX_CLIENTS && !Below; i++)
+			{
+				if(i == LocalId || !GameClient()->m_Snap.m_aCharacters[i].m_Active)
+					continue;
+				const vec2 Other = GameClient()->m_aClients[i].m_RenderPos;
+				Below = (int)(Other.x / 32.0f) == (int)(Pos.x / 32.0f) && Other.y > Pos.y + 16.0f && Other.y - Pos.y < 32.0f * 30.0f;
+			}
+		}
+		m_CcBelowPhase = std::clamp(m_CcBelowPhase + (Below ? 1.0f : -1.0f) * Client()->RenderFrameTime() / 0.2f, 0.0f, 1.0f);
+		if(m_CcBelowPhase > 0.001f)
+		{
+			const float Alpha = 1.0f - std::pow(1.0f - m_CcBelowPhase, 3.0f);
+			const char *pText = Localize("Player below you");
+			const float FontSize = 7.0f;
+			const float W = TextRender()->TextWidth(FontSize, pText) + 16.0f;
+			const float H = FontSize + 7.0f;
+			const float X = (m_Width - W) / 2.0f;
+			const float Y = m_Height - H - 22.0f - (g_Config.m_CcStatusbar ? 9.0f : 0.0f) + (1.0f - Alpha) * 10.0f;
+			Graphics()->DrawRect(X, Y, W, H, ColorRGBA(0.0f, 0.0f, 0.0f, 0.5f * Alpha), IGraphics::CORNER_ALL, H / 2.0f);
+			TextRender()->TextColor(0.95f, 0.18f, 0.33f, Alpha);
+			TextRender()->Text(X + 8.0f, Y + 3.2f, FontSize, pText, -1.0f);
+			TextRender()->TextColor(TextRender()->DefaultTextColor());
+		}
+	}
+
 	if(g_Config.m_CcShowCenter)
 	{
 		Graphics()->TextureClear();

@@ -396,6 +396,39 @@ public:
 		CNamePlatePartText(This) {}
 };
 
+class CNamePlatePartCoords : public CNamePlatePartText
+{
+private:
+	char m_aText[32] = "";
+	float m_FontSize = -INFINITY;
+
+protected:
+	bool UpdateNeeded(CGameClient &This, const CNamePlateData &Data) override
+	{
+		// C-Client: the X tile of the tee, handy to line up in gores
+		m_Visible = g_Config.m_CcTeeCoords && Data.m_InGame && Data.m_ClientId >= 0 && Data.m_ClientId < MAX_CLIENTS;
+		if(!m_Visible)
+			return false;
+		m_Color = Data.m_Color.WithMultipliedAlpha(0.75f);
+		char aText[32];
+		str_format(aText, sizeof(aText), "X: %d", (int)(This.m_aClients[Data.m_ClientId].m_RenderPos.x / 32.0f));
+		const bool Changed = m_FontSize != Data.m_FontSizeClan || str_comp(m_aText, aText) != 0;
+		str_copy(m_aText, aText);
+		return Changed;
+	}
+	void UpdateText(CGameClient &This, const CNamePlateData &Data) override
+	{
+		m_FontSize = Data.m_FontSizeClan;
+		CTextCursor Cursor;
+		Cursor.m_FontSize = m_FontSize;
+		This.TextRender()->CreateOrAppendTextContainer(m_TextContainerIndex, &Cursor, m_aText);
+	}
+
+public:
+	CNamePlatePartCoords(CGameClient &This) :
+		CNamePlatePartText(This) {}
+};
+
 class CNamePlatePartHookStrongWeak : public CNamePlatePartSprite
 {
 protected:
@@ -696,6 +729,9 @@ private:
 
 		AddPart<CNamePlatePartHookStrongWeak>(This);
 		AddPart<CNamePlatePartHookStrongWeakId>(This);
+		AddPart<CNamePlatePartNewLine>(This);
+
+		AddPart<CNamePlatePartCoords>(This); // C-Client
 	}
 
 public:

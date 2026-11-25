@@ -34,6 +34,7 @@
 #include "components/camera.h"
 #include "components/cclient.h"
 #include "components/cclient_bg_draw.h"
+#include "components/cclient_effects.h"
 #include "components/cclient_moving_tiles.h"
 #include "components/cclient_playtime.h"
 #include "components/cclient_presence.h"
@@ -195,6 +196,7 @@ public:
 	CCTrails m_CTrails;
 	CCBgDraw m_CBgDraw;
 	CCPet m_CPet;
+	CCEffects m_CEffects;
 	CCAutomation m_CAutomation;
 	CDamageInd m_DamageInd;
 	CTouchControls m_TouchControls;

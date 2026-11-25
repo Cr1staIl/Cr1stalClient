@@ -463,5 +463,18 @@ void CVoting::RenderBars(CUIRect Bars) const
 			Bars.VSplitRight(Bars.w * m_No / m_Total, nullptr, &NoArea);
 			NoArea.Draw(ColorRGBA(0.9f, 0.2f, 0.2f, 0.85f), IGraphics::CORNER_ALL, NoArea.h / 2.0f);
 		}
+
+		// C-Client: yes and no in percent on the bar
+		if(g_Config.m_CcVotePercent)
+		{
+			char aBuf[16];
+			CUIRect Text;
+			Bars.VMargin(Bars.h * 0.4f, &Text);
+			const float FontSize = Bars.h * 0.85f;
+			str_format(aBuf, sizeof(aBuf), "%d%%", (m_Yes * 100 + m_Total / 2) / m_Total);
+			Ui()->DoLabel(&Text, aBuf, FontSize, TEXTALIGN_ML);
+			str_format(aBuf, sizeof(aBuf), "%d%%", (m_No * 100 + m_Total / 2) / m_Total);
+			Ui()->DoLabel(&Text, aBuf, FontSize, TEXTALIGN_MR);
+		}
 	}
 }

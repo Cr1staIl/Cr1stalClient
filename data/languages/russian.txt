@@ -3546,9 +3546,6 @@ Client avatar before their names
 Others with Cr1stal Client see your avatar and your game pack
 == Другие с Cr1stal Client видят твою аватарку и твой game-пак
 
-Virtual joystick which only aims and moves the mouse pointer relatively.
-== 
-
 Show when frozen tees unfreeze
 == Показывать, когда ти разморозится
 
@@ -3578,3 +3575,120 @@ Smaller when further away
 
 Frozen ones in the ninja skin
 == Замороженные в скине ниндзя
+
+Checkpoint:
+== Чекпоинт:
+
+Player below you
+== Под тобой игрок
+
+Virtual joystick which only aims and moves the mouse pointer relatively.
+== 
+
+Show your checkpoint
+== Показывать чекпоинт
+
+X tile above every tee
+== Координата X над ти
+
+Hint when a tee is straight below you
+== Подсказка, когда под тобой ти
+
+FPS counter shows the best frame
+== Показывать максимальный FPS
+
+Vote in percent
+== Голосование в процентах
+
+Heart after friends in the scoreboard
+== Сердечко у друзей в табе
+
+Names of the spectators
+== Ники наблюдателей
+
+Scoreboard size
+== Размер таба
+
+Emote wheel size
+== Размер колеса эмоций
+
+Interface size
+== Размер интерфейса
+
+Effects
+== Эффекты
+
+Jelly tees
+== Желейные ти
+
+Also other tees
+== И у других ти
+
+Wobble
+== Сила качания
+
+Weapon glow
+== Свечение оружия
+
+Classic
+== Классика
+
+Prism
+== Призма
+
+Crystal
+== Кристалл
+
+Glow look
+== Вид свечения
+
+Glow strength
+== Сила свечения
+
+Glow color
+== Цвет свечения
+
+Hook and hammer
+== Хук и молот
+
+Ring when jumping in the air
+== Кольцо при прыжке в воздухе
+
+Hammer swing
+== Взмах молота
+
+No hammer hit flash
+== Без вспышки удара молота
+
+Lasso on the hooked tee
+== Лассо на захваченном ти
+
+Box on the hooked tee
+== Рамка на захваченном ти
+
+Light along the hook while holding
+== Свет по хуку при удержании
+
+Ice around frozen tees
+== Лёд вокруг замороженных
+
+Lightning when a tee gets frozen
+== Молния при заморозке
+
+Lightning color
+== Цвет молнии
+
+Snow
+== Снег
+
+Rain
+== Дождь
+
+Fireflies
+== Светлячки
+
+Dust
+== Пыль
+
+Weather
+== Погода

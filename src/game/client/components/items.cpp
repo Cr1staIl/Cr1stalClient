@@ -118,6 +118,7 @@ void CItems::RenderProjectile(const CProjectileData *pCurrent, int ItemId, const
 			Graphics()->QuadsSetRotation(0);
 	}
 
+	GameClient()->m_CEffects.ProjectileGlow(Pos, CurWeapon, Alpha); // C-Client
 	if(GameClient()->m_GameSkin.m_aSpriteWeaponProjectiles[CurWeapon].IsValid())
 	{
 		Graphics()->TextureSet(GameClient()->m_GameSkin.m_aSpriteWeaponProjectiles[CurWeapon]);
@@ -363,6 +364,8 @@ void CItems::RenderLaser(vec2 From, vec2 Pos, ColorRGBA OuterColor, ColorRGBA In
 		}
 		a = std::clamp(a, 0.0f, 1.0f);
 		float Ia = 1 - a;
+
+		GameClient()->m_CEffects.LaserGlow(From, Pos, Type, Ia); // C-Client
 
 		Graphics()->TextureClear();
 		Graphics()->QuadsBegin();

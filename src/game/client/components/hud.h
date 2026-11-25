@@ -89,6 +89,11 @@ private:
 	void RenderPlayerState(int ClientId);
 
 	int m_LastSpectatorCountTick;
+	// C-Client
+	float m_CcFpsShortest = 1.0f;
+	float m_CcFpsWindow = 0.0f;
+	int m_CcFpsMax = 0;
+	float m_CcBelowPhase = 0.0f;
 	void RenderSpectatorCount();
 	void RenderDummyActions();
 	void RenderMovementInformation();

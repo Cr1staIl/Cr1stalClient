@@ -288,6 +288,7 @@ enum
 	CARD_AUTOMATION,
 	CARD_GHOSTS,
 	CARD_FUN,
+	CARD_EFFECTS,
 	NUM_CARDS,
 };
 
@@ -313,8 +314,8 @@ void CMenus::RenderSettingsCClient(CUIRect MainView)
 		vColumns.emplace_back(this, Ui(), Rect);
 	}
 	// which column every card goes to, for 3 and for 2 columns
-	static const int s_aColumnOf3[NUM_CARDS] = {0, 0, 0, 0, 1, 1, 1, 1, 2, 2, 2, 2, 2, 2, 2, 2, 0, 1};
-	static const int s_aColumnOf2[NUM_CARDS] = {0, 0, 0, 0, 0, 0, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 0, 1};
+	static const int s_aColumnOf3[NUM_CARDS] = {0, 0, 0, 0, 1, 1, 1, 1, 2, 2, 2, 2, 2, 2, 2, 2, 0, 1, 1};
+	static const int s_aColumnOf2[NUM_CARDS] = {0, 0, 0, 0, 0, 0, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 0, 1, 0};
 	auto Col = [&](int Card) -> CCcColumn & {
 		return vColumns[NumColumns == 3 ? s_aColumnOf3[Card] : s_aColumnOf2[Card]];
 	};
@@ -700,6 +701,63 @@ void CMenus::RenderSettingsCClient(CUIRect MainView)
 		if(g_Config.m_CcRenderCursorSpec)
 			C.Slider(&g_Config.m_CcRenderCursorSpecAlpha, Localize("Cursor opacity"), 0, 100, "%");
 		C.Slider(&g_Config.m_ClOverlayEntities, Localize("Game tiles over the map"), 0, 100, "%");
+		C.Check(&g_Config.m_CcShowCheckpoint, Localize("Show your checkpoint"));
+		C.Check(&g_Config.m_CcTeeCoords, Localize("X tile above every tee"));
+		C.Check(&g_Config.m_CcPlayerBelow, Localize("Hint when a tee is straight below you"));
+		C.Check(&g_Config.m_CcMaxFps, Localize("FPS counter shows the best frame"));
+		C.Check(&g_Config.m_CcVotePercent, Localize("Vote in percent"));
+		C.Check(&g_Config.m_CcScoreboardFriend, Localize("Heart after friends in the scoreboard"));
+		C.Check(&g_Config.m_CcSpectatorNames, Localize("Names of the spectators"));
+		C.Slider(&g_Config.m_CcScoreboardScale, Localize("Scoreboard size"), 50, 100, "%");
+		C.Slider(&g_Config.m_CcWheelScale, Localize("Emote wheel size"), 50, 100, "%");
+		C.Slider(&g_Config.m_CcUiScale, Localize("Interface size"), 75, 110, "%");
+		C.EndCard();
+	}
+
+	// ---- effects ----
+	{
+		CCcColumn &C = Col(CARD_EFFECTS);
+		C.BeginCard(CARD_EFFECTS, Localize("Effects"));
+		C.Check(&g_Config.m_CcJelly, Localize("Jelly tees"));
+		if(g_Config.m_CcJelly)
+		{
+			C.Check(&g_Config.m_CcJellyOthers, Localize("Also other tees"));
+			C.Slider(&g_Config.m_CcJellyStrength, Localize("Wobble"), 1, 100, "%");
+		}
+		C.Gap(4.0f);
+		C.Caption(Localize("Weapon glow"));
+		C.Check(&g_Config.m_CcGlowLaser, Localize("Laser"));
+		C.Check(&g_Config.m_CcGlowShotgun, Localize("Shotgun"));
+		C.Check(&g_Config.m_CcGlowRocket, Localize("Grenade"));
+		if(g_Config.m_CcGlowLaser || g_Config.m_CcGlowShotgun || g_Config.m_CcGlowRocket)
+		{
+			static CButtonContainer s_aGlowModes[4];
+			const char *apModes[] = {Localize("Classic"), Localize("Prism"), Localize("Pulse"), Localize("Crystal")};
+			C.Choice(&g_Config.m_CcGlowMode, Localize("Glow look"), apModes, 4, s_aGlowModes);
+			C.Slider(&g_Config.m_CcGlowPower, Localize("Glow strength"), 0, 100, "%");
+			if(g_Config.m_CcGlowMode == 0 || g_Config.m_CcGlowMode == 2)
+				C.Color(Localize("Glow color"), &g_Config.m_CcGlowColor, 0xF8FF80);
+		}
+		C.Gap(4.0f);
+		C.Caption(Localize("Hook and hammer"));
+		C.Check(&g_Config.m_CcAirJumpRing, Localize("Ring when jumping in the air"));
+		C.Check(&g_Config.m_CcHammerSlash, Localize("Hammer swing"));
+		C.Check(&g_Config.m_CcNoHammerParticles, Localize("No hammer hit flash"));
+		C.Check(&g_Config.m_CcHookLasso, Localize("Lasso on the hooked tee"));
+		C.Check(&g_Config.m_CcHookBox, Localize("Box on the hooked tee"));
+		C.Check(&g_Config.m_CcHookHold, Localize("Light along the hook while holding"));
+		C.Gap(4.0f);
+		C.Caption(Localize("Freeze"));
+		C.Check(&g_Config.m_CcFreezeFrost, Localize("Ice around frozen tees"));
+		C.Check(&g_Config.m_CcFreezeLightning, Localize("Lightning when a tee gets frozen"));
+		if(g_Config.m_CcFreezeLightning)
+			C.Color(Localize("Lightning color"), &g_Config.m_CcFreezeLightningColor, 0x8FFF9F);
+		C.Gap(4.0f);
+		static CButtonContainer s_aWeather[5];
+		const char *apWeather[] = {Localize("Off"), Localize("Snow"), Localize("Rain"), Localize("Fireflies"), Localize("Dust")};
+		C.Choice(&g_Config.m_CcWeather, Localize("Weather"), apWeather, 5, s_aWeather);
+		if(g_Config.m_CcWeather)
+			C.Slider(&g_Config.m_CcWeatherAmount, Localize("Amount"), 25, 300, "%");
 		C.EndCard();
 	}
 

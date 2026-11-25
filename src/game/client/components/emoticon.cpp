@@ -110,6 +110,7 @@ void CEmoticon::OnRender()
 
 	m_WasActive = true;
 
+	const CUi::CScreenScaleGuard ScaleGuard(Ui(), std::clamp(g_Config.m_CcWheelScale, 50, 100) / 100.0f); // C-Client
 	const CUIRect Screen = *Ui()->Screen();
 
 	const bool WasTouchPressed = m_TouchState.m_AnyPressed;
