@@ -161,6 +161,7 @@ void CGameClient::OnConsoleInit()
 					      &m_Emoticon,
 					      &m_CClient,
 					      &m_CPlaytime,
+					      &m_CPresence,
 					      &m_CRainbow,
 					      &m_CAutomation,
 					      &m_InfoMessages,
@@ -4804,4 +4805,25 @@ void CGameClient::StoreSave(const char *pTeamMembers, const char *pGeneratedCode
 	}
 	CsvWrite(File, std::size(SAVES_HEADER), apColumns);
 	io_close(File);
+}
+
+const CGameClient::CGameSkin &CGameClient::GameSkinOf(int ClientId)
+{
+	if(!g_Config.m_CcOthersPacks)
+		return m_GameSkin;
+	const char *pPack = m_CPresence.PackOf(ClientId);
+	if(!pPack)
+		return m_GameSkin;
+	auto It = m_CcPackSkins.find(pPack);
+	if(It == m_CcPackSkins.end())
+	{
+		if(m_CcPackSkins.size() >= 12)
+			return m_GameSkin;
+		char aFile[IO_MAX_PATH_LENGTH];
+		str_format(aFile, sizeof(aFile), "cclient_packs/%s.png", pPack);
+		CGameSkin &Skin = m_CcPackSkins[pPack];
+		LoadGameSkinFile(Skin, aFile, IStorage::TYPE_SAVE);
+		It = m_CcPackSkins.find(pPack);
+	}
+	return It->second.m_Loaded ? It->second : m_GameSkin;
 }

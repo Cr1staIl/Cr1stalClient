@@ -835,6 +835,13 @@ void CScoreboard::RenderScoreboard(CUIRect Scoreboard, int Team, int CountStart,
 
 			// name
 			{
+				// C-Client: the diamond of Cr1stal Client players, like an avatar of the client
+				float BadgeWidth = 0.0f;
+				if(g_Config.m_CcClientBadge && GameClient()->m_CPresence.IsCrystal(pInfo->m_ClientId))
+				{
+					BadgeWidth = FontSize * 1.2f;
+					GameClient()->m_CPresence.RenderDiamond(vec2(NameOffset + FontSize * 0.5f, Row.y + Row.h / 2.0f - FontSize * 0.04f), FontSize * 0.95f, TextColor.a);
+				}
 				if(g_Config.m_ClShowIds)
 				{
 					char aClientId[16];
@@ -846,20 +853,20 @@ void CScoreboard::RenderScoreboard(CUIRect Scoreboard, int Team, int CountStart,
 				{
 					str_copy(aBuf, ClientData.m_aName);
 				}
-				Player.m_Name.Update(TextRender(), aBuf, FontSize, NameLength, TEXTFLAG_RENDER | TEXTFLAG_ELLIPSIS_AT_END);
+				Player.m_Name.Update(TextRender(), aBuf, FontSize, std::max(0.0f, NameLength - BadgeWidth), TEXTFLAG_RENDER | TEXTFLAG_ELLIPSIS_AT_END);
 
 				ColorRGBA NameColor = TextColor;
 				if(ClientData.m_AuthLevel)
 				{
 					NameColor = color_cast<ColorRGBA>(ColorHSLA(g_Config.m_ClAuthedPlayerColor));
 				}
-				Player.m_Name.Render(TextRender(), vec2(NameOffset, TextY), NameColor);
+				Player.m_Name.Render(TextRender(), vec2(NameOffset + BadgeWidth, TextY), NameColor);
 
 				// ready / watching
 				if(Client()->IsSixup() && Client()->m_TranslationContext.m_aClients[pInfo->m_ClientId].m_PlayerFlags7 & protocol7::PLAYERFLAG_READY)
 				{
 					Player.m_ReadyMark.Update(TextRender(), "✓", FontSize);
-					Player.m_ReadyMark.Render(TextRender(), vec2(NameOffset + Player.m_Name.Width(), TextY), ColorRGBA(0.1f, 1.0f, 0.1f, TextColor.a));
+					Player.m_ReadyMark.Render(TextRender(), vec2(NameOffset + BadgeWidth + Player.m_Name.Width(), TextY), ColorRGBA(0.1f, 1.0f, 0.1f, TextColor.a));
 				}
 			}
 

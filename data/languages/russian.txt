@@ -3198,9 +3198,6 @@ Loaded %d items (discarded %d items)
 Changing name to %s near finish
 == Меняю ник на %s у финиша
 
-Virtual joystick which only aims and moves the mouse pointer relatively.
-== 
-
 Smooth antiping (TClient)
 == Плавный антипинг (TClient)
 
@@ -3479,3 +3476,27 @@ yes
 
 no
 == нет
+
+Virtual joystick which only aims and moves the mouse pointer relatively.
+== 
+
+Cr1stal players
+== Игроки Cr1stal
+
+Diamond before their names
+== Алмаз перед их ником
+
+In the scoreboard and above the tees
+== В табе и над ти
+
+See their texture packs
+== Видеть их текстурпаки
+
+Their hook and weapons are drawn with their own game pack
+== Их хук и оружие рисуются их собственным game-паком
+
+Show that I use Cr1stal Client
+== Показывать, что я с Cr1stal Client
+
+Others with Cr1stal Client see your diamond and your game pack
+== Другие с Cr1stal Client видят твой алмаз и твой game-пак

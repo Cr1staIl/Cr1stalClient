@@ -539,6 +539,11 @@ void CMenus::RenderSettingsCClient(CUIRect MainView)
 		C.BeginCard(CARD_LOOKS, Localize("Looks"));
 		C.Check(&g_Config.m_CrNeonBackground, Localize("Neon menu background"));
 		C.Gap(4.0f);
+		C.Caption(Localize("Cr1stal players"));
+		C.Check(&g_Config.m_CcClientBadge, Localize("Diamond before their names"), Localize("In the scoreboard and above the tees"));
+		C.Check(&g_Config.m_CcOthersPacks, Localize("See their texture packs"), Localize("Their hook and weapons are drawn with their own game pack"));
+		C.Check(&g_Config.m_CcSharePresence, Localize("Show that I use Cr1stal Client"), Localize("Others with Cr1stal Client see your diamond and your game pack"));
+		C.Gap(4.0f);
 		C.Caption(Localize("Rainbow"));
 		C.Check(&g_Config.m_CcRainbowTee, Localize("Rainbow tee"));
 		C.Check(&g_Config.m_CcRainbowHook, Localize("Rainbow hook"));

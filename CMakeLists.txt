@@ -2695,6 +2695,8 @@ if(CLIENT)
     components/cclient_moving_tiles.h
     components/cclient_playtime.cpp
     components/cclient_playtime.h
+    components/cclient_presence.cpp
+    components/cclient_presence.h
     components/cclient_spt.cpp
     components/cclient_spt.h
     components/cclient_style.cpp

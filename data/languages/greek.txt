@@ -2448,6 +2448,27 @@ Looks
 Neon menu background
 == 
 
+Cr1stal players
+== 
+
+Diamond before their names
+== 
+
+In the scoreboard and above the tees
+== 
+
+See their texture packs
+== 
+
+Their hook and weapons are drawn with their own game pack
+== 
+
+Show that I use Cr1stal Client
+== 
+
+Others with Cr1stal Client see your diamond and your game pack
+== 
+
 Rainbow
 == 
 

@@ -36,6 +36,7 @@
 #include "components/cclient_bg_draw.h"
 #include "components/cclient_moving_tiles.h"
 #include "components/cclient_playtime.h"
+#include "components/cclient_presence.h"
 #include "components/cclient_tc.h"
 #include "components/cclient_trails.h"
 #include "components/censor.h"
@@ -76,7 +77,10 @@
 #include "components/touch_controls.h"
 #include "components/voting.h"
 
+#include <map>
 #include <memory>
+#include <optional>
+#include <string>
 #include <vector>
 
 class IMap;
@@ -186,6 +190,7 @@ public:
 	CCMovingTiles m_CMovingTilesBackground = CCMovingTiles{false};
 	CCMovingTiles m_CMovingTilesForeground = CCMovingTiles{true};
 	CCPlaytime m_CPlaytime;
+	CCPresence m_CPresence;
 	CCRainbow m_CRainbow;
 	CCTrails m_CTrails;
 	CCBgDraw m_CBgDraw;
@@ -862,6 +867,15 @@ public:
 		}
 	};
 	CGameSkin m_GameSkin;
+	// C-Client: game packs of other Cr1stal Client players
+	void UnloadGameSkin(CGameSkin &Skin);
+	void FillGameSkin(CGameSkin &Skin, const CImageInfo &ImgInfo, const std::optional<CImageInfo> &FallbackImgInfo);
+	bool LoadGameSkinFile(CGameSkin &Skin, const char *pFile, int StorageType);
+	// the game skin to draw this player with (their own pack if they use Cr1stal Client)
+	const CGameSkin &GameSkinOf(int ClientId);
+	// the file of the game pack you use, empty for the default one
+	char m_aCcGameSkinFile[IO_MAX_PATH_LENGTH] = "";
+	std::map<std::string, CGameSkin> m_CcPackSkins;
 
 	class CParticlesSkin
 	{
