@@ -3477,9 +3477,6 @@ yes
 no
 == нет
 
-Virtual joystick which only aims and moves the mouse pointer relatively.
-== 
-
 Cr1stal players
 == Игроки Cr1stal
 
@@ -3500,3 +3497,51 @@ Show that I use Cr1stal Client
 
 Others with Cr1stal Client see your diamond and your game pack
 == Другие с Cr1stal Client видят твой алмаз и твой game-пак
+
+Virtual joystick which only aims and moves the mouse pointer relatively.
+== 
+
+Skins
+== Скины
+
+Sounds
+== Звуки
+
+Backgrounds
+== Фоны
+
+Put .png skins into the skins folder.
+== Кидай .png скины в папку skins.
+
+They appear in the skin list of the Tee settings right after a reload.
+== Они появятся в списке скинов (настройки Ти) сразу после обновления.
+
+Make a folder for your pack in the sounds folder and put .wv or .opus sounds in it.
+== Создай в папке sounds папку для своего пака и положи туда звуки .wv или .opus.
+
+The names are in sound_names.txt there. Sounds you leave out stay normal.
+== Названия файлов есть в sound_names.txt. Звуки, которых нет в паке, остаются обычными.
+
+Put .png pictures into the backgrounds folder.
+== Кидай .png картинки в папку backgrounds.
+
+The chosen picture is shown behind the menus.
+== Выбранная картинка будет фоном меню.
+
+Open folder
+== Открыть папку
+
+Reload
+== Обновить
+
+Choose skin
+== Выбрать скин
+
+Test sound
+== Проверить звук
+
+Default
+== Стандартный
+
+Neon
+== Неон

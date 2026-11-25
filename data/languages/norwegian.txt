@@ -2476,10 +2476,55 @@ Set all to Rifle
 Extras
 == 
 
+Skins
+== 
+
+Sounds
+== 
+
+Backgrounds
+== 
+
 Loading assets
 == 
 
 Open the directory to add custom assets
+== 
+
+Put .png skins into the skins folder.
+== 
+
+They appear in the skin list of the Tee settings right after a reload.
+== 
+
+Make a folder for your pack in the sounds folder and put .wv or .opus sounds in it.
+== 
+
+The names are in sound_names.txt there. Sounds you leave out stay normal.
+== 
+
+Put .png pictures into the backgrounds folder.
+== 
+
+The chosen picture is shown behind the menus.
+== 
+
+Open folder
+== 
+
+Reload
+== 
+
+Choose skin
+== 
+
+Test sound
+== 
+
+Default
+== 
+
+Neon
 == 
 
 Input

@@ -2763,6 +2763,7 @@ if(CLIENT)
     components/menus_settings.cpp
     components/menus_settings_appearance.cpp
     components/menus_settings_assets.cpp
+    components/menus_settings_cc_assets.cpp
     components/menus_settings_cclient.cpp
     components/menus_settings_controls.cpp
     components/menus_settings_controls.h

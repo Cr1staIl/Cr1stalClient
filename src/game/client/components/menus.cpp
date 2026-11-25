@@ -2469,6 +2469,8 @@ void CMenus::UpdateColors()
 
 bool CMenus::RenderMenuBackgroundOrNeon()
 {
+	if(RenderCcMenuBackgroundImage())
+		return true;
 	if(g_Config.m_CrNeonBackground)
 	{
 		RenderNeonBackground();

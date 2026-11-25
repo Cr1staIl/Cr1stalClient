@@ -4,11 +4,13 @@
 #include "sounds.h"
 
 #include <base/mem.h>
+#include <base/str.h>
 #include <base/time.h>
 
 #include <engine/engine.h>
 #include <engine/shared/config.h>
 #include <engine/sound.h>
+#include <engine/storage.h>
 
 #include <generated/client_data.h>
 
@@ -16,6 +18,37 @@
 #include <game/client/components/menus.h>
 #include <game/client/gameclient.h>
 #include <game/localization.h>
+
+// C-Client: a sound pack is a folder in assets/sounds with files named like the game's
+// sounds (hook_attach-01.wv, ...). Missing files keep the normal sound.
+static int CcLoadGameSound(ISound *pSound, IStorage *pStorage, const char *pFilename)
+{
+	if(g_Config.m_CcAssetSounds[0] && str_comp(g_Config.m_CcAssetSounds, "default") != 0)
+	{
+		const char *pBase = str_startswith(pFilename, "audio/") ? pFilename + 6 : pFilename;
+		char aPath[IO_MAX_PATH_LENGTH];
+		str_format(aPath, sizeof(aPath), "assets/sounds/%s/%s", g_Config.m_CcAssetSounds, pBase);
+		if(pStorage->FileExists(aPath, IStorage::TYPE_ALL))
+		{
+			const int Id = pSound->LoadWV(aPath, IStorage::TYPE_ALL);
+			if(Id >= 0)
+				return Id;
+		}
+		// the same sound as .opus
+		char aName[IO_MAX_PATH_LENGTH];
+		str_copy(aName, pBase);
+		if(str_endswith(aName, ".wv"))
+			aName[str_length(aName) - 3] = '\0';
+		str_format(aPath, sizeof(aPath), "assets/sounds/%s/%s.opus", g_Config.m_CcAssetSounds, aName);
+		if(pStorage->FileExists(aPath, IStorage::TYPE_ALL))
+		{
+			const int OpusId = pSound->LoadOpus(aPath, IStorage::TYPE_ALL);
+			if(OpusId >= 0)
+				return OpusId;
+		}
+	}
+	return pSound->LoadWV(pFilename);
+}
 
 CSoundLoading::CSoundLoading(CGameClient *pGameClient, bool Render) :
 	m_pGameClient(pGameClient),
@@ -36,7 +69,7 @@ void CSoundLoading::Run()
 			if(State() == IJob::STATE_ABORTED)
 				return;
 
-			int Id = m_pGameClient->Sound()->LoadWV(g_pData->m_aSounds[s].m_aSounds[i].m_pFilename);
+			int Id = CcLoadGameSound(m_pGameClient->Sound(), m_pGameClient->Storage(), g_pData->m_aSounds[s].m_aSounds[i].m_pFilename);
 			g_pData->m_aSounds[s].m_aSounds[i].m_Id = Id;
 			// try to render a frame
 			if(m_Render)
@@ -119,6 +152,24 @@ void CSounds::OnInit()
 	{
 		CSoundLoading(GameClient(), true).Run();
 		m_WaitForSoundJob = false;
+	}
+}
+
+void CSounds::ReloadSoundPack()
+{
+	if(m_WaitForSoundJob)
+		return;
+	Sound()->StopAll();
+	ClearQueue();
+	for(int s = 0; s < g_pData->m_NumSounds; s++)
+	{
+		for(int i = 0; i < g_pData->m_aSounds[s].m_NumSounds; i++)
+		{
+			int &Id = g_pData->m_aSounds[s].m_aSounds[i].m_Id;
+			if(Id >= 0)
+				Sound()->UnloadSample(Id);
+			Id = CcLoadGameSound(Sound(), Storage(), g_pData->m_aSounds[s].m_aSounds[i].m_pFilename);
+		}
 	}
 }
 

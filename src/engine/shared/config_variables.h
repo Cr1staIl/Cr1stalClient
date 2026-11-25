@@ -756,6 +756,8 @@ MACRO_CONFIG_INT(CcExecuteOnJoinDelay, cc_execute_on_join_delay, 7, 7, 50000, CF
 MACRO_CONFIG_INT(CcClientBadge, cc_client_badge, 1, 0, 1, CFGFLAG_CLIENT | CFGFLAG_SAVE, "C-Client: show a diamond before the names of Cr1stal Client players")
 MACRO_CONFIG_INT(CcOthersPacks, cc_others_packs, 1, 0, 1, CFGFLAG_CLIENT | CFGFLAG_SAVE, "C-Client: show other Cr1stal Client players with their own game texture pack")
 MACRO_CONFIG_INT(CcSharePresence, cc_share_presence, 1, 0, 1, CFGFLAG_CLIENT | CFGFLAG_SAVE, "C-Client: let other Cr1stal Client players see that you use it and see your game pack")
+MACRO_CONFIG_STR(CcAssetSounds, cc_asset_sounds, 50, "default", CFGFLAG_CLIENT | CFGFLAG_SAVE, "C-Client: sound pack, a folder in assets/sounds")
+MACRO_CONFIG_STR(CcMenuBackground, cc_menu_background, 64, "", CFGFLAG_CLIENT | CFGFLAG_SAVE, "C-Client: picture behind the menus, a png in assets/backgrounds (empty for the neon background)")
 MACRO_CONFIG_INT(CcAutoReplyMuted, cc_auto_reply_muted, 0, 0, 1, CFGFLAG_CLIENT | CFGFLAG_SAVE, "Auto reply to muted players with a message")
 MACRO_CONFIG_STR(CcAutoReplyMutedMessage, cc_auto_reply_muted_message, 128, "I have muted you", CFGFLAG_CLIENT | CFGFLAG_SAVE, "Message to reply to muted players")
 MACRO_CONFIG_INT(CcAutoReplyMinimized, cc_auto_reply_minimized, 0, 0, 1, CFGFLAG_CLIENT | CFGFLAG_SAVE, "Auto reply when your game is minimized")

@@ -34,7 +34,10 @@ enum
 	ASSETS_TAB_PARTICLES = 3,
 	ASSETS_TAB_HUD = 4,
 	ASSETS_TAB_EXTRAS = 5,
-	NUMBER_OF_ASSETS_TABS = 6,
+	ASSETS_TAB_SKINS = 6, // C-Client
+	ASSETS_TAB_SOUNDS = 7, // C-Client
+	ASSETS_TAB_BACKGROUNDS = 8, // C-Client
+	NUMBER_OF_ASSETS_TABS = 9,
 };
 
 void CMenus::LoadEntities(SCustomEntities *pEntitiesItem, void *pUser)
@@ -364,7 +367,10 @@ void CMenus::RenderSettingsAssets(CUIRect MainView)
 		Localize("Emoticons"),
 		Localize("Particles"),
 		Localize("HUD"),
-		Localize("Extras")};
+		Localize("Extras"),
+		Localize("Skins"),
+		Localize("Sounds"),
+		Localize("Backgrounds")};
 
 	for(int Tab = ASSETS_TAB_ENTITIES; Tab < NUMBER_OF_ASSETS_TABS; ++Tab)
 	{
@@ -375,6 +381,12 @@ void CMenus::RenderSettingsAssets(CUIRect MainView)
 		{
 			s_CurCustomTab = Tab;
 		}
+	}
+
+	if(s_CurCustomTab >= ASSETS_TAB_SKINS)
+	{
+		RenderCcAssetsTab(MainView, s_CurCustomTab - ASSETS_TAB_SKINS);
+		return;
 	}
 
 	auto LoadStartTime = time_get_nanoseconds();
