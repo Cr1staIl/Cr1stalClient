@@ -25,8 +25,9 @@
 
 // Horizontal spacing of the scoreboard contents, both to its edges and between columns
 static constexpr float MARGIN = 10.0f;
-static constexpr float ROUNDING = 7.5f;
-static constexpr ColorRGBA BACKGROUND_COLOR(0.0f, 0.0f, 0.0f, 0.5f);
+static constexpr float ROUNDING = 14.0f;
+// C-Client: dark violet card like the rest of the new design
+static constexpr ColorRGBA BACKGROUND_COLOR(0.06f, 0.045f, 0.11f, 0.9f);
 
 static constexpr float POPUP_WIDTH = 140.0f;
 
@@ -210,7 +211,7 @@ void CScoreboard::RenderTitle(CUIRect TitleLabel, int Team, const char *pTitle, 
 		}
 		if(Ui()->HotItem() == &m_MapTitleButtonId)
 		{
-			TitleLabel.Draw(ColorRGBA(0.7f, 0.7f, 0.7f, 0.3f), IGraphics::CORNER_ALL, 5.0f);
+			TitleLabel.Draw(ColorRGBA(1.0f, 1.0f, 1.0f, 0.08f), IGraphics::CORNER_ALL, 6.0f);
 		}
 	}
 
@@ -506,7 +507,7 @@ void CScoreboard::RenderScoreboard(CUIRect Scoreboard, int Team, int CountStart,
 		LineHeight = 30.0f;
 		TeeSizeMod = 0.5f;
 		Spacing = 8.0f;
-		RoundRadius = 5.0f;
+		RoundRadius = 9.0f;
 		FontSize = 12.0f;
 	}
 	else if(NumPlayers <= 12)
@@ -514,7 +515,7 @@ void CScoreboard::RenderScoreboard(CUIRect Scoreboard, int Team, int CountStart,
 		LineHeight = 25.0f;
 		TeeSizeMod = 0.45f;
 		Spacing = 2.5f;
-		RoundRadius = 5.0f;
+		RoundRadius = 7.0f;
 		FontSize = 12.0f;
 	}
 	else if(NumPlayers <= 16)
@@ -586,7 +587,7 @@ void CScoreboard::RenderScoreboard(CUIRect Scoreboard, int Team, int CountStart,
 	CUIRect Headline;
 	Scoreboard.HSplitTop(HeadlineFontsize * 2.0f, &Headline, &Scoreboard);
 	const float HeadlineY = Headline.y + Headline.h / 2.0f - HeadlineFontsize / 2.0f;
-	const ColorRGBA HeadlineColor = TextRender()->DefaultTextColor();
+	const ColorRGBA HeadlineColor = ColorRGBA(0.68f, 0.66f, 0.78f, 1.0f);
 	m_HeadlineScore.Update(TextRender(), UseTime ? Localize("Time") : Localize("Score"), HeadlineFontsize);
 	m_HeadlineName.Update(TextRender(), Localize("Name"), HeadlineFontsize);
 	m_HeadlineClan.Update(TextRender(), Localize("Clan"), HeadlineFontsize);
@@ -595,6 +596,13 @@ void CScoreboard::RenderScoreboard(CUIRect Scoreboard, int Team, int CountStart,
 	m_HeadlineName.Render(TextRender(), vec2(NameOffset, HeadlineY), HeadlineColor);
 	m_HeadlineClan.Render(TextRender(), vec2(ClanOffset + (ClanLength - m_HeadlineClan.Width()) / 2.0f, HeadlineY), HeadlineColor);
 	m_HeadlinePing.Render(TextRender(), vec2(PingOffset + PingLength - m_HeadlinePing.Width(), HeadlineY), HeadlineColor);
+	{
+		CUIRect Divider = Headline;
+		Divider.VMargin(MARGIN, &Divider);
+		Divider.y = Headline.y + Headline.h - 2.0f;
+		Divider.h = 0.6f;
+		Divider.Draw(ColorRGBA(1.0f, 1.0f, 1.0f, 0.07f), IGraphics::CORNER_NONE, 0.0f);
+	}
 
 	// render player entries
 	int CountRendered = 0;
@@ -702,12 +710,16 @@ void CScoreboard::RenderScoreboard(CUIRect Scoreboard, int Team, int CountStart,
 			}
 			PrevDDTeam = DDTeam;
 
+			// C-Client: every player gets a soft rounded row
+			if(DDTeam == TEAM_FLOCK && LineHeight >= 13.5f)
+				Row.Draw(ColorRGBA(1.0f, 1.0f, 1.0f, 0.035f), IGraphics::CORNER_ALL, RoundRadius);
+
 			// background so it's easy to find the local player or the followed one in spectator mode
 			if((!GameClient()->m_Snap.m_SpecInfo.m_Active && pInfo->m_Local) ||
 				(GameClient()->m_Snap.m_SpecInfo.m_SpectatorId == SPEC_FREEVIEW && pInfo->m_Local) ||
 				(GameClient()->m_Snap.m_SpecInfo.m_Active && pInfo->m_ClientId == GameClient()->m_Snap.m_SpecInfo.m_SpectatorId))
 			{
-				Row.Draw(ColorRGBA(1.0f, 1.0f, 1.0f, 0.25f), IGraphics::CORNER_ALL, RoundRadius);
+				Row.Draw(ColorRGBA(0.42f, 0.37f, 1.0f, 0.32f), IGraphics::CORNER_ALL, RoundRadius);
 			}
 
 			const CGameClient::CClientData &ClientData = GameClient()->m_aClients[pInfo->m_ClientId];
@@ -725,7 +737,7 @@ void CScoreboard::RenderScoreboard(CUIRect Scoreboard, int Team, int CountStart,
 					Ui()->HotItem() == &Player.m_TimeTooltipId ||
 					(Ui()->IsPopupOpen(&m_ScoreboardPopupContext) && m_ScoreboardPopupContext.m_ClientId == pInfo->m_ClientId))
 				{
-					Row.Draw(ColorRGBA(0.7f, 0.7f, 0.7f, 0.7f), IGraphics::CORNER_ALL, RoundRadius);
+					Row.Draw(ColorRGBA(1.0f, 1.0f, 1.0f, 0.12f), IGraphics::CORNER_ALL, RoundRadius);
 				}
 			}
 
@@ -1123,6 +1135,13 @@ void CScoreboard::OnRender()
 		CUIRect Title;
 		Scoreboard.HSplitTop(TitleHeight, &Title, &Scoreboard);
 		RenderTitleBar(Title, TEAM_GAME, pTitle);
+		{
+			CUIRect Divider = Title;
+			Divider.VMargin(MARGIN, &Divider);
+			Divider.y = Title.y + Title.h - 0.6f;
+			Divider.h = 0.6f;
+			Divider.Draw(ColorRGBA(1.0f, 1.0f, 1.0f, 0.08f), IGraphics::CORNER_NONE, 0.0f);
+		}
 
 		if(NumPlayers <= 16)
 		{
@@ -1338,12 +1357,12 @@ CUi::EPopupMenuFunctionResult CScoreboard::CScoreboardPopupContext::Render(void 
 	constexpr float ButtonSize = 17.5f;
 
 	// C-Client: dark card with pill buttons (new design)
-	View.Draw(ColorRGBA(0.07f, 0.047f, 0.125f, 0.96f), IGraphics::CORNER_ALL, 10.0f);
+	View.Draw(ColorRGBA(0.075f, 0.06f, 0.13f, 0.97f), IGraphics::CORNER_ALL, 12.0f);
 	View.Margin(Margin, &View);
 
 	auto SoftColor = [pUi](const CButtonContainer *pButton, bool Checked = false) {
 		if(Checked)
-			return pUi->HotItem() == pButton ? ColorRGBA(0.6f, 0.3f, 1.0f, 0.55f) : ColorRGBA(0.6f, 0.3f, 1.0f, 0.38f);
+			return pUi->HotItem() == pButton ? ColorRGBA(0.42f, 0.37f, 1.0f, 0.65f) : ColorRGBA(0.42f, 0.37f, 1.0f, 0.45f);
 		return pUi->HotItem() == pButton ? ColorRGBA(1.0f, 1.0f, 1.0f, 0.16f) : ColorRGBA(1.0f, 1.0f, 1.0f, 0.07f);
 	};
 	auto SoftButton = [pUi, &SoftColor](CButtonContainer *pButton, const char *pText, const CUIRect *pRect, float Size, bool Checked = false, bool Danger = false) {
@@ -1376,7 +1395,7 @@ CUi::EPopupMenuFunctionResult CScoreboard::CScoreboardPopupContext::Render(void 
 
 		Container.VSplitLeft(ActionSize, &Action, &Container);
 
-		ColorRGBA FriendActionColor = Client.m_Friend ? ColorRGBA(1.0f, 0.15f, 0.85f, 0.55f) : SoftColor(&pPopupContext->m_FriendAction);
+		ColorRGBA FriendActionColor = Client.m_Friend ? ColorRGBA(0.94f, 0.4f, 0.4f, 0.55f) : SoftColor(&pPopupContext->m_FriendAction);
 		const char *pFriendActionIcon = pUi->HotItem() == &pPopupContext->m_FriendAction && Client.m_Friend ? FontIcon::HEART_CRACK : FontIcon::HEART;
 		if(pUi->DoButton_FontIcon(&pPopupContext->m_FriendAction, pFriendActionIcon, Client.m_Friend, &Action, BUTTONFLAG_LEFT, ActionCorners, true, FriendActionColor))
 		{

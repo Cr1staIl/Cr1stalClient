@@ -42,6 +42,7 @@
 #include <algorithm>
 #include <chrono>
 #include <cmath>
+#include <map>
 #include <vector>
 
 using namespace std::chrono_literals;
@@ -283,6 +284,45 @@ int CMenus::DoButton_Favorite(const void *pButtonId, const void *pParentId, bool
 
 int CMenus::DoButton_CheckBox_Common(const void *pId, const char *pText, const char *pBoxText, const CUIRect *pRect, const unsigned Flags)
 {
+	const bool Checkable = *pBoxText == 'X';
+
+	// C-Client: on/off boxes become iPhone style switches, gray off and green on
+	if(Checkable || *pBoxText == '\0')
+	{
+		CUIRect Switch, Label;
+		const float SwitchH = pRect->h - 4.0f;
+		const float SwitchW = SwitchH * 1.8f;
+		pRect->VSplitLeft(SwitchW + 4.0f, &Switch, &Label);
+		Switch.VSplitLeft(2.0f, nullptr, &Switch);
+		Switch.VSplitLeft(SwitchW, &Switch, nullptr);
+		Switch.HMargin((Switch.h - SwitchH) / 2.0f, &Switch);
+		Label.VSplitLeft(5.0f, nullptr, &Label);
+
+		static std::map<const void *, float> s_Anim;
+		auto It = s_Anim.find(pId);
+		if(It == s_Anim.end())
+			It = s_Anim.emplace(pId, Checkable ? 1.0f : 0.0f).first;
+		const float Target = Checkable ? 1.0f : 0.0f;
+		It->second += (Target - It->second) * std::min(1.0f, Client()->RenderFrameTime() * 9.0f);
+		if(absolute(It->second - Target) < 0.002f)
+			It->second = Target;
+		const float A = It->second;
+
+		const ColorRGBA Off(0.23f, 0.21f, 0.28f, 1.0f);
+		const ColorRGBA On(0.204f, 0.78f, 0.349f, 1.0f);
+		const float Hot = Ui()->HotItem() == pId ? 0.06f : 0.0f;
+		Switch.Draw(ColorRGBA(Off.r + (On.r - Off.r) * A + Hot, Off.g + (On.g - Off.g) * A + Hot, Off.b + (On.b - Off.b) * A + Hot, 1.0f), IGraphics::CORNER_ALL, Switch.h / 2.0f);
+		const float KnobSize = Switch.h - 3.0f;
+		CUIRect Knob;
+		Knob.x = Switch.x + 1.5f + (Switch.w - KnobSize - 3.0f) * A;
+		Knob.y = Switch.y + 1.5f;
+		Knob.w = Knob.h = KnobSize;
+		Knob.Draw(ColorRGBA(1.0f, 1.0f, 1.0f, 1.0f), IGraphics::CORNER_ALL, KnobSize / 2.0f);
+
+		Ui()->DoLabel(&Label, pText, SwitchH * CUi::ms_FontmodHeight, TEXTALIGN_ML);
+		return Ui()->DoButtonLogic(pId, 0, pRect, Flags);
+	}
+
 	CUIRect Box, Label;
 	pRect->VSplitLeft(pRect->h, &Box, &Label);
 	Label.VSplitLeft(5.0f, nullptr, &Label);
@@ -290,20 +330,7 @@ int CMenus::DoButton_CheckBox_Common(const void *pId, const char *pText, const c
 	Box.Margin(2.0f, &Box);
 	Box.Draw(ColorRGBA(1, 1, 1, 0.25f * Ui()->ButtonColorMul(pId)), IGraphics::CORNER_ALL, 3.0f);
 
-	const bool Checkable = *pBoxText == 'X';
-	if(Checkable)
-	{
-		TextRender()->SetRenderFlags(ETextRenderFlags::TEXT_RENDER_FLAG_ONLY_ADVANCE_WIDTH | ETextRenderFlags::TEXT_RENDER_FLAG_NO_X_BEARING | ETextRenderFlags::TEXT_RENDER_FLAG_NO_Y_BEARING | ETextRenderFlags::TEXT_RENDER_FLAG_NO_OVERSIZE | ETextRenderFlags::TEXT_RENDER_FLAG_NO_PIXEL_ALIGNMENT);
-		TextRender()->SetFontPreset(EFontPreset::ICON_FONT);
-		Ui()->DoLabel(&Box, FontIcon::XMARK, Box.h * CUi::ms_FontmodHeight, TEXTALIGN_MC);
-		TextRender()->SetFontPreset(EFontPreset::DEFAULT_FONT);
-	}
-	else
-	{
-		Ui()->DoLabel(&Box, pBoxText, Box.h * CUi::ms_FontmodHeight, TEXTALIGN_MC);
-	}
-
-	TextRender()->SetRenderFlags(0);
+	Ui()->DoLabel(&Box, pBoxText, Box.h * CUi::ms_FontmodHeight, TEXTALIGN_MC);
 	Ui()->DoLabel(&Label, pText, Box.h * CUi::ms_FontmodHeight, TEXTALIGN_ML);
 
 	return Ui()->DoButtonLogic(pId, 0, pRect, Flags);
@@ -2428,27 +2455,15 @@ void CMenus::UpdateColors()
 {
 	ms_GuiColor = color_cast<ColorRGBA>(ColorHSLA(g_Config.m_UiColor, true));
 
-	// C-Client: dark tabs, the active one violet
-	ms_ColorTabbarInactiveOutgame = ColorRGBA(0.06f, 0.03f, 0.12f, 0.45f);
-	ms_ColorTabbarActiveOutgame = ColorRGBA(0.48f, 0.22f, 0.84f, 0.75f);
-	ms_ColorTabbarHoverOutgame = ColorRGBA(1.0f, 1.0f, 1.0f, 0.14f);
+	// C-Client: dark tabs, the active one has the same color as the page panel below it
+	ms_ColorTabbarInactiveOutgame = ColorRGBA(0.045f, 0.035f, 0.085f, 0.45f);
+	ms_ColorTabbarActiveOutgame = ColorRGBA(0.045f, 0.035f, 0.085f, 0.82f);
+	ms_ColorTabbarHoverOutgame = ColorRGBA(1.0f, 1.0f, 1.0f, 0.12f);
 
-	const float ColorIngameScaleI = 0.5f;
-	const float ColorIngameScaleA = 0.2f;
-
-	ms_ColorTabbarInactiveIngame = ColorRGBA(
-		ms_GuiColor.r * ColorIngameScaleI,
-		ms_GuiColor.g * ColorIngameScaleI,
-		ms_GuiColor.b * ColorIngameScaleI,
-		ms_GuiColor.a * 0.8f);
-
-	ms_ColorTabbarActiveIngame = ColorRGBA(
-		ms_GuiColor.r * ColorIngameScaleA,
-		ms_GuiColor.g * ColorIngameScaleA,
-		ms_GuiColor.b * ColorIngameScaleA,
-		ms_GuiColor.a);
-
-	ms_ColorTabbarHoverIngame = ColorRGBA(1.0f, 1.0f, 1.0f, 0.75f);
+	// C-Client: the same dark look in game, a bit less see-through because the map is behind
+	ms_ColorTabbarInactiveIngame = ColorRGBA(0.045f, 0.035f, 0.085f, 0.6f);
+	ms_ColorTabbarActiveIngame = ColorRGBA(0.045f, 0.035f, 0.085f, 0.9f);
+	ms_ColorTabbarHoverIngame = ColorRGBA(1.0f, 1.0f, 1.0f, 0.12f);
 }
 
 bool CMenus::RenderMenuBackgroundOrNeon()

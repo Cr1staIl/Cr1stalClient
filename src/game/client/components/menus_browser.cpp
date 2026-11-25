@@ -18,6 +18,7 @@
 #include <engine/textrender.h>
 
 #include <game/client/animstate.h>
+#include <game/client/components/cclient_style.h>
 #include <game/client/components/countryflags.h>
 #include <game/client/gameclient.h>
 #include <game/client/ui.h>
@@ -68,9 +69,9 @@ void CMenus::RenderServerbrowserServerList(CUIRect View, bool &WasListboxItemAct
 
 	CUIRect Headers;
 	View.HSplitTop(ms_ListheaderHeight, &Headers, &View);
-	Headers.Draw(ColorRGBA(1.0f, 1.0f, 1.0f, 0.25f), IGraphics::CORNER_T, 5.0f);
+	// C-Client: the list sits in a card, the header is a slightly lighter strip
+	Headers.Draw(ColorRGBA(1.0f, 1.0f, 1.0f, 0.05f), IGraphics::CORNER_T, CCStyle::CARD_ROUNDING);
 	Headers.VSplitRight(s_ListBox.ScrollbarWidthMax(), &Headers, nullptr);
-	View.Draw(ColorRGBA(0.0f, 0.0f, 0.0f, 0.15f), IGraphics::CORNER_NONE, 0.0f);
 
 	struct SColumn
 	{
@@ -787,15 +788,15 @@ void CMenus::RenderServerbrowserFilters(CUIRect View)
 	// countries and types filters
 	if(ServerBrowser()->CommunityCache().CountriesTypesFilterAvailable())
 	{
-		const ColorRGBA ColorActive = ColorRGBA(0.0f, 0.0f, 0.0f, 0.3f);
-		const ColorRGBA ColorInactive = ColorRGBA(0.0f, 0.0f, 0.0f, 0.15f);
+		const ColorRGBA ColorActive = CCStyle::CARD;
+		const ColorRGBA ColorInactive = ColorRGBA(1.0f, 1.0f, 1.0f, 0.03f);
 
 		CUIRect TabContents, CountriesTab, TypesTab;
 		View.HSplitTop(6.0f, nullptr, &View);
 		View.HSplitTop(19.0f, &Button, &View);
 		View.HSplitTop(std::min(4.0f * 22.0f, View.h), &TabContents, &View);
 		Button.VSplitMid(&CountriesTab, &TypesTab);
-		TabContents.Draw(ColorActive, IGraphics::CORNER_B, 4.0f);
+		TabContents.Draw(ColorActive, IGraphics::CORNER_B, 8.0f);
 
 		enum EFilterTab
 		{
@@ -988,9 +989,9 @@ void CMenus::RenderServerbrowserCommunitiesFilter(CUIRect View)
 {
 	CUIRect Tab;
 	View.HSplitTop(19.0f, &Tab, &View);
-	Tab.Draw(ColorRGBA(0.0f, 0.0f, 0.0f, 0.3f), IGraphics::CORNER_T, 4.0f);
+	Tab.Draw(CCStyle::CARD, IGraphics::CORNER_T, 10.0f);
 	Ui()->DoLabel(&Tab, Localize("Communities"), 12.0f, TEXTALIGN_MC);
-	View.Draw(ColorRGBA(0.0f, 0.0f, 0.0f, 0.15f), IGraphics::CORNER_B, 4.0f);
+	View.Draw(ColorRGBA(0.105f, 0.09f, 0.165f, 0.6f), IGraphics::CORNER_B, 10.0f);
 
 	const int MaxEntries = ServerBrowser()->Communities().size();
 	if(MaxEntries == 0)
@@ -1744,8 +1745,8 @@ void CMenus::RenderServerbrowserTabBar(CUIRect TabBar)
 	TabBar.VSplitLeft(TabBar.w / 3.0f, &FilterTabButton, &TabBar);
 	TabBar.VSplitMid(&InfoTabButton, &FriendsTabButton);
 
-	const ColorRGBA ColorActive = ColorRGBA(0.0f, 0.0f, 0.0f, 0.3f);
-	const ColorRGBA ColorInactive = ColorRGBA(0.0f, 0.0f, 0.0f, 0.15f);
+	const ColorRGBA ColorActive = CCStyle::CARD;
+	const ColorRGBA ColorInactive = ColorRGBA(1.0f, 1.0f, 1.0f, 0.03f);
 
 	if(!Ui()->IsPopupOpen() && Ui()->ConsumeHotkey(CUi::HOTKEY_TAB))
 	{
@@ -1783,7 +1784,7 @@ void CMenus::RenderServerbrowserTabBar(CUIRect TabBar)
 
 void CMenus::RenderServerbrowserToolBox(CUIRect ToolBox)
 {
-	ToolBox.Draw(ColorRGBA(0.0f, 0.0f, 0.0f, 0.3f), IGraphics::CORNER_B, 4.0f);
+	ToolBox.Draw(CCStyle::CARD, IGraphics::CORNER_B, 10.0f);
 
 	switch(g_Config.m_UiToolboxPage)
 	{
@@ -1846,10 +1847,10 @@ void CMenus::RenderServerbrowser(CUIRect MainView)
 	// clang-format on
 
 	CUIRect ServerList, StatusBox, ToolBox, TabBar;
-	MainView.Draw(ms_ColorTabbarActive, IGraphics::CORNER_B, 10.0f);
-	MainView.Margin(10.0f, &MainView);
+	MainView.Draw(ms_ColorTabbarActive, IGraphics::CORNER_B, 14.0f);
+	MainView.Margin(12.0f, &MainView);
 	MainView.VSplitRight(205.0f, &ServerList, &ToolBox);
-	ServerList.VSplitRight(5.0f, &ServerList, nullptr);
+	ServerList.VSplitRight(10.0f, &ServerList, nullptr);
 
 	if(g_Config.m_UiPage == PAGE_INTERNET || g_Config.m_UiPage == PAGE_FAVORITES)
 	{
@@ -1860,7 +1861,11 @@ void CMenus::RenderServerbrowser(CUIRect MainView)
 	}
 
 	ToolBox.HSplitTop(24.0f, &TabBar, &ToolBox);
-	ServerList.HSplitBottom(65.0f, &ServerList, &StatusBox);
+	ServerList.HSplitBottom(75.0f, &ServerList, &StatusBox);
+	ServerList.HSplitBottom(8.0f, &ServerList, nullptr);
+	CCStyle::DrawCard(ServerList);
+	CCStyle::DrawCard(StatusBox);
+	StatusBox.Margin(vec2(10.0f, 5.0f), &StatusBox);
 
 	bool WasListboxItemActivated;
 	RenderServerbrowserServerList(ServerList, WasListboxItemActivated);

@@ -707,7 +707,7 @@ MACRO_CONFIG_COL(CcOutlineColorSolid, cc_outline_color_solid, 0xFFBFC8AA, CFGFLA
 MACRO_CONFIG_COL(CcOutlineColorUnfreeze, cc_outline_color_unfreeze, 0xFF55FFAA, CFGFLAG_CLIENT | CFGFLAG_SAVE | CFGFLAG_COLALPHA, "C-Client: color of unfreeze outlines")
 MACRO_CONFIG_COL(CcOutlineColorDeath, cc_outline_color_death, 0xFFE6FFAA, CFGFLAG_CLIENT | CFGFLAG_SAVE | CFGFLAG_COLALPHA, "C-Client: color of death tile outlines")
 MACRO_CONFIG_INT(CcMusicIsland, cc_music_island, 1, 0, 1, CFGFLAG_CLIENT | CFGFLAG_SAVE, "C-Client: show the music that is playing at the top, like the iPhone Dynamic Island (Windows)")
-MACRO_CONFIG_INT(CcMusicIslandText, cc_music_island_text, 1, 0, 1, CFGFLAG_CLIENT | CFGFLAG_SAVE, "C-Client: show title and artist in the music island")
+MACRO_CONFIG_INT(CcMusicIslandText, cc_music_island_text, 1, 0, 1, CFGFLAG_CLIENT | CFGFLAG_SAVE, "C-Client: show the song title in the music island")
 MACRO_CONFIG_INT(CcMusicIslandCover, cc_music_island_cover, 1, 0, 1, CFGFLAG_CLIENT | CFGFLAG_SAVE, "C-Client: show the cover picture in the music island")
 MACRO_CONFIG_INT(CcMusicIslandSize, cc_music_island_size, 100, 50, 200, CFGFLAG_CLIENT | CFGFLAG_SAVE, "C-Client: size of the music island in percent")
 MACRO_CONFIG_INT(CcMusicIslandY, cc_music_island_y, 2, 0, 250, CFGFLAG_CLIENT | CFGFLAG_SAVE, "C-Client: distance of the music island from the top of the screen")

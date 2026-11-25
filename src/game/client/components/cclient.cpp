@@ -746,19 +746,24 @@ void CCClient::RenderMusicIsland(float ScreenWidth)
 	const float Pad = 2.4f * Scale;
 	const float IconSize = Height - Pad * 2.0f;
 	const float TimeSize = 6.5f * Scale;
-	const float TitleSize = 5.2f * Scale;
-	const float ArtistSize = 4.3f * Scale;
+	const float TitleSize = 5.6f * Scale;
 	const float TimeWidth = HasTime ? TextRender()->TextWidth(TimeSize, aTime) : 0.0f;
 	const bool ShowText = g_Config.m_CcMusicIslandText;
 	const bool ShowCover = g_Config.m_CcMusicIslandCover;
 
-	// width of both layouts
+	// a new song starts its title from the beginning
+	if(Music && m_IslandTitle != m_MediaInfo.m_Title)
+	{
+		m_IslandTitle = m_MediaInfo.m_Title;
+		m_IslandTitleStart = Time;
+	}
+
+	// the title gets a box of limited width, a longer one slides from side to side inside it
+	const float TitleWidth = Music && ShowText ? TextRender()->TextWidth(TitleSize, m_MediaInfo.m_Title.c_str()) : 0.0f;
+	const float TitleBoxWidth = std::min(TitleWidth, 62.0f * Scale);
+
 	const float CompactWidth = Pad * 2.0f + IconSize + (HasTime ? Pad * 1.6f + TimeWidth : 0.0f) + Pad;
-	float MusicTextWidth = 0.0f;
-	if(Music && ShowText)
-		MusicTextWidth = std::min(95.0f * Scale, std::max(TextRender()->TextWidth(TitleSize, m_MediaInfo.m_Title.c_str()), TextRender()->TextWidth(ArtistSize, m_MediaInfo.m_Artist.c_str())));
-	const float BarsWidth = 8.0f * Scale;
-	const float MusicWidth = Pad * 2.0f + IconSize + Pad * 1.6f + (ShowText ? MusicTextWidth + Pad * 1.6f : 0.0f) + BarsWidth + (HasTime ? Pad * 2.0f + TimeWidth : 0.0f) + Pad;
+	const float MusicWidth = Pad * 2.0f + IconSize + (ShowText && TitleBoxWidth > 0.0f ? Pad * 1.8f + TitleBoxWidth : 0.0f) + (HasTime ? Pad * 2.2f + TimeWidth : 0.0f) + Pad;
 	const float TargetWidth = CompactWidth + (MusicWidth - CompactWidth) * MusicBlend;
 	if(m_IslandWidth <= 0.0f)
 		m_IslandWidth = TargetWidth;
@@ -768,7 +773,7 @@ void CCClient::RenderMusicIsland(float ScreenWidth)
 	const float X = ScreenWidth / 2.0f - Width / 2.0f;
 	const float Y = (float)g_Config.m_CcMusicIslandY;
 
-	// pill with a thin neon edge
+	// black pill with a barely visible edge, like the iPhone island
 	CUIRect Pill;
 	Pill.x = X;
 	Pill.y = Y;
@@ -779,8 +784,8 @@ void CCClient::RenderMusicIsland(float ScreenWidth)
 	Edge.y -= 0.35f;
 	Edge.w += 0.7f;
 	Edge.h += 0.7f;
-	Edge.Draw(ColorRGBA(0.55f, 0.3f, 1.0f, 0.35f), IGraphics::CORNER_ALL, Edge.h / 2.0f);
-	Pill.Draw(ColorRGBA(0.0f, 0.0f, 0.0f, 0.88f), IGraphics::CORNER_ALL, Height / 2.0f);
+	Edge.Draw(ColorRGBA(1.0f, 1.0f, 1.0f, 0.08f), IGraphics::CORNER_ALL, Edge.h / 2.0f);
+	Pill.Draw(ColorRGBA(0.0f, 0.0f, 0.0f, 0.9f), IGraphics::CORNER_ALL, Height / 2.0f);
 
 	float CursorX = X + Pad * 1.4f;
 	const float CenterY = Y + Height / 2.0f;
@@ -793,7 +798,7 @@ void CCClient::RenderMusicIsland(float ScreenWidth)
 	IGraphics::CQuadItem Picture(CursorX, CenterY - IconSize / 2.0f, IconSize, IconSize);
 	Graphics()->QuadsDrawTL(&Picture, 1);
 	Graphics()->QuadsEnd();
-	CursorX += IconSize + Pad * 1.6f;
+	CursorX += IconSize + Pad * 1.8f;
 
 	// time on the right side
 	if(HasTime)
@@ -804,44 +809,44 @@ void CCClient::RenderMusicIsland(float ScreenWidth)
 		TextRender()->TextColor(TextRender()->DefaultTextColor());
 	}
 
-	// music: title, artist and a small equalizer, fading in while the island grows
+	// song title, fading in while the island grows
 	const float ContentAlpha = std::clamp((MusicBlend - 0.35f) / 0.65f, 0.0f, 1.0f);
-	if(Music && ContentAlpha > 0.01f)
+	if(Music && ShowText && TitleBoxWidth > 0.0f && ContentAlpha > 0.01f)
 	{
-		if(ShowText)
+		float Offset = 0.0f;
+		const float Overflow = TitleWidth - TitleBoxWidth;
+		if(Overflow > 0.5f)
 		{
-			CTextCursor Cursor;
-			Cursor.SetPosition(vec2(CursorX, CenterY - TitleSize - 0.2f * Scale));
-			Cursor.m_FontSize = TitleSize;
-			Cursor.m_LineWidth = MusicTextWidth;
-			Cursor.m_MaxLines = 1;
-			Cursor.m_Flags = TEXTFLAG_RENDER | TEXTFLAG_ELLIPSIS_AT_END;
-			TextRender()->TextColor(1.0f, 1.0f, 1.0f, ContentAlpha);
-			TextRender()->TextEx(&Cursor, m_MediaInfo.m_Title.c_str());
-
-			CTextCursor ArtistCursor;
-			ArtistCursor.SetPosition(vec2(CursorX, CenterY + 0.4f * Scale));
-			ArtistCursor.m_FontSize = ArtistSize;
-			ArtistCursor.m_LineWidth = MusicTextWidth;
-			ArtistCursor.m_MaxLines = 1;
-			ArtistCursor.m_Flags = TEXTFLAG_RENDER | TEXTFLAG_ELLIPSIS_AT_END;
-			TextRender()->TextColor(0.7f, 0.75f, 0.9f, ContentAlpha);
-			TextRender()->TextEx(&ArtistCursor, m_MediaInfo.m_Artist.c_str());
-			TextRender()->TextColor(TextRender()->DefaultTextColor());
-			CursorX += MusicTextWidth + Pad * 1.6f;
+			// wait, slide to the end, wait, slide back
+			const float Pause = 1.6f;
+			const float Speed = 9.0f * Scale;
+			const float MoveTime = Overflow / Speed;
+			const float Cycle = 2.0f * (Pause + MoveTime);
+			const float t = std::fmod(Time - m_IslandTitleStart, Cycle);
+			if(t < Pause)
+				Offset = 0.0f;
+			else if(t < Pause + MoveTime)
+				Offset = (t - Pause) * Speed;
+			else if(t < 2.0f * Pause + MoveTime)
+				Offset = Overflow;
+			else
+				Offset = Overflow - (t - 2.0f * Pause - MoveTime) * Speed;
 		}
 
-		const float BarW = 1.1f * Scale;
-		Graphics()->TextureClear();
-		Graphics()->QuadsBegin();
-		for(int i = 0; i < 4; i++)
-		{
-			const float Level = m_MediaInfo.m_Playing ? 0.3f + 0.7f * std::fabs(std::sin(Time * (4.5f + i * 1.7f) + i * 1.3f)) : 0.18f;
-			const float BarH = (Height - Pad * 3.2f) * Level;
-			Graphics()->SetColor(i % 2 == 0 ? ColorRGBA(0.0f, 0.95f, 1.0f, ContentAlpha) : ColorRGBA(1.0f, 0.25f, 0.85f, ContentAlpha));
-			IGraphics::CQuadItem Bar(CursorX + i * BarW * 1.9f, CenterY - BarH / 2.0f, BarW, BarH);
-			Graphics()->QuadsDrawTL(&Bar, 1);
-		}
-		Graphics()->QuadsEnd();
+		// only draw inside the title box
+		const CScreenRect Screen = Graphics()->GetScreen();
+		const float ScaleX = Graphics()->ScreenWidth() / (Screen.m_BottomRight.x - Screen.m_TopLeft.x);
+		const float ScaleY = Graphics()->ScreenHeight() / (Screen.m_BottomRight.y - Screen.m_TopLeft.y);
+		const float BoxTop = Y + Pad * 0.5f;
+		const float BoxHeight = Height - Pad;
+		Graphics()->ClipEnable(
+			(int)std::round((CursorX - Screen.m_TopLeft.x) * ScaleX),
+			(int)std::round((BoxTop - Screen.m_TopLeft.y) * ScaleY),
+			(int)std::round(TitleBoxWidth * ScaleX),
+			(int)std::round(BoxHeight * ScaleY));
+		TextRender()->TextColor(1.0f, 1.0f, 1.0f, ContentAlpha);
+		TextRender()->Text(CursorX - Offset, CenterY - TitleSize * 0.62f, TitleSize, m_MediaInfo.m_Title.c_str());
+		TextRender()->TextColor(TextRender()->DefaultTextColor());
+		Graphics()->ClipDisable();
 	}
 }

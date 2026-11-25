@@ -9,6 +9,8 @@
 #include <engine/graphics.h>
 #include <engine/shared/config.h>
 
+#include <game/client/components/cclient.h>
+#include <game/client/components/cclient_style.h>
 #include <game/client/components/menu_background.h>
 #include <game/client/gameclient.h>
 #include <game/client/ui.h>
@@ -24,11 +26,13 @@ void CMenus::SetNeedSendInfo()
 
 void CMenus::RenderSettings(CUIRect MainView)
 {
-	// render background
-	CUIRect Button, TabBar, RestartBar;
-	MainView.VSplitRight(120.0f, &MainView, &TabBar);
-	MainView.Draw(ms_ColorTabbarActive, IGraphics::CORNER_B, 10.0f);
-	MainView.Margin(20.0f, &MainView);
+	// C-Client design: dark panel, header with the client icon on the left and the
+	// pages as pills on the top right
+	CUIRect Header, RestartBar;
+	MainView.Draw(CCStyle::PANEL, IGraphics::CORNER_B, 14.0f);
+	MainView.Margin(16.0f, &MainView);
+	MainView.HSplitTop(28.0f, &Header, &MainView);
+	MainView.HSplitTop(14.0f, nullptr, &MainView);
 
 	const bool NeedRestart = m_NeedRestartGraphics || m_NeedRestartSound || m_NeedRestartUpdate;
 	if(NeedRestart)
@@ -36,9 +40,6 @@ void CMenus::RenderSettings(CUIRect MainView)
 		MainView.HSplitBottom(20.0f, &MainView, &RestartBar);
 		MainView.HSplitBottom(10.0f, &MainView, nullptr);
 	}
-
-	TabBar.HSplitTop(50.0f, &Button, &TabBar);
-	Button.Draw(ms_ColorTabbarActive, IGraphics::CORNER_BR, 10.0f);
 
 	const char *apTabs[SETTINGS_LENGTH] = {
 		Localize("Language"),
@@ -55,12 +56,78 @@ void CMenus::RenderSettings(CUIRect MainView)
 		Localize("Credits")};
 	static CButtonContainer s_aTabButtons[SETTINGS_LENGTH];
 
-	for(int i = 0; i < SETTINGS_LENGTH; i++)
 	{
-		TabBar.HSplitTop(10.0f, nullptr, &TabBar);
-		TabBar.HSplitTop(26.0f, &Button, &TabBar);
-		if(DoButton_MenuTab(&s_aTabButtons[i], apTabs[i], g_Config.m_UiSettingsPage == i, &Button, IGraphics::CORNER_R, &m_aAnimatorsSettingsTab[i]))
-			g_Config.m_UiSettingsPage = i;
+		// icon and name
+		CUIRect Icon, Title;
+		Header.VSplitLeft(26.0f, &Icon, &Title);
+		Icon.HMargin((Icon.h - 26.0f) / 2.0f, &Icon);
+		Graphics()->TextureSet(GameClient()->m_CClient.IconTexture());
+		Graphics()->QuadsBegin();
+		Graphics()->SetColor(1.0f, 1.0f, 1.0f, 1.0f);
+		IGraphics::CQuadItem IconQuad(Icon.x, Icon.y, Icon.w, Icon.h);
+		Graphics()->QuadsDrawTL(&IconQuad, 1);
+		Graphics()->QuadsEnd();
+
+		const float TitleSize = 16.0f;
+		const char *pFirst = "Cr\xe2\x99\xb1stal ";
+		TextRender()->SetFontPreset(EFontPreset::TITLE_FONT);
+		const float FirstW = TextRender()->TextWidth(TitleSize, pFirst);
+		const float TitleW = FirstW + TextRender()->TextWidth(TitleSize, "Client");
+		const float TextX = Title.x + 9.0f;
+		const float TextY = Title.y + (Title.h - TitleSize) / 2.0f - 1.0f;
+		TextRender()->TextColor(CCStyle::TEXT);
+		TextRender()->Text(TextX, TextY, TitleSize, pFirst);
+		TextRender()->TextColor(0.66f, 0.62f, 1.0f, 1.0f);
+		TextRender()->Text(TextX + FirstW, TextY, TitleSize, "Client");
+		TextRender()->TextColor(TextRender()->DefaultTextColor());
+		TextRender()->SetFontPreset(EFontPreset::DEFAULT_FONT);
+		Title.VSplitLeft(TitleW + 24.0f, nullptr, &Title);
+
+		// pills, as wide as their text; smaller text if they don't fit
+		float FontSize = 11.0f;
+		float PadX = 9.0f;
+		float aWidths[SETTINGS_LENGTH];
+		float Total = 0.0f;
+		for(int Try = 0; Try < 3; Try++)
+		{
+			Total = 6.0f;
+			for(int i = 0; i < SETTINGS_LENGTH; i++)
+			{
+				aWidths[i] = TextRender()->TextWidth(FontSize, apTabs[i]) + PadX * 2.0f;
+				Total += aWidths[i];
+			}
+			if(Total <= Title.w)
+				break;
+			FontSize -= 1.0f;
+			PadX -= 2.0f;
+		}
+		if(Total > Title.w)
+		{
+			// still too wide: equal parts
+			for(float &Width : aWidths)
+				Width = (Title.w - 6.0f) / (float)SETTINGS_LENGTH;
+			Total = Title.w;
+		}
+
+		CUIRect Nav;
+		Title.VSplitRight(Total, nullptr, &Nav);
+		Nav.Draw(ColorRGBA(1.0f, 1.0f, 1.0f, 0.05f), IGraphics::CORNER_ALL, Nav.h / 2.0f);
+		Nav.Margin(3.0f, &Nav);
+		for(int i = 0; i < SETTINGS_LENGTH; i++)
+		{
+			CUIRect Pill;
+			Nav.VSplitLeft(aWidths[i], &Pill, &Nav);
+			const bool Active = g_Config.m_UiSettingsPage == i;
+			if(Active)
+				Pill.Draw(CCStyle::ACCENT, IGraphics::CORNER_ALL, Pill.h / 2.0f);
+			else if(Ui()->HotItem() == &s_aTabButtons[i])
+				Pill.Draw(CCStyle::HOVER, IGraphics::CORNER_ALL, Pill.h / 2.0f);
+			SLabelProperties Props;
+			Props.SetColor(Active ? ColorRGBA(1.0f, 1.0f, 1.0f, 1.0f) : CCStyle::TEXT_DIM);
+			Ui()->DoLabel(&Pill, apTabs[i], FontSize, TEXTALIGN_MC, Props);
+			if(Ui()->DoButtonLogic(&s_aTabButtons[i], 0, &Pill, BUTTONFLAG_LEFT))
+				g_Config.m_UiSettingsPage = i;
+		}
 	}
 
 	if(g_Config.m_UiSettingsPage == SETTINGS_LANGUAGE)

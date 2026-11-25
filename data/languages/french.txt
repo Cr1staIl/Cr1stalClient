@@ -2667,24 +2667,6 @@ Dragger Outline Color
 Dragger Inner Color
 == 
 
-Cursor
-== 
-
-Cursor distance
-== 
-
-Type any value from 0 to 5000
-== 
-
-Dynamic camera is on: it uses its own distance
-== 
-
-Cursor size
-== 
-
-Lines through the screen center
-== 
-
 Input
 == 
 
@@ -2757,52 +2739,22 @@ Prediction strength
 Predict freeze
 == 
 
-Tees
+Cursor
 == 
 
-Show real hitbox of tees
+Cursor distance
 == 
 
-Tees of other teams
+Type any value from 0 to 5000
 == 
 
-Ninja skin
+Dynamic camera is on: it uses its own distance
 == 
 
-Show emotes
+Cursor size
 == 
 
-Show pressed keys of all tees
-== 
-
-Own hook line
-== 
-
-Hook lines of others
-== 
-
-Looks
-== 
-
-Neon menu background
-== 
-
-Rainbow tee (only you see it)
-== 
-
-Rainbow speed
-== 
-
-Trail behind your tee
-== 
-
-Rainbow trail
-== 
-
-Trail length
-== 
-
-Trail width
+Lines through the screen center
 == 
 
 Customization
@@ -2835,7 +2787,52 @@ Picture opacity
 Picture rotation
 == 
 
-Texture packs of other players: coming later
+Tees
+== 
+
+Show real hitbox of tees
+== 
+
+Ninja skin
+== 
+
+Show emotes
+== 
+
+Show pressed keys of all tees
+== 
+
+Own hook line
+== 
+
+Hook lines of others
+== 
+
+Tees of other teams
+== 
+
+Looks
+== 
+
+Neon menu background
+== 
+
+Rainbow tee (only you see it)
+== 
+
+Rainbow speed
+== 
+
+Trail behind your tee
+== 
+
+Rainbow trail
+== 
+
+Trail length
+== 
+
+Trail width
 == 
 
 Tile outlines
@@ -2880,7 +2877,7 @@ Show the music that is playing (Windows)
 Shows what plays in YouTube, Spotify and other players, like the iPhone Dynamic Island
 == 
 
-Show title and artist
+Show the song title
 == 
 
 Show cover picture
@@ -2890,6 +2887,9 @@ Island size
 == 
 
 Distance from the top
+== 
+
+A long title slides from side to side
 == 
 
 Warn when you are the last one alive
@@ -2908,45 +2908,6 @@ Indicator size
 == 
 
 Green: alive, blue: frozen
-== 
-
-Updates
-== 
-
-Your version
-== 
-
-Your version: local build (no updates)
-== 
-
-Check for updates when the game starts
-== 
-
-Check for updates
-== 
-
-Checking…
-== 
-
-You have the newest version
-== 
-
-Update is ready: see the main menu
-== 
-
-Saves and markers
-== 
-
-Hold Shift and press Q or E: save wheel
-== 
-
-Middle mouse button: marker for your team
-== 
-
-Others with Cr1stal Client see pictures and markers
-== 
-
-Put markers on the middle mouse button
 == 
 
 Status bar (FPS, ping, team, time)
@@ -2976,10 +2937,49 @@ Show jumps you have left
 Game tiles over the map
 == 
 
+Saves and markers
+== 
+
+Hold Shift and press Q or E: save wheel
+== 
+
+Middle mouse button: marker for your team
+== 
+
+Others with Cr1stal Client see pictures and markers
+== 
+
+Put markers on the middle mouse button
+== 
+
 Only show chat of friends
 == 
 
 Names in team colors
+== 
+
+Updates
+== 
+
+Your version
+== 
+
+Your version: local build (no updates)
+== 
+
+Check for updates when the game starts
+== 
+
+Check for updates
+== 
+
+Checking…
+== 
+
+You have the newest version
+== 
+
+Update is ready: see the main menu
 == 
 
 On join

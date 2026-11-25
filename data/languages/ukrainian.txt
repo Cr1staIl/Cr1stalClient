@@ -2978,9 +2978,6 @@ Picture opacity
 Picture rotation
 == Обертання картинки
 
-Texture packs of other players: coming later
-== Текстурпаки інших гравців: буде пізніше
-
 Tile outlines
 == Обведення тайлів
 
@@ -3022,9 +3019,6 @@ Show the music that is playing (Windows)
 
 Shows what plays in YouTube, Spotify and other players, like the iPhone Dynamic Island
 == Показує, що грає в YouTube, Spotify та інших плеєрах, як Dynamic Island на iPhone
-
-Show title and artist
-== Назва та виконавець
 
 Show cover picture
 == Обкладинка
@@ -3088,6 +3082,12 @@ Initializing layers
 == 
 
 Credits
+== 
+
+Show the song title
+== 
+
+A long title slides from side to side
 == 
 
 Teleport to cursor

@@ -13,6 +13,7 @@
 #include <game/client/components/cclient_media.h>
 
 #include <memory>
+#include <string>
 #include <vector>
 
 class IHttpRequest;
@@ -111,6 +112,8 @@ private:
 	float m_NextMediaPoll = 0.0f;
 	float m_IslandWidth = 0.0f; // animated
 	float m_IslandVisible = 0.0f; // animated 0..1
+	std::string m_IslandTitle; // title the scrolling started for
+	float m_IslandTitleStart = 0.0f;
 	void UpdateMedia();
 
 	void ApplyFont();

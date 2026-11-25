@@ -3009,9 +3009,6 @@ Picture opacity
 Picture rotation
 == Вращение картинки
 
-Texture packs of other players: coming later
-== Текстурпаки других игроков: будет позже
-
 Tile outlines
 == Обводка тайлов
 
@@ -3053,9 +3050,6 @@ Show the music that is playing (Windows)
 
 Shows what plays in YouTube, Spotify and other players, like the iPhone Dynamic Island
 == Показывает, что играет в YouTube, Spotify и других плеерах, как Dynamic Island на iPhone
-
-Show title and artist
-== Название и исполнитель
 
 Show cover picture
 == Обложка
@@ -3107,3 +3101,9 @@ Only changes what you see, not what the server gets
 
 Virtual joystick which only aims and moves the mouse pointer relatively.
 == 
+
+Show the song title
+== Показывать название песни
+
+A long title slides from side to side
+== Длинное название двигается из стороны в сторону

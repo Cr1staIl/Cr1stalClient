@@ -34,7 +34,7 @@ void CListBox::DoHeader(const CUIRect *pRect, const char *pTitle, float HeaderHe
 
 	// background
 	View.HSplitTop(HeaderHeight + Spacing, &Header, nullptr);
-	Header.Draw(ColorRGBA(0.0f, 0.0f, 0.0f, 0.15f), m_BackgroundCorners & IGraphics::CORNER_T, 5.0f);
+	Header.Draw(ColorRGBA(0.0f, 0.0f, 0.0f, 0.2f), m_BackgroundCorners & IGraphics::CORNER_T, 8.0f);
 
 	// draw header
 	View.HSplitTop(HeaderHeight, &Header, &View);
@@ -65,7 +65,7 @@ void CListBox::DoStart(float RowHeight, int NumItems, int ItemsPerRow, int RowsP
 	// background
 	m_BackgroundCorners = BackgroundCorners;
 	if(Background)
-		View.Draw(ColorRGBA(0.0f, 0.0f, 0.0f, 0.15f), m_BackgroundCorners & (m_HasHeader ? IGraphics::CORNER_B : IGraphics::CORNER_ALL), 5.0f);
+		View.Draw(ColorRGBA(0.0f, 0.0f, 0.0f, 0.2f), m_BackgroundCorners & (m_HasHeader ? IGraphics::CORNER_B : IGraphics::CORNER_ALL), 8.0f);
 
 	// setup the variables
 	m_ListBoxView = View;
@@ -166,11 +166,12 @@ CListboxItem CListBox::DoNextItem(const void *pId, bool Selected, float CornerRa
 			}
 		}
 
-		Item.m_Rect.Draw(ColorRGBA(1.0f, 1.0f, 1.0f, m_Active ? 0.5f : 0.33f), IGraphics::CORNER_ALL, CornerRadius);
+		// C-Client: calm blue violet for the selected row
+		Item.m_Rect.Draw(ColorRGBA(0.42f, 0.37f, 1.0f, m_Active ? 0.45f : 0.3f), IGraphics::CORNER_ALL, CornerRadius);
 	}
 	if(Ui()->HotItem() == pId && !m_ScrollRegion.Animating())
 	{
-		Item.m_Rect.Draw(ColorRGBA(1.0f, 1.0f, 1.0f, 0.33f), IGraphics::CORNER_ALL, CornerRadius);
+		Item.m_Rect.Draw(ColorRGBA(1.0f, 1.0f, 1.0f, 0.09f), IGraphics::CORNER_ALL, CornerRadius);
 	}
 
 	return Item;
