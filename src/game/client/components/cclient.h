@@ -102,6 +102,7 @@ private:
 	CMediaWatcher m_Media;
 	CMediaWatcher::SInfo m_MediaInfo;
 	IGraphics::CTextureHandle m_CoverTexture;
+	IGraphics::CTextureHandle m_IconTexture;
 	int m_CoverVersion = -1;
 	float m_NextMediaPoll = 0.0f;
 	float m_IslandWidth = 0.0f; // animated

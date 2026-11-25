@@ -1,6 +1,9 @@
 /* Cr1stal Client: what music is playing right now (Windows media controls). Based on DDNet, see licence.txt. */
 #include "cclient_media.h"
 
+#include <base/detect.h>
+
+#include <algorithm>
 #include <chrono>
 
 #if defined(CONF_FAMILY_WINDOWS) && defined(_MSC_VER)
@@ -92,9 +95,17 @@ void CMediaWatcher::Run()
 						{
 							const auto Stream = Thumbnail.OpenReadAsync().get();
 							const auto Decoder = BitmapDecoder::CreateAsync(Stream).get();
+							// scale so the short side is 128 pixels and cut a square from the middle
+							// (YouTube covers are 16:9, they would look squashed otherwise)
+							const uint32_t SrcW = std::max<uint32_t>(1, Decoder.PixelWidth());
+							const uint32_t SrcH = std::max<uint32_t>(1, Decoder.PixelHeight());
+							const uint32_t Short = std::min(SrcW, SrcH);
+							const uint32_t ScaledW = std::max<uint32_t>(128, SrcW * 128 / Short);
+							const uint32_t ScaledH = std::max<uint32_t>(128, SrcH * 128 / Short);
 							BitmapTransform Transform;
-							Transform.ScaledWidth(128);
-							Transform.ScaledHeight(128);
+							Transform.ScaledWidth(ScaledW);
+							Transform.ScaledHeight(ScaledH);
+							Transform.Bounds(BitmapBounds{(ScaledW - 128) / 2, (ScaledH - 128) / 2, 128, 128});
 							Transform.InterpolationMode(BitmapInterpolationMode::Fant);
 							const auto Pixels = Decoder.GetPixelDataAsync(BitmapPixelFormat::Rgba8, BitmapAlphaMode::Straight, Transform,
 											   ExifOrientationMode::RespectExifOrientation, ColorManagementMode::DoNotColorManage)

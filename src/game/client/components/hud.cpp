@@ -159,6 +159,28 @@ void CHud::RenderGameTimer()
 	}
 }
 
+bool CHud::GameTimerText(char *pBuf, int BufSize, bool *pWarning)
+{
+	*pWarning = false;
+	const CNetObj_GameInfo *pInfo = GameClient()->m_Snap.m_pGameInfoObj;
+	if(!pInfo || (pInfo->m_GameStateFlags & GAMESTATEFLAG_SUDDENDEATH))
+		return false;
+	int Time = 0;
+	if(pInfo->m_TimeLimit && pInfo->m_WarmupTimer <= 0)
+	{
+		Time = pInfo->m_TimeLimit * 60 - ((Client()->GameTick(g_Config.m_ClDummy) - pInfo->m_RoundStartTick) / Client()->GameTickSpeed());
+		if(pInfo->m_GameStateFlags & GAMESTATEFLAG_GAMEOVER)
+			Time = 0;
+		*pWarning = Time <= 60;
+	}
+	else if(pInfo->m_GameStateFlags & GAMESTATEFLAG_RACETIME)
+		Time = (Client()->GameTick(g_Config.m_ClDummy) + pInfo->m_WarmupTimer) / Client()->GameTickSpeed();
+	else
+		Time = (Client()->GameTick(g_Config.m_ClDummy) - pInfo->m_RoundStartTick) / Client()->GameTickSpeed();
+	str_time((int64_t)Time * 100, ETimeFormat::DAYS, pBuf, BufSize);
+	return true;
+}
+
 void CHud::RenderPauseNotification()
 {
 	if(GameClient()->m_Snap.m_pGameInfoObj->m_GameStateFlags & GAMESTATEFLAG_PAUSED &&
@@ -1820,7 +1842,7 @@ void CHud::OnRender()
 			RenderSpectatorHud();
 		}
 
-		if(g_Config.m_ClShowhudTimer)
+		if(g_Config.m_ClShowhudTimer && !g_Config.m_CcMusicIsland) // the music island shows the timer itself
 			RenderGameTimer();
 		RenderPauseNotification();
 		RenderSuddenDeath();

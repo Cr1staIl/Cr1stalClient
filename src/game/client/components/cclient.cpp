@@ -137,6 +137,7 @@ void CCClient::OnInit()
 		m_aSaveTextures[i] = Graphics()->LoadTexture(s_apSaveFiles[i], IStorage::TYPE_ALL);
 	for(int i = 0; i < NUM_AURAS; i++)
 		m_aAuraTextures[i] = Graphics()->LoadTexture(s_apAuraFiles[i], IStorage::TYPE_ALL);
+	m_IconTexture = Graphics()->LoadTexture("cclient/icon.png", IStorage::TYPE_ALL);
 	ApplyFont();
 	m_Media.Start();
 
@@ -717,102 +718,126 @@ void CCClient::UpdateMedia()
 			Image.m_pData = m_MediaInfo.m_vCover.data();
 			m_CoverTexture = Graphics()->LoadTextureRaw(Image, 0, "cclient_cover");
 		}
-		m_IslandWidth = 0.0f; // grow again for the new track
 	}
 }
 
 void CCClient::RenderMusicIsland(float ScreenWidth)
 {
-	const bool Show = g_Config.m_CcMusicIsland && m_MediaInfo.m_Valid;
-	const float Delta = std::clamp(Client()->RenderFrameTime(), 0.0f, 0.1f);
-	m_IslandVisible = std::clamp(m_IslandVisible + (Show ? Delta : -Delta) * 4.0f, 0.0f, 1.0f);
-	if(m_IslandVisible <= 0.0f)
+	if(!g_Config.m_CcMusicIsland)
 		return;
 
+	const float Delta = std::clamp(Client()->RenderFrameTime(), 0.0f, 0.1f);
+	const float Time = Client()->GlobalTime();
 	const float Scale = g_Config.m_CcMusicIslandSize / 100.0f;
-	const float Height = 18.0f * Scale;
-	const float Pad = 2.5f * Scale;
-	const float CoverSize = Height - Pad * 2.0f;
-	const bool Cover = g_Config.m_CcMusicIslandCover && m_CoverTexture.IsValid();
-	const bool Text = g_Config.m_CcMusicIslandText;
-	const float TitleSize = 6.0f * Scale;
-	const float ArtistSize = 4.8f * Scale;
-	const float TextMax = 90.0f * Scale;
+	const bool Music = m_MediaInfo.m_Valid;
 
-	float TextWidth = 0.0f;
-	if(Text)
-		TextWidth = std::min(TextMax, std::max(TextRender()->TextWidth(TitleSize, m_MediaInfo.m_Title.c_str()), TextRender()->TextWidth(ArtistSize, m_MediaInfo.m_Artist.c_str())));
-	const float BarsWidth = 10.0f * Scale;
-	float TargetWidth = Pad * 2.0f + BarsWidth + (Cover ? CoverSize + Pad * 1.5f : 0.0f) + (Text ? TextWidth + Pad * 1.5f : Pad);
-	TargetWidth = std::max(TargetWidth, Height * 2.0f);
+	// map timer
+	char aTime[32] = "";
+	bool TimeWarning = false;
+	const bool HasTime = g_Config.m_ClShowhudTimer && GameClient()->m_Hud.GameTimerText(aTime, sizeof(aTime), &TimeWarning);
 
-	// smooth "growing" like the iPhone island
+	// 0 = compact (icon + time), 1 = music; blends smoothly between the two
+	m_IslandVisible += ((Music ? 1.0f : 0.0f) - m_IslandVisible) * std::min(1.0f, Delta * 6.0f);
+	const float MusicBlend = m_IslandVisible;
+
+	const float Height = 16.0f * Scale;
+	const float Pad = 2.4f * Scale;
+	const float IconSize = Height - Pad * 2.0f;
+	const float TimeSize = 6.5f * Scale;
+	const float TitleSize = 5.2f * Scale;
+	const float ArtistSize = 4.3f * Scale;
+	const float TimeWidth = HasTime ? TextRender()->TextWidth(TimeSize, aTime) : 0.0f;
+	const bool ShowText = g_Config.m_CcMusicIslandText;
+	const bool ShowCover = g_Config.m_CcMusicIslandCover;
+
+	// width of both layouts
+	const float CompactWidth = Pad * 2.0f + IconSize + (HasTime ? Pad * 1.6f + TimeWidth : 0.0f) + Pad;
+	float MusicTextWidth = 0.0f;
+	if(Music && ShowText)
+		MusicTextWidth = std::min(95.0f * Scale, std::max(TextRender()->TextWidth(TitleSize, m_MediaInfo.m_Title.c_str()), TextRender()->TextWidth(ArtistSize, m_MediaInfo.m_Artist.c_str())));
+	const float BarsWidth = 8.0f * Scale;
+	const float MusicWidth = Pad * 2.0f + IconSize + Pad * 1.6f + (ShowText ? MusicTextWidth + Pad * 1.6f : 0.0f) + BarsWidth + (HasTime ? Pad * 2.0f + TimeWidth : 0.0f) + Pad;
+	const float TargetWidth = CompactWidth + (MusicWidth - CompactWidth) * MusicBlend;
 	if(m_IslandWidth <= 0.0f)
-		m_IslandWidth = Height;
-	m_IslandWidth += (TargetWidth - m_IslandWidth) * std::min(1.0f, Delta * 8.0f);
+		m_IslandWidth = TargetWidth;
+	m_IslandWidth += (TargetWidth - m_IslandWidth) * std::min(1.0f, Delta * 9.0f);
+
 	const float Width = m_IslandWidth;
 	const float X = ScreenWidth / 2.0f - Width / 2.0f;
 	const float Y = (float)g_Config.m_CcMusicIslandY;
-	const float Alpha = m_IslandVisible;
 
-	// pill
+	// pill with a thin neon edge
 	CUIRect Pill;
 	Pill.x = X;
 	Pill.y = Y;
 	Pill.w = Width;
 	Pill.h = Height;
-	Pill.Draw(ColorRGBA(0.02f, 0.01f, 0.04f, 0.92f * Alpha), IGraphics::CORNER_ALL, Height / 2.0f);
+	CUIRect Edge = Pill;
+	Edge.x -= 0.35f;
+	Edge.y -= 0.35f;
+	Edge.w += 0.7f;
+	Edge.h += 0.7f;
+	Edge.Draw(ColorRGBA(0.55f, 0.3f, 1.0f, 0.35f), IGraphics::CORNER_ALL, Edge.h / 2.0f);
+	Pill.Draw(ColorRGBA(0.0f, 0.0f, 0.0f, 0.88f), IGraphics::CORNER_ALL, Height / 2.0f);
 
-	// content appears once the pill is wide enough
-	const float ContentAlpha = Alpha * std::clamp((Width - Height * 1.5f) / std::max(1.0f, TargetWidth - Height * 1.5f), 0.0f, 1.0f);
-	float CursorX = X + Pad * 1.6f;
-	if(Cover)
-	{
-		Graphics()->TextureSet(m_CoverTexture);
-		Graphics()->QuadsBegin();
-		Graphics()->SetColor(1.0f, 1.0f, 1.0f, ContentAlpha);
-		IGraphics::CQuadItem CoverQuad(CursorX, Y + Pad, CoverSize, CoverSize);
-		Graphics()->QuadsDrawTL(&CoverQuad, 1);
-		Graphics()->QuadsEnd();
-		CursorX += CoverSize + Pad * 1.5f;
-	}
-	if(Text && ContentAlpha > 0.01f)
-	{
-		const float MaxW = std::max(1.0f, Width - (CursorX - X) - BarsWidth - Pad * 2.0f);
-		CTextCursor Cursor;
-		Cursor.SetPosition(vec2(CursorX, Y + Pad * 0.6f));
-		Cursor.m_FontSize = TitleSize;
-		Cursor.m_LineWidth = MaxW;
-		Cursor.m_MaxLines = 1;
-		Cursor.m_Flags = TEXTFLAG_RENDER | TEXTFLAG_ELLIPSIS_AT_END;
-		TextRender()->TextColor(1.0f, 1.0f, 1.0f, ContentAlpha);
-		TextRender()->TextEx(&Cursor, m_MediaInfo.m_Title.c_str());
+	float CursorX = X + Pad * 1.4f;
+	const float CenterY = Y + Height / 2.0f;
 
-		CTextCursor ArtistCursor;
-		ArtistCursor.SetPosition(vec2(CursorX, Y + Pad * 0.6f + TitleSize + 0.6f * Scale));
-		ArtistCursor.m_FontSize = ArtistSize;
-		ArtistCursor.m_LineWidth = MaxW;
-		ArtistCursor.m_MaxLines = 1;
-		ArtistCursor.m_Flags = TEXTFLAG_RENDER | TEXTFLAG_ELLIPSIS_AT_END;
-		TextRender()->TextColor(0.75f, 0.8f, 0.95f, ContentAlpha * 0.85f);
-		TextRender()->TextEx(&ArtistCursor, m_MediaInfo.m_Artist.c_str());
+	// left picture: cover when music plays, client icon otherwise
+	const bool UseCover = Music && ShowCover && m_CoverTexture.IsValid() && MusicBlend > 0.5f;
+	Graphics()->TextureSet(UseCover ? m_CoverTexture : m_IconTexture);
+	Graphics()->QuadsBegin();
+	Graphics()->SetColor(1.0f, 1.0f, 1.0f, 1.0f);
+	IGraphics::CQuadItem Picture(CursorX, CenterY - IconSize / 2.0f, IconSize, IconSize);
+	Graphics()->QuadsDrawTL(&Picture, 1);
+	Graphics()->QuadsEnd();
+	CursorX += IconSize + Pad * 1.6f;
+
+	// time on the right side
+	if(HasTime)
+	{
+		const float TimeX = X + Width - Pad * 1.6f - TimeWidth;
+		TextRender()->TextColor(TimeWarning ? ColorRGBA(1.0f, 0.35f, 0.4f, 1.0f) : ColorRGBA(0.92f, 0.95f, 1.0f, 1.0f));
+		TextRender()->Text(TimeX, CenterY - TimeSize * 0.62f, TimeSize, aTime);
 		TextRender()->TextColor(TextRender()->DefaultTextColor());
 	}
 
-	// little equalizer on the right, moving while the music plays
+	// music: title, artist and a small equalizer, fading in while the island grows
+	const float ContentAlpha = std::clamp((MusicBlend - 0.35f) / 0.65f, 0.0f, 1.0f);
+	if(Music && ContentAlpha > 0.01f)
 	{
-		const float Time = Client()->GlobalTime();
-		const float BarW = 1.4f * Scale;
-		const float BaseX = X + Width - Pad * 1.6f - BarsWidth + BarW;
+		if(ShowText)
+		{
+			CTextCursor Cursor;
+			Cursor.SetPosition(vec2(CursorX, CenterY - TitleSize - 0.2f * Scale));
+			Cursor.m_FontSize = TitleSize;
+			Cursor.m_LineWidth = MusicTextWidth;
+			Cursor.m_MaxLines = 1;
+			Cursor.m_Flags = TEXTFLAG_RENDER | TEXTFLAG_ELLIPSIS_AT_END;
+			TextRender()->TextColor(1.0f, 1.0f, 1.0f, ContentAlpha);
+			TextRender()->TextEx(&Cursor, m_MediaInfo.m_Title.c_str());
+
+			CTextCursor ArtistCursor;
+			ArtistCursor.SetPosition(vec2(CursorX, CenterY + 0.4f * Scale));
+			ArtistCursor.m_FontSize = ArtistSize;
+			ArtistCursor.m_LineWidth = MusicTextWidth;
+			ArtistCursor.m_MaxLines = 1;
+			ArtistCursor.m_Flags = TEXTFLAG_RENDER | TEXTFLAG_ELLIPSIS_AT_END;
+			TextRender()->TextColor(0.7f, 0.75f, 0.9f, ContentAlpha);
+			TextRender()->TextEx(&ArtistCursor, m_MediaInfo.m_Artist.c_str());
+			TextRender()->TextColor(TextRender()->DefaultTextColor());
+			CursorX += MusicTextWidth + Pad * 1.6f;
+		}
+
+		const float BarW = 1.1f * Scale;
 		Graphics()->TextureClear();
 		Graphics()->QuadsBegin();
 		for(int i = 0; i < 4; i++)
 		{
-			const float Level = m_MediaInfo.m_Playing ? 0.35f + 0.65f * std::fabs(std::sin(Time * (5.0f + i * 1.7f) + i * 1.3f)) : 0.2f;
-			const float BarH = (Height - Pad * 3.0f) * Level;
-			const ColorRGBA Color = i % 2 == 0 ? ColorRGBA(0.0f, 0.95f, 1.0f, ContentAlpha) : ColorRGBA(1.0f, 0.2f, 0.85f, ContentAlpha);
-			Graphics()->SetColor(Color);
-			IGraphics::CQuadItem Bar(BaseX + i * BarW * 1.9f, Y + Height / 2.0f - BarH / 2.0f, BarW, BarH);
+			const float Level = m_MediaInfo.m_Playing ? 0.3f + 0.7f * std::fabs(std::sin(Time * (4.5f + i * 1.7f) + i * 1.3f)) : 0.18f;
+			const float BarH = (Height - Pad * 3.2f) * Level;
+			Graphics()->SetColor(i % 2 == 0 ? ColorRGBA(0.0f, 0.95f, 1.0f, ContentAlpha) : ColorRGBA(1.0f, 0.25f, 0.85f, ContentAlpha));
+			IGraphics::CQuadItem Bar(CursorX + i * BarW * 1.9f, CenterY - BarH / 2.0f, BarW, BarH);
 			Graphics()->QuadsDrawTL(&Bar, 1);
 		}
 		Graphics()->QuadsEnd();

@@ -69,6 +69,12 @@ class CHud : public CComponent
 
 	void RenderTextInfo();
 	void RenderCClientTeamHud();
+
+public:
+	// game timer as text (for the music island), false if there is none
+	bool GameTimerText(char *pBuf, int BufSize, bool *pWarning);
+
+private:
 	void RenderCClientWorld();
 	void RenderCClientOverlay();
 	void RenderCClientIndicators();

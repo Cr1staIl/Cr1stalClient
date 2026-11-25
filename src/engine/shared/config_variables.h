@@ -714,7 +714,7 @@ MACRO_CONFIG_INT(CcMusicIsland, cc_music_island, 1, 0, 1, CFGFLAG_CLIENT | CFGFL
 MACRO_CONFIG_INT(CcMusicIslandText, cc_music_island_text, 1, 0, 1, CFGFLAG_CLIENT | CFGFLAG_SAVE, "C-Client: show title and artist in the music island")
 MACRO_CONFIG_INT(CcMusicIslandCover, cc_music_island_cover, 1, 0, 1, CFGFLAG_CLIENT | CFGFLAG_SAVE, "C-Client: show the cover picture in the music island")
 MACRO_CONFIG_INT(CcMusicIslandSize, cc_music_island_size, 100, 50, 200, CFGFLAG_CLIENT | CFGFLAG_SAVE, "C-Client: size of the music island in percent")
-MACRO_CONFIG_INT(CcMusicIslandY, cc_music_island_y, 16, 0, 250, CFGFLAG_CLIENT | CFGFLAG_SAVE, "C-Client: distance of the music island from the top of the screen")
+MACRO_CONFIG_INT(CcMusicIslandY, cc_music_island_y, 2, 0, 250, CFGFLAG_CLIENT | CFGFLAG_SAVE, "C-Client: distance of the music island from the top of the screen")
 MACRO_CONFIG_INT(CrNeonBackground, cr_neon_background, 1, 0, 1, CFGFLAG_CLIENT | CFGFLAG_SAVE, "Cr1stal Client: animated neon main menu background instead of the map theme")
 MACRO_CONFIG_COL(ClBackgroundEntitiesColor, cl_background_entities_color, 128, CFGFLAG_CLIENT | CFGFLAG_SAVE, "Background (entities) color") // 0 0 128
 MACRO_CONFIG_STR(ClBackgroundEntities, cl_background_entities, IO_MAX_PATH_LENGTH, "", CFGFLAG_CLIENT | CFGFLAG_SAVE, "Background (entities)")
