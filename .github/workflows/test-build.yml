@@ -80,8 +80,23 @@ jobs:
       env:
         GH_TOKEN: ${{ github.token }}
       run: |
-        if ! gh release view test-latest >/dev/null 2>&1; then
-          gh release create test-latest --prerelease --latest=false --title "Cr♱stal Client test build (not for everyone yet)" --notes "Used by the in-game update button."
+        set +e
+        NOTES="Test build ${{ github.run_number }} from ${{ github.sha }}. Used by the in-game update button."
+        TITLE="Cr♱stal Client test build (not for everyone yet)"
+        FILES="installer-out/Cr1stalClient-Setup.exe installer-out/version.json"
+        ensure_release() {
+          gh release view test-latest >/dev/null 2>&1 || gh release create test-latest --prerelease --latest=false --title "$TITLE" --notes "$NOTES"
+        }
+        # GitHub sometimes answers 500, so try a few times
+        for Try in 1 2 3; do
+          ensure_release && gh release upload test-latest $FILES --clobber && OK=1 && break
+          echo "Upload attempt $Try failed, waiting"
+          sleep $((Try * 20))
+        done
+        if [ -z "$OK" ]; then
+          echo "Replacing files keeps failing, making the release again"
+          gh release delete test-latest --yes --cleanup-tag
+          sleep 10
+          gh release create test-latest --prerelease --latest=false --title "$TITLE" --notes "$NOTES" $FILES || exit 1
         fi
-        gh release upload test-latest installer-out/Cr1stalClient-Setup.exe installer-out/version.json --clobber
-        gh release edit test-latest --notes "Test build ${{ github.run_number }} from ${{ github.sha }}. Used by the in-game update button." || echo "Could not update the release notes, the files are uploaded"
+        gh release edit test-latest --notes "$NOTES" || echo "Could not update the release notes, the files are uploaded"
