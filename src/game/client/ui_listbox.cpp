@@ -170,7 +170,7 @@ CListboxItem CListBox::DoNextItem(const void *pId, bool Selected, float CornerRa
 		Item.m_Rect.Draw(ColorRGBA(0.86f, 0.07f, 0.23f, m_Active ? 0.45f : 0.3f), IGraphics::CORNER_ALL, CornerRadius);
 	}
 	// C-Client: the hover light fades in and out
-	const float HoverA = Ui()->StateAnim(pId, Ui()->HotItem() == pId && !m_ScrollRegion.Animating(), 14.0f);
+	const float HoverA = Item.m_Visible ? Ui()->StateAnim(pId, Ui()->HotItem() == pId && !m_ScrollRegion.Animating(), 14.0f) : 0.0f;
 	if(HoverA > 0.01f)
 	{
 		Item.m_Rect.Draw(ColorRGBA(1.0f, 1.0f, 1.0f, 0.08f * HoverA), IGraphics::CORNER_ALL, CornerRadius);

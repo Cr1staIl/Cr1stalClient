@@ -188,6 +188,7 @@ void CUi::OnCursorMove(float X, float Y)
 
 void CUi::Update()
 {
+	m_AnimNow = time_get();
 	const vec2 WindowSize = vec2(Graphics()->WindowWidth(), Graphics()->WindowHeight());
 	const CUIRect *pScreen = Screen();
 
@@ -455,12 +456,16 @@ float CUi::ButtonColorMul(const void *pId)
 
 float CUi::StateAnim(const void *pId, bool On, float Speed)
 {
-	const int64_t Now = time_get();
+	// one clock read per frame (set in Update), not one per element
+	const int64_t Now = m_AnimNow != 0 ? m_AnimNow : time_get();
 	auto It = m_HoverAnims.find(pId);
 	if(It == m_HoverAnims.end())
 	{
-		It = m_HoverAnims.emplace(pId, SHoverAnim{On ? 1.0f : 0.0f, Now}).first;
-		return It->second.m_Value;
+		// elements that were never on need no entry, so long lists stay cheap
+		if(!On)
+			return 0.0f;
+		// starts dark and fades in
+		It = m_HoverAnims.emplace(pId, SHoverAnim{0.0f, Now}).first;
 	}
 	SHoverAnim &Anim = It->second;
 	const float Delta = (float)((double)(Now - Anim.m_LastUpdate) / (double)time_freq());
@@ -472,6 +477,11 @@ float CUi::StateAnim(const void *pId, bool On, float Speed)
 		Anim.m_Value += (Target - Anim.m_Value) * (1.0f - std::exp(-Speed * Delta));
 	if(std::abs(Anim.m_Value - Target) < 0.001f)
 		Anim.m_Value = Target;
+	if(Anim.m_Value == 0.0f && !On)
+	{
+		m_HoverAnims.erase(It); // faded out completely, forget it
+		return 0.0f;
+	}
 	return Anim.m_Value;
 }
 

@@ -84,6 +84,11 @@ public:
 	// music island at the top of the screen (called by the HUD, HUD coordinates)
 	void RenderMusicIsland(float ScreenWidth);
 
+	// frames per second, measured over the last second
+	int Fps() const { return m_Fps; }
+	// cc_optimize: true while the "weaker PC" settings are used
+	bool OptimizeStrong() const { return m_OptimizeStrong; }
+
 	// fonts for all text
 	static constexpr int NUM_FONTS = 11;
 	static const char *FontFamily(int Font);
@@ -117,6 +122,13 @@ private:
 	void UpdateMedia();
 
 	void ApplyFont();
+
+	int m_Fps = 0;
+	int m_FpsFrames = 0;
+	float m_FpsTime = 0.0f;
+	int m_LastOptimize = -1;
+	bool m_OptimizeStrong = false;
+	void UpdateOptimize();
 
 	bool m_WheelActive = false;
 	vec2 m_SelectorMouse = vec2(0.0f, 0.0f);

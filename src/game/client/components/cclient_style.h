@@ -8,6 +8,7 @@
 
 #include <game/client/ui_rect.h>
 
+#include <algorithm>
 #include <string>
 
 namespace CCStyle
@@ -37,23 +38,10 @@ namespace CCStyle
 		return ColorRGBA(A.r + (B.r - A.r) * T, A.g + (B.g - A.g) * T, A.b + (B.b - A.b) * T, A.a + (B.a - A.a) * T);
 	}
 
-	// card with a thin light edge; Glow 0..1 turns the edge red (for hover)
+	// card without any frame; Glow 0..1 tints it softly red (for hover)
 	inline void DrawCard(const CUIRect &Rect, float Rounding = CARD_ROUNDING, ColorRGBA Color = CARD, float Glow = 0.0f)
 	{
-		if(Glow > 0.01f)
-		{
-			// soft red light around the card
-			for(int i = 3; i >= 1; i--)
-			{
-				CUIRect Halo;
-				Rect.Margin(-1.2f * i, &Halo);
-				Halo.Draw(ACCENT.WithAlpha(0.05f * Glow), IGraphics::CORNER_ALL, Rounding + 1.2f * i);
-			}
-		}
-		Rect.Draw(Mix(CARD_EDGE, ACCENT.WithAlpha(0.7f), Glow), IGraphics::CORNER_ALL, Rounding);
-		CUIRect Inner;
-		Rect.Margin(0.75f, &Inner);
-		Inner.Draw(Mix(Color, ColorRGBA(0.16f, 0.05f, 0.08f, Color.a), Glow * 0.6f), IGraphics::CORNER_ALL, Rounding - 0.75f);
+		Rect.Draw(Mix(Color, ColorRGBA(0.2f, 0.05f, 0.09f, Color.a), std::clamp(Glow, 0.0f, 1.0f) * 0.7f), IGraphics::CORNER_ALL, Rounding);
 	}
 
 	// upper case for latin and cyrillic text, for small titles like PLAYTIME

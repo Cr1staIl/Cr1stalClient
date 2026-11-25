@@ -27,100 +27,95 @@
 #include <android/android_main.h>
 #endif
 
+void CMenusStart::ResetTitle()
+{
+	for(STextContainerIndex &Container : m_aTitleContainers)
+		TextRender()->DeleteTextContainer(Container);
+	m_NumTitleChars = 0;
+}
+
 void CMenusStart::RenderNeonTitle(float CenterX, float Y)
 {
-	auto LerpColor = [](const ColorRGBA &A, const ColorRGBA &B, float T) {
-		return ColorRGBA(A.r + (B.r - A.r) * T, A.g + (B.g - A.g) * T, A.b + (B.b - A.b) * T, A.a + (B.a - A.a) * T);
-	};
 	static const char *const s_pTitle = "Cr\xe2\x99\xb1stal Client";
 	constexpr int CrossCodepoint = 0x2671;
 	constexpr float FontSize = 58.0f;
 	constexpr float CrossSize = FontSize * 1.45f; // the cross is drawn bigger than the letters
 	constexpr float LetterSpacing = 1.0f;
+	constexpr int Bands = 9; // the color changes smoothly from top to bottom in this many steps
 	const float Time = Client()->GlobalTime();
 
-	const ColorRGBA aPalette[] = {
-		ColorRGBA(1.0f, 0.93f, 0.95f, 1.0f), // almost white
-		ColorRGBA(1.0f, 0.35f, 0.45f, 1.0f), // light red
-		ColorRGBA(0.88f, 0.07f, 0.24f, 1.0f), // crimson
-	};
-
-	const ColorRGBA OldColor = TextRender()->GetTextColor();
-	TextRender()->TextColor(1.0f, 1.0f, 1.0f, 1.0f);
-	TextRender()->SetFontPreset(EFontPreset::TITLE_FONT);
-
-	struct SChar
+	// letters are laid out once and reused every frame
+	bool Valid = m_NumTitleChars > 0;
+	for(int i = 0; i < m_NumTitleChars && Valid; i++)
+		Valid = m_aTitleSpace[i] || m_aTitleContainers[i].Valid();
+	if(!Valid)
 	{
-		char m_aText[8];
-		float m_Size;
-		float m_Width;
-	};
-	SChar aChars[32];
-	int NumChars = 0;
-	float TotalWidth = 0.0f;
-	const char *pCur = s_pTitle;
-	while(*pCur && NumChars < (int)std::size(aChars))
-	{
-		const char *pStart = pCur;
-		const int Code = str_utf8_decode(&pCur);
-		if(Code <= 0)
-			break;
-		SChar &Char = aChars[NumChars++];
-		str_copy(Char.m_aText, pStart, std::min<int>(sizeof(Char.m_aText), pCur - pStart + 1));
-		Char.m_Size = Code == CrossCodepoint ? CrossSize : FontSize;
-		Char.m_Width = TextRender()->TextWidth(Char.m_Size, Char.m_aText) + LetterSpacing;
-		TotalWidth += Char.m_Width;
+		ResetTitle();
+		TextRender()->SetFontPreset(EFontPreset::TITLE_FONT);
+		const char *pCur = s_pTitle;
+		while(*pCur && m_NumTitleChars < MAX_TITLE_CHARS)
+		{
+			const char *pStart = pCur;
+			const int Code = str_utf8_decode(&pCur);
+			if(Code <= 0)
+				break;
+			char aText[8];
+			str_copy(aText, pStart, std::min<int>(sizeof(aText), pCur - pStart + 1));
+			const int Index = m_NumTitleChars++;
+			m_aTitleSizes[Index] = Code == CrossCodepoint ? CrossSize : FontSize;
+			m_aTitleWidths[Index] = TextRender()->TextWidth(m_aTitleSizes[Index], aText) + LetterSpacing;
+			m_aTitleSpace[Index] = Code == ' ';
+			if(!m_aTitleSpace[Index])
+			{
+				CTextCursor Cursor;
+				Cursor.SetPosition(vec2(0.0f, 0.0f));
+				Cursor.m_FontSize = m_aTitleSizes[Index];
+				TextRender()->CreateTextContainer(m_aTitleContainers[Index], &Cursor, aText);
+			}
+		}
+		TextRender()->SetFontPreset(EFontPreset::DEFAULT_FONT);
 	}
+
+	float TotalWidth = 0.0f;
+	for(int i = 0; i < m_NumTitleChars; i++)
+		TotalWidth += m_aTitleWidths[i];
+
+	const ColorRGBA Top(1.0f, 0.97f, 0.98f, 1.0f);
+	const ColorRGBA Bottom(0.93f, 0.1f, 0.28f, 1.0f);
+	const ColorRGBA NoOutline(0.0f, 0.0f, 0.0f, 0.0f);
 
 	float X = CenterX - TotalWidth / 2.0f;
-	for(int Index = 0; Index < NumChars; Index++)
+	for(int Index = 0; Index < m_NumTitleChars; Index++)
 	{
-		const SChar &Char = aChars[Index];
-
-		// fixed colour gradient through the title: cyan -> violet -> magenta
-		const float T = NumChars > 1 ? Index / (float)(NumChars - 1) : 0.0f;
-		const ColorRGBA Color = T < 0.5f ? LerpColor(aPalette[0], aPalette[1], T * 2.0f) : LerpColor(aPalette[1], aPalette[2], (T - 0.5f) * 2.0f);
-
-		// every letter floats gently up/down and sways a little, each with its own rhythm
-		const float BobY = std::sin(Time * 1.3f + Index * 0.55f) * 3.0f;
-		const float SwayX = std::sin(Time * 0.7f + Index * 1.1f) * 1.2f;
-		const float CharX = X + SwayX;
-		const float CharY = Y - (Char.m_Size - FontSize) * 0.55f + BobY;
-
-		// soft halo behind the letter: many faint circles make a smooth falloff
-		if(Char.m_aText[0] != ' ')
+		const float Size = m_aTitleSizes[Index];
+		if(!m_aTitleSpace[Index] && m_aTitleContainers[Index].Valid())
 		{
-			const vec2 HaloCenter(CharX + Char.m_Width / 2.0f, CharY + Char.m_Size * 0.55f);
-			Graphics()->TextureClear();
-			Graphics()->BlendAdditive();
-			Graphics()->QuadsBegin();
-			for(int Ring = 20; Ring >= 1; Ring--)
+			// every letter floats gently up/down and sways a little, each with its own rhythm
+			const float BobY = std::sin(Time * 1.3f + Index * 0.55f) * 3.0f;
+			const float SwayX = std::sin(Time * 0.7f + Index * 1.1f) * 1.2f;
+			const float CharX = X + SwayX;
+			const float CharY = Y - (Size - FontSize) * 0.55f + BobY;
+
+			// smooth white -> red gradient from top to bottom, no outline, so no hard edges
+			const float InkTop = CharY + Size * 0.18f;
+			const float InkHeight = Size * 0.78f;
+			for(int Band = 0; Band < Bands; Band++)
 			{
-				Graphics()->SetColor(aPalette[2].WithAlpha(0.005f));
-				Graphics()->DrawCircle(HaloCenter.x, HaloCenter.y, Char.m_Size * 0.55f * Ring / 20.0f, 48);
+				CUIRect Clip;
+				Clip.x = CharX - Size * 0.2f;
+				Clip.w = m_aTitleWidths[Index] + Size * 0.4f;
+				Clip.y = Band == 0 ? CharY - Size : InkTop + InkHeight * Band / Bands;
+				Clip.h = Band == Bands - 1 ? Size * 3.0f : InkTop + InkHeight * (Band + 1) / Bands - Clip.y;
+				const float T = (Band + 0.5f) / Bands;
+				const float Ease = T * T * (3.0f - 2.0f * T);
+				const ColorRGBA Color(Top.r + (Bottom.r - Top.r) * Ease, Top.g + (Bottom.g - Top.g) * Ease, Top.b + (Bottom.b - Top.b) * Ease, 1.0f);
+				Ui()->ClipEnable(&Clip);
+				TextRender()->RenderTextContainer(m_aTitleContainers[Index], Color, NoOutline, CharX, CharY);
+				Ui()->ClipDisable();
 			}
-			Graphics()->QuadsEnd();
-			Graphics()->BlendNormal();
 		}
-
-		// crisp letter with a thin neon outline (no shifted copies, so no jagged steps)
-		CTextCursor Cursor;
-		Cursor.SetPosition(vec2(CharX, CharY));
-		Cursor.m_FontSize = Char.m_Size;
-		STextContainerIndex Container;
-		TextRender()->CreateTextContainer(Container, &Cursor, Char.m_aText);
-		if(Container.Valid())
-		{
-			TextRender()->RenderTextContainer(Container, LerpColor(Color, ColorRGBA(1.0f, 1.0f, 1.0f, 1.0f), 0.45f), Color.WithAlpha(0.55f), 0.0f, 0.0f);
-			TextRender()->DeleteTextContainer(Container);
-		}
-
-		X += Char.m_Width;
+		X += m_aTitleWidths[Index];
 	}
-
-	TextRender()->SetFontPreset(EFontPreset::DEFAULT_FONT);
-
-	TextRender()->TextColor(OldColor);
 }
 
 void CMenusStart::RenderStartMenu(CUIRect MainView)
@@ -218,16 +213,9 @@ void CMenusStart::RenderStartMenu(CUIRect MainView)
 		Play.h = 42.0f + Grow;
 		Play.x = MainView.w / 2.0f - Play.w / 2.0f;
 		Play.y = 190.0f - Grow / 2.0f;
-		// soft red light around it, stronger on hover
-		for(int i = 4; i >= 1; i--)
-		{
-			CUIRect Halo;
-			Play.Margin(-2.0f * i, &Halo);
-			Halo.Draw(ColorRGBA(0.86f, 0.07f, 0.23f, (0.02f + 0.035f * HoverA)), IGraphics::CORNER_ALL, Halo.h / 2.0f);
-		}
-		Play.Draw4(ColorRGBA(0.95f, 0.16f, 0.32f, 1.0f), ColorRGBA(0.72f, 0.04f, 0.17f, 1.0f), ColorRGBA(0.8f, 0.07f, 0.22f, 1.0f), ColorRGBA(0.55f, 0.02f, 0.12f, 1.0f), IGraphics::CORNER_ALL, Play.h / 2.0f);
-		if(HoverA > 0.01f)
-			Play.Draw(ColorRGBA(1.0f, 1.0f, 1.0f, 0.08f * HoverA), IGraphics::CORNER_ALL, Play.h / 2.0f);
+		// bright red so it stands out from the dark top half, a bit lighter on hover
+		const float L = 0.1f * HoverA;
+		Play.Draw4(ColorRGBA(1.0f, 0.24f + L, 0.38f + L, 1.0f), ColorRGBA(0.9f + L, 0.08f + L, 0.24f + L, 1.0f), ColorRGBA(0.86f + L, 0.08f + L, 0.24f + L, 1.0f), ColorRGBA(0.68f + L, 0.03f + L, 0.16f + L, 1.0f), IGraphics::CORNER_ALL, Play.h / 2.0f);
 		SLabelProperties Props;
 		Props.SetColor(ColorRGBA(1.0f, 1.0f, 1.0f, 1.0f));
 		Ui()->DoLabel(&Play, Localize("Play", "Start menu"), 17.0f + HoverA, TEXTALIGN_MC, Props);

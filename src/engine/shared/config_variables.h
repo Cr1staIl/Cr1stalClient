@@ -716,6 +716,8 @@ MACRO_CONFIG_INT(CcSheylunTickAim, cc_sheylun_tick_aim, 1, 0, 1, CFGFLAG_CLIENT 
 MACRO_CONFIG_INT(CcDeltaPrecision, cc_delta_precision, 60, 20, 200, CFGFLAG_CLIENT | CFGFLAG_SAVE, "C-Client Delta Input: sensitivity for small mouse movements in percent")
 MACRO_CONFIG_INT(CcDeltaThreshold, cc_delta_threshold, 6, 1, 30, CFGFLAG_CLIENT | CFGFLAG_SAVE, "C-Client Delta Input: mouse movements smaller than this count as small")
 MACRO_CONFIG_INT(CrNeonBackground, cr_neon_background, 1, 0, 1, CFGFLAG_CLIENT | CFGFLAG_SAVE, "Cr1stal Client: animated neon main menu background instead of the map theme")
+MACRO_CONFIG_INT(CcOptimize, cc_optimize, 0, 0, 1, CFGFLAG_CLIENT | CFGFLAG_SAVE, "C-Client: optimize the game for this PC (turning it off brings the old settings back)")
+MACRO_CONFIG_STR(CcOptimizeBackup, cc_optimize_backup, 512, "", CFGFLAG_CLIENT | CFGFLAG_SAVE, "C-Client: your settings from before cc_optimize was turned on")
 MACRO_CONFIG_COL(ClBackgroundEntitiesColor, cl_background_entities_color, 128, CFGFLAG_CLIENT | CFGFLAG_SAVE, "Background (entities) color") // 0 0 128
 MACRO_CONFIG_STR(ClBackgroundEntities, cl_background_entities, IO_MAX_PATH_LENGTH, "", CFGFLAG_CLIENT | CFGFLAG_SAVE, "Background (entities)")
 MACRO_CONFIG_STR(ClRunOnJoin, cl_run_on_join, 100, "", CFGFLAG_CLIENT | CFGFLAG_SAVE | CFGFLAG_INSENSITIVE, "Command to run when joining a server")

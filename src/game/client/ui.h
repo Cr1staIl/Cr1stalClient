@@ -347,6 +347,7 @@ class CUi
 		int64_t m_LastUpdate = 0;
 	};
 	std::unordered_map<const void *, SHoverAnim> m_HoverAnims;
+	int64_t m_AnimNow = 0;
 
 public:
 	/**

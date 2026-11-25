@@ -529,10 +529,66 @@ float CCClient::UpdateProgress() const
 	return m_UpdateState == EUpdateState::INSTALLING ? 1.0f : 0.0f;
 }
 
+void CCClient::UpdateOptimize()
+{
+	// fps over the last second
+	m_FpsFrames++;
+	m_FpsTime += Client()->RenderFrameTime();
+	if(m_FpsTime >= 1.0f)
+	{
+		m_Fps = round_to_int(m_FpsFrames / m_FpsTime);
+		m_FpsFrames = 0;
+		m_FpsTime = 0.0f;
+	}
+
+	if(m_LastOptimize == -1)
+	{
+		m_LastOptimize = g_Config.m_CcOptimize;
+		m_OptimizeStrong = str_find(g_Config.m_CcOptimizeBackup, "cl_showquads") != nullptr;
+		return;
+	}
+	if(m_LastOptimize == g_Config.m_CcOptimize)
+		return;
+	m_LastOptimize = g_Config.m_CcOptimize;
+
+	if(!g_Config.m_CcOptimize)
+	{
+		// put back exactly what was there before
+		if(g_Config.m_CcOptimizeBackup[0] != '\0')
+			Console()->ExecuteLine(g_Config.m_CcOptimizeBackup, IConsole::CLIENT_ID_UNSPECIFIED);
+		g_Config.m_CcOptimizeBackup[0] = '\0';
+		m_OptimizeStrong = false;
+		return;
+	}
+
+	// remember the old value of every setting that gets changed, then change it
+	char aBackup[sizeof(g_Config.m_CcOptimizeBackup)] = "";
+	auto Set = [&](const char *pName, int *pValue, int NewValue) {
+		if(*pValue == NewValue)
+			return;
+		char aPart[64];
+		str_format(aPart, sizeof(aPart), "%s%s %d", aBackup[0] ? "; " : "", pName, *pValue);
+		str_append(aBackup, aPart, sizeof(aBackup));
+		*pValue = NewValue;
+	};
+	Set("gfx_high_detail", &g_Config.m_GfxHighDetail, 0);
+	Set("gfx_backgroundrender", &g_Config.m_GfxBackgroundRender, 0);
+	Set("cl_refresh_rate_inactive", &g_Config.m_ClRefreshRateInactive, 30);
+	Set("cl_unpredicted_shadow", &g_Config.m_ClUnpredictedShadow, 0);
+	Set("cc_trail", &g_Config.m_CcTrail, 0);
+	Set("cc_aura", &g_Config.m_CcAura, 0);
+	// a weaker PC (under 144 fps right now) also hides the decoration quads of the map
+	m_OptimizeStrong = m_Fps > 0 && m_Fps < 144;
+	if(m_OptimizeStrong)
+		Set("cl_showquads", &g_Config.m_ClShowQuads, 0);
+	str_copy(g_Config.m_CcOptimizeBackup, aBackup);
+}
+
 void CCClient::OnUpdate()
 {
 	ApplyFont();
 	UpdateMedia();
+	UpdateOptimize();
 
 	if(m_UpdateState == EUpdateState::CHECKING && m_pVersionRequest && m_pVersionRequest->Done())
 	{

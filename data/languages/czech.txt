@@ -2955,6 +2955,27 @@ Distance from the top
 A long title slides from side to side
 == 
 
+Optimization
+== 
+
+Optimize the game for my PC
+== 
+
+Turns off heavy effects; a weaker PC also hides the map decoration. Turn it off and your old settings come back.
+== 
+
+FPS right now
+== 
+
+Strong mode: your PC was under 144 FPS
+== 
+
+Light mode: your PC is fast
+== 
+
+Turning it off brings your settings back
+== 
+
 Warn when you are the last one alive
 == 
 

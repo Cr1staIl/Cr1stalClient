@@ -2397,6 +2397,7 @@ void CMenus::OnStateChange(int NewState, int OldState)
 void CMenus::OnWindowResize()
 {
 	TextRender()->DeleteTextContainer(m_MotdTextContainerIndex);
+	m_MenusStart.ResetTitle();
 }
 
 void CMenus::OnRender()
@@ -2489,36 +2490,6 @@ static float NeonHash(int Index, int Salt)
 	return (Hash & 0xffffff) / (float)0xffffff;
 }
 
-// rotated rectangle as a freeform quad (center, half width, half height, angle)
-static IGraphics::CFreeformItem NeonRotatedRect(vec2 Center, float HalfW, float HalfH, float Angle)
-{
-	const vec2 X = direction(Angle) * HalfW;
-	const vec2 Y = direction(Angle + pi / 2.0f) * HalfH;
-	const vec2 A = Center - X - Y, B = Center + X - Y, C = Center - X + Y, D = Center + X + Y;
-	return IGraphics::CFreeformItem(A.x, A.y, B.x, B.y, C.x, C.y, D.x, D.y);
-}
-
-// thin neon cross (long vertical bar, crossbar in the upper part) with a soft glow
-static void NeonCross(IGraphics *pGraphics, vec2 Pos, float Size, float Angle, ColorRGBA Color, float Alpha)
-{
-	const vec2 Up = direction(Angle - pi / 2.0f);
-	const vec2 BarCenter = Pos + Up * (Size * 0.28f);
-	// glow layers from wide and faint to thin and bright
-	const float aWidth[] = {1.1f, 0.65f, 0.3f};
-	const float aAlpha[] = {0.07f, 0.16f, 0.95f};
-	for(int Layer = 0; Layer < 3; Layer++)
-	{
-		const float W = aWidth[Layer];
-		ColorRGBA C = Layer == 2 ? ColorRGBA(Color.r * 0.6f + 0.4f, Color.g * 0.6f + 0.4f, Color.b * 0.6f + 0.4f, 1.0f) : Color;
-		pGraphics->SetColor(C.WithAlpha(aAlpha[Layer] * Alpha));
-		IGraphics::CFreeformItem aItems[2] = {
-			NeonRotatedRect(Pos, W, Size, Angle), // vertical bar
-			NeonRotatedRect(BarCenter, Size * 0.55f, W, Angle), // crossbar
-		};
-		pGraphics->QuadsDrawFreeform(aItems, 2);
-	}
-}
-
 void CMenus::RenderNeonBackground()
 {
 	const float ScreenHeight = 300.0f;
@@ -2526,114 +2497,65 @@ void CMenus::RenderNeonBackground()
 	Graphics()->MapScreenToSize(ScreenWidth, ScreenHeight);
 	const float Time = Client()->GlobalTime();
 
-	// almost black, a little lighter at the top
+	// almost black
 	Graphics()->TextureClear();
 	Graphics()->QuadsBegin();
-	Graphics()->SetColor4(ColorRGBA(0.052f, 0.046f, 0.052f, 1.0f), ColorRGBA(0.052f, 0.046f, 0.052f, 1.0f),
-		ColorRGBA(0.022f, 0.019f, 0.023f, 1.0f), ColorRGBA(0.022f, 0.019f, 0.023f, 1.0f));
+	Graphics()->SetColor(0.03f, 0.027f, 0.031f, 1.0f);
 	const IGraphics::CQuadItem Bg(0, 0, ScreenWidth, ScreenHeight);
 	Graphics()->QuadsDrawTL(&Bg, 1);
 	Graphics()->QuadsEnd();
 
+	// red neon rising from the bottom and fading out at the middle of the screen.
+	// One light layer made of a grid of quads with colors at the corners, so it is
+	// smooth and costs almost nothing (the old version drew ~80 full screen circles).
 	Graphics()->BlendAdditive();
-
-	// red haze along the left and right edge, breathing very slowly
-	{
-		const ColorRGBA Red(0.62f, 0.03f, 0.12f, 1.0f);
-		const float BreathL = 0.75f + 0.25f * std::sin(Time * 0.35f);
-		const float BreathR = 0.75f + 0.25f * std::sin(Time * 0.31f + 2.0f);
-		const float Width = ScreenWidth * 0.22f;
-		Graphics()->QuadsBegin();
-		Graphics()->SetColor4(Red.WithAlpha(0.28f * BreathL), Red.WithAlpha(0.0f), Red.WithAlpha(0.18f * BreathL), Red.WithAlpha(0.0f));
-		const IGraphics::CQuadItem Left(0, 0, Width, ScreenHeight);
-		Graphics()->QuadsDrawTL(&Left, 1);
-		Graphics()->SetColor4(Red.WithAlpha(0.0f), Red.WithAlpha(0.2f * BreathR), Red.WithAlpha(0.0f), Red.WithAlpha(0.3f * BreathR));
-		const IGraphics::CQuadItem Right(ScreenWidth - Width, 0, Width, ScreenHeight);
-		Graphics()->QuadsDrawTL(&Right, 1);
-		Graphics()->QuadsEnd();
-	}
-
-	// big soft red glows drifting around: many very faint circles give a smooth falloff
 	Graphics()->QuadsBegin();
-	const ColorRGBA aGlow[] = {
-		ColorRGBA(0.75f, 0.04f, 0.16f, 1.0f),
-		ColorRGBA(0.55f, 0.02f, 0.10f, 1.0f),
-		ColorRGBA(0.85f, 0.10f, 0.22f, 1.0f),
-	};
-	for(int i = 0; i < 3; i++)
 	{
-		const float Px = ScreenWidth * (0.5f + 0.42f * std::sin(Time * (0.018f + 0.006f * i) + i * 2.1f));
-		const float Py = ScreenHeight * (0.55f + 0.35f * std::cos(Time * (0.015f + 0.005f * i) + i * 2.9f));
-		const float Radius = 110.0f + 40.0f * i;
-		for(int Ring = 28; Ring >= 1; Ring--)
+		constexpr int Columns = 16;
+		constexpr int Rows = 14;
+		const float Top = ScreenHeight * 0.45f;
+		const float CellW = ScreenWidth / Columns;
+		const float CellH = (ScreenHeight - Top) / Rows;
+		auto Light = [&](float X, float Y) {
+			const float Rise = std::clamp((Y - Top) / (ScreenHeight - Top), 0.0f, 1.0f);
+			const float Ease = Rise * Rise * (3.0f - 2.0f * Rise); // smoothstep: no visible edge at the middle
+			// slow waves along the bottom so the light breathes a little
+			const float Wave = 0.82f + 0.12f * std::sin(X * 0.021f + Time * 0.45f) + 0.08f * std::sin(X * 0.0075f - Time * 0.28f);
+			const float A = std::clamp(Ease * Ease * Wave, 0.0f, 1.0f);
+			return ColorRGBA(0.80f, 0.04f, 0.15f, 0.62f * A);
+		};
+		for(int y = 0; y < Rows; y++)
 		{
-			Graphics()->SetColor(aGlow[i].WithAlpha(0.0032f));
-			Graphics()->DrawCircle(Px, Py, Radius * Ring / 28.0f, 48);
+			for(int x = 0; x < Columns; x++)
+			{
+				const float X0 = x * CellW, X1 = X0 + CellW;
+				const float Y0 = Top + y * CellH, Y1 = Y0 + CellH;
+				Graphics()->SetColor4(Light(X0, Y0), Light(X1, Y0), Light(X0, Y1), Light(X1, Y1));
+				const IGraphics::CQuadItem Cell(X0, Y0, CellW, CellH);
+				Graphics()->QuadsDrawTL(&Cell, 1);
+			}
 		}
+		// thin brighter glow right at the bottom edge
+		const ColorRGBA Edge(1.0f, 0.12f, 0.28f, 0.0f);
+		Graphics()->SetColor4(Edge, Edge, Edge.WithAlpha(0.22f), Edge.WithAlpha(0.22f));
+		const IGraphics::CQuadItem BottomGlow(0, ScreenHeight - 18.0f, ScreenWidth, 18.0f);
+		Graphics()->QuadsDrawTL(&BottomGlow, 1);
 	}
 	Graphics()->QuadsEnd();
 
-	// a little dust floating up
+	// a little dust floating up out of the light
 	Graphics()->QuadsBegin();
-	for(int i = 0; i < 40; i++)
+	for(int i = 0; i < 24; i++)
 	{
-		const float Speed = 1.5f + 3.0f * NeonHash(i, 21);
-		const float Py = ScreenHeight + 5.0f - std::fmod(NeonHash(i, 22) * (ScreenHeight + 10.0f) + Time * Speed, ScreenHeight + 10.0f);
+		const float Speed = 2.0f + 3.0f * NeonHash(i, 21);
+		const float Py = ScreenHeight + 5.0f - std::fmod(NeonHash(i, 22) * (ScreenHeight * 0.75f) + Time * Speed, ScreenHeight * 0.75f);
 		const float Px = NeonHash(i, 23) * ScreenWidth + 6.0f * std::sin(Time * 0.3f + i);
-		const float Twinkle = 0.5f + 0.5f * std::sin(Time * (0.6f + NeonHash(i, 24)) + i * 2.3f);
-		Graphics()->SetColor(1.0f, 0.35f, 0.45f, 0.12f * Twinkle);
-		Graphics()->DrawCircle(Px, Py, 0.35f + 0.35f * NeonHash(i, 25), 8);
+		const float Fade = std::clamp((Py - ScreenHeight * 0.3f) / (ScreenHeight * 0.4f), 0.0f, 1.0f);
+		Graphics()->SetColor(1.0f, 0.4f, 0.5f, 0.35f * Fade);
+		Graphics()->DrawCircle(Px, Py, 0.35f + 0.3f * NeonHash(i, 25), 6);
 	}
 	Graphics()->QuadsEnd();
-
-	// the cross pictures float slowly through the background, dimmed
-	for(int i = 0; i < 6; i++)
-	{
-		const IGraphics::CTextureHandle Texture = GameClient()->m_CClient.AuraTexture(i % CCClient::NUM_AURAS);
-		if(!Texture.IsValid())
-			continue;
-		const float Period = ScreenHeight + 160.0f;
-		const float Speed = 1.2f + 2.0f * NeonHash(i, 41);
-		const float Py = ScreenHeight + 80.0f - std::fmod(NeonHash(i, 42) * Period + Time * Speed, Period);
-		const float Px = (0.06f + 0.88f * NeonHash(i, 43)) * ScreenWidth + 18.0f * std::sin(Time * (0.08f + 0.06f * NeonHash(i, 44)) + i * 2.0f);
-		const float Size = 34.0f + 34.0f * NeonHash(i, 45);
-		const float EdgeFade = std::clamp(std::min(Py + 60.0f, ScreenHeight + 60.0f - Py) / 90.0f, 0.0f, 1.0f);
-		const float Breath = 0.75f + 0.25f * std::sin(Time * 0.6f + i * 1.7f);
-		Graphics()->TextureSet(Texture);
-		Graphics()->QuadsBegin();
-		Graphics()->SetColor(1.0f, 0.3f, 0.4f, 0.14f * EdgeFade * Breath);
-		Graphics()->QuadsSetRotation(0.15f * std::sin(Time * 0.2f + i));
-		IGraphics::CQuadItem Quad(Px, Py, Size, Size);
-		Graphics()->QuadsDraw(&Quad, 1);
-		Graphics()->QuadsSetRotation(0.0f);
-		Graphics()->QuadsEnd();
-	}
-	Graphics()->TextureClear();
-
-	// a few thin crosses
-	Graphics()->QuadsBegin();
-	for(int i = 0; i < 8; i++)
-	{
-		const float Speed = 2.0f + 3.0f * NeonHash(i, 11);
-		const float Py = ScreenHeight + 30.0f - std::fmod(NeonHash(i, 12) * (ScreenHeight + 60.0f) + Time * Speed, ScreenHeight + 60.0f);
-		const float Px = NeonHash(i, 13) * ScreenWidth + 12.0f * std::sin(Time * (0.15f + 0.1f * NeonHash(i, 16)) + i);
-		const float Size = 6.0f + 10.0f * NeonHash(i, 14);
-		const float Angle = 0.25f * std::sin(Time * (0.25f + 0.3f * NeonHash(i, 15)) + i * 1.3f);
-		const float Twinkle = 0.65f + 0.35f * std::sin(Time * 0.9f + i * 2.1f);
-		const float EdgeFade = std::clamp(std::min(Py + 20.0f, ScreenHeight + 20.0f - Py) / 40.0f, 0.0f, 1.0f);
-		NeonCross(Graphics(), vec2(Px, Py), Size, Angle, ColorRGBA(0.9f, 0.08f, 0.25f, 1.0f), Twinkle * EdgeFade * 0.45f);
-	}
-	Graphics()->QuadsEnd();
-
 	Graphics()->BlendNormal();
-
-	// darken the borders a bit
-	Graphics()->TextureSet(m_TextureBlob);
-	Graphics()->QuadsBegin();
-	Graphics()->SetColor(0.0f, 0.0f, 0.0f, 0.6f);
-	const IGraphics::CQuadItem BlobQuadItem(-100, -100, ScreenWidth + 200, ScreenHeight + 200);
-	Graphics()->QuadsDrawTL(&BlobQuadItem, 1);
-	Graphics()->QuadsEnd();
 
 	Ui()->MapScreen();
 }

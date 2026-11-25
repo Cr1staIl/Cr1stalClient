@@ -3138,9 +3138,6 @@ Solo
 Other
 == Другие
 
-Virtual joystick which only aims and moves the mouse pointer relatively.
-== 
-
 In game
 == В игре
 
@@ -3167,3 +3164,27 @@ Country
 
 Profile
 == Профиль
+
+Virtual joystick which only aims and moves the mouse pointer relatively.
+== 
+
+Optimization
+== Оптимизация
+
+Optimize the game for my PC
+== Оптимизировать игру под мой ПК
+
+Turns off heavy effects; a weaker PC also hides the map decoration. Turn it off and your old settings come back.
+== Выключает тяжёлые эффекты; на слабом ПК ещё прячет декорации карты. Выключишь — вернутся твои настройки.
+
+FPS right now
+== FPS сейчас
+
+Strong mode: your PC was under 144 FPS
+== Сильный режим: у ПК было меньше 144 FPS
+
+Light mode: your PC is fast
+== Лёгкий режим: ПК быстрый
+
+Turning it off brings your settings back
+== Если выключить, настройки вернутся

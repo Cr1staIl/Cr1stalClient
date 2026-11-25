@@ -274,6 +274,7 @@ enum
 	CARD_CHAT,
 	CARD_UPDATES,
 	CARD_ON_JOIN,
+	CARD_PERF,
 	NUM_CARDS,
 };
 
@@ -299,8 +300,8 @@ void CMenus::RenderSettingsCClient(CUIRect MainView)
 		vColumns.emplace_back(this, Ui(), Rect);
 	}
 	// which column every card goes to, for 3 and for 2 columns
-	static const int s_aColumnOf3[NUM_CARDS] = {0, 0, 0, 0, 1, 1, 1, 1, 2, 2, 2, 2, 2, 2};
-	static const int s_aColumnOf2[NUM_CARDS] = {0, 0, 0, 0, 0, 0, 1, 1, 1, 1, 1, 1, 1, 1};
+	static const int s_aColumnOf3[NUM_CARDS] = {0, 0, 0, 0, 1, 1, 1, 1, 2, 2, 2, 2, 2, 2, 2};
+	static const int s_aColumnOf2[NUM_CARDS] = {0, 0, 0, 0, 0, 0, 1, 1, 1, 1, 1, 1, 1, 1, 1};
 	auto Col = [&](int Card) -> CCcColumn & {
 		return vColumns[NumColumns == 3 ? s_aColumnOf3[Card] : s_aColumnOf2[Card]];
 	};
@@ -519,6 +520,21 @@ void CMenus::RenderSettingsCClient(CUIRect MainView)
 			C.Slider(&g_Config.m_CcMusicIslandY, Localize("Distance from the top"), 0, 250);
 			C.Note(Localize("A long title slides from side to side"));
 		}
+		C.EndCard();
+	}
+
+	// ---- optimization ----
+	{
+		CCcColumn &C = Col(CARD_PERF);
+		C.BeginCard(CARD_PERF, Localize("Optimization"));
+		C.Check(&g_Config.m_CcOptimize, Localize("Optimize the game for my PC"), Localize("Turns off heavy effects; a weaker PC also hides the map decoration. Turn it off and your old settings come back."));
+		char aBuf[64];
+		str_format(aBuf, sizeof(aBuf), "%s: %d", Localize("FPS right now"), GameClient()->m_CClient.Fps());
+		C.Note(aBuf, ColorRGBA(0.55f, 0.9f, 0.65f, 1.0f));
+		if(g_Config.m_CcOptimize)
+			C.Note(GameClient()->m_CClient.OptimizeStrong() ? Localize("Strong mode: your PC was under 144 FPS") : Localize("Light mode: your PC is fast"));
+		else
+			C.Note(Localize("Turning it off brings your settings back"));
 		C.EndCard();
 	}
 
