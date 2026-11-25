@@ -6,12 +6,14 @@
 
 #include <engine/console.h>
 #include <engine/graphics.h>
+#include <engine/image.h>
 #include <engine/shared/protocol.h>
 
 #include <game/client/component.h>
 #include <game/client/components/cclient_media.h>
 
 #include <memory>
+#include <vector>
 
 class IHttpRequest;
 
@@ -80,6 +82,13 @@ public:
 	// music island at the top of the screen (called by the HUD, HUD coordinates)
 	void RenderMusicIsland(float ScreenWidth);
 
+	// skin builder: build a skin from parts, preview it and save it into the skins folder
+	static constexpr int SB_PARTS = 10;
+	static constexpr int SB_COLORS = 12;
+	static ColorRGBA SkinBuilderColor(int Index);
+	IGraphics::CTextureHandle SkinBuilderPreview(); // composed 256x128 skin texture, rebuilt when the choice changes
+	bool SkinBuilderSave(); // writes skins/<cc_sb_name>.png and wears it
+
 	// fonts for all text
 	static constexpr int NUM_FONTS = 11;
 	static const char *FontFamily(int Font);
@@ -109,6 +118,18 @@ private:
 	float m_IslandWidth = 0.0f; // animated
 	float m_IslandVisible = 0.0f; // animated 0..1
 	void UpdateMedia();
+
+	bool m_SbPartsLoaded = false;
+	bool m_SbPartsOk = false;
+	CImageInfo m_aSbBody[SB_PARTS];
+	CImageInfo m_aSbEars[SB_PARTS];
+	CImageInfo m_aSbFeet[SB_PARTS];
+	CImageInfo m_aSbEyes[SB_PARTS];
+	std::vector<uint8_t> m_vSbComposed;
+	IGraphics::CTextureHandle m_SbPreviewTexture;
+	int m_SbPreviewKey = -1;
+	void SkinBuilderLoadParts();
+	bool SkinBuilderCompose();
 	void ApplyFont();
 
 	bool m_WheelActive = false;

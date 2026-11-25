@@ -2757,15 +2757,6 @@ Dynamic camera is on: it uses its own distance
 Cursor size
 == Размер курсора
 
-Fast input
-== Быстрый ввод (Fast Input)
-
-Enable fast input
-== Включить быстрый ввод
-
-Your tee reacts to your keys right away, before the server tick. Only changes what you see, not what the server gets.
-== Ти реагирует на нажатия сразу, ещё до тика сервера. Меняет только то, что видишь ты, а не то, что получает сервер.
-
 Amount
 == Сила
 
@@ -3086,6 +3077,75 @@ Island size
 
 Distance from the top
 == Отступ сверху
+
+Input
+== Ввод
+
+Input mode
+== Режим ввода
+
+Fast Input: your tee reacts before the server tick
+== Fast Input: ти реагирует ещё до тика сервера
+
+Sheylun Input: predicts whole ticks, as many as your ping needs
+== Sheylun Input: предсказывает целые тики, столько, сколько нужно по твоему пингу
+
+Strength
+== Сила
+
+Max ticks
+== Максимум тиков
+
+Aim updates once per tick (calmer hook line)
+== Прицел обновляется раз в тик (спокойнее линия хука)
+
+Ticks right now
+== Тиков сейчас
+
+Delta Input: Fast Input plus finer aim for small mouse moves
+== Delta Input: Fast Input и точнее прицел при мелких движениях мыши
+
+Small move sensitivity
+== Чувствительность мелких движений
+
+Small move size
+== Размер мелкого движения
+
+Normal DDNet input
+== Обычный ввод DDNet
+
+Only changes what you see, not what the server gets
+== Меняет только то, что видишь ты, а не то, что получает сервер
+
+Skin Builder
+== Конструктор скинов
+
+Parts not found
+== Детали не найдены
+
+Ears
+== Ушки
+
+Face
+== Лицо
+
+Body color
+== Цвет тела
+
+Feet color
+== Цвет ножек
+
+Save and wear
+== Сохранить и надеть
+
+Saved to your skins and put on
+== Сохранено в твои скины и надето
+
+Could not save the skin
+== Не удалось сохранить скин
+
+Others only see it if they have this skin too
+== Другие увидят его, только если у них тоже есть этот скин
 
 Virtual joystick which only aims and moves the mouse pointer relatively.
 == 

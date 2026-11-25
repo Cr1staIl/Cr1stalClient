@@ -46,6 +46,9 @@ public:
 	bool m_FastInputHookAction = false;
 	bool m_FastInputFireAction = false;
 	bool CheckNewInput();
+	// how many ticks ahead your own tee is predicted with the current input mode
+	int FastInputTicks();
+	int m_LastAimTick = -1;
 
 	CControls();
 	int Sizeof() const override { return sizeof(*this); }

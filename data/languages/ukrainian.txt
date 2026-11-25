@@ -2726,15 +2726,6 @@ Dynamic camera is on: it uses its own distance
 Cursor size
 == Розмір курсора
 
-Fast input
-== Швидке введення (Fast Input)
-
-Enable fast input
-== Увімкнути швидке введення
-
-Your tee reacts to your keys right away, before the server tick. Only changes what you see, not what the server gets.
-== Ті реагує на натискання одразу, ще до тіку сервера. Змінює лише те, що бачиш ти, а не те, що отримує сервер.
-
 Amount
 == Сила
 
@@ -3055,6 +3046,75 @@ Island size
 
 Distance from the top
 == Відступ згори
+
+Input
+== Введення
+
+Input mode
+== Режим введення
+
+Fast Input: your tee reacts before the server tick
+== Fast Input: ті реагує ще до тіку сервера
+
+Sheylun Input: predicts whole ticks, as many as your ping needs
+== Sheylun Input: передбачає цілі тіки, стільки, скільки треба за твоїм пінгом
+
+Strength
+== Сила
+
+Max ticks
+== Максимум тіків
+
+Aim updates once per tick (calmer hook line)
+== Приціл оновлюється раз на тік (спокійніша лінія хука)
+
+Ticks right now
+== Тіків зараз
+
+Delta Input: Fast Input plus finer aim for small mouse moves
+== Delta Input: Fast Input і точніший приціл при дрібних рухах миші
+
+Small move sensitivity
+== Чутливість дрібних рухів
+
+Small move size
+== Розмір дрібного руху
+
+Normal DDNet input
+== Звичайне введення DDNet
+
+Only changes what you see, not what the server gets
+== Змінює лише те, що бачиш ти, а не те, що отримує сервер
+
+Skin Builder
+== Конструктор скінів
+
+Parts not found
+== Деталі не знайдено
+
+Ears
+== Вушка
+
+Face
+== Обличчя
+
+Body color
+== Колір тіла
+
+Feet color
+== Колір ніжок
+
+Save and wear
+== Зберегти й одягнути
+
+Saved to your skins and put on
+== Збережено у твої скіни та одягнено
+
+Could not save the skin
+== Не вдалося зберегти скін
+
+Others only see it if they have this skin too
+== Інші побачать його, лише якщо в них теж є цей скін
 
 Hold Shift to be more precise.
 == 

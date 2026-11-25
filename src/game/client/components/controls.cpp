@@ -482,6 +482,10 @@ bool CControls::OnCursorMove(float x, float y, IInput::ECursorType CursorType)
 	if(GameClient()->m_Snap.m_SpecInfo.m_Active && GameClient()->m_Snap.m_SpecInfo.m_SpectatorId < 0)
 		Factor *= GameClient()->m_Camera.m_Zoom;
 
+	// C-Client Delta Input: small mouse movements get their own sensitivity for precise aiming
+	if(g_Config.m_CcFastInput == 3 && CursorType == IInput::CURSOR_MOUSE && length(vec2(x, y)) < (float)g_Config.m_CcDeltaThreshold)
+		Factor *= g_Config.m_CcDeltaPrecision / 100.0f;
+
 	m_aMousePos[g_Config.m_ClDummy] += vec2(x, y) * Factor;
 	GameClient()->m_Controls.m_aMouseInputType[g_Config.m_ClDummy] = CControls::EMouseInputType::RELATIVE;
 	ClampMousePos();
@@ -571,7 +575,15 @@ bool CControls::CheckNewInput()
 				SetMousePos = true;
 			}
 			if(!m_FastInputHookAction && !m_FastInputFireAction)
-				SetMousePos = true;
+			{
+				// Sheylun Input: the aim of the prediction only moves once per tick
+				const int Tick = Client()->PredGameTick(g_Config.m_ClDummy);
+				if(g_Config.m_CcFastInput != 2 || !g_Config.m_CcSheylunTickAim || Tick != m_LastAimTick)
+				{
+					SetMousePos = true;
+					m_LastAimTick = Tick;
+				}
+			}
 		}
 
 		if(SetMousePos)
@@ -589,4 +601,22 @@ bool CControls::CheckNewInput()
 	}
 
 	return aNewInput[0] || aNewInput[1];
+}
+
+int CControls::FastInputTicks()
+{
+	switch(g_Config.m_CcFastInput)
+	{
+	case 1: // Fast Input: fixed amount
+	case 3: // Delta Input uses the same prediction
+		return (g_Config.m_CcFastInputAmount + 19) / 20;
+	case 2:
+	{
+		// Sheylun Input: whole ticks, as many as your input needs to reach the server
+		const float DelayTicks = Client()->GetPredictionTime() / 20.0f * g_Config.m_CcSheylunStrength / 100.0f;
+		return std::clamp(round_to_int(DelayTicks), 1, g_Config.m_CcSheylunMaxTicks);
+	}
+	default:
+		return 0;
+	}
 }

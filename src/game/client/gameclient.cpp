@@ -2650,7 +2650,7 @@ void CGameClient::OnPredict()
 	// C-Client fast input: predict our own tee a few extra ticks ahead using the newest local input.
 	// Everything that is shared with others (events, effects, other tees) stays on the regular tick.
 	const int FinalTickRegular = Client()->PredGameTick(g_Config.m_ClDummy);
-	const int FastInputTicks = g_Config.m_CcFastInput ? (g_Config.m_CcFastInputAmount + 19) / 20 : 0;
+	const int FastInputTicks = m_Controls.FastInputTicks();
 	const int FinalTickSelf = FinalTickRegular + FastInputTicks;
 	const int LocalTee = g_Config.m_ClDummy ^ m_IsDummySwapping;
 

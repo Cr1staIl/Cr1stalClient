@@ -166,11 +166,42 @@ void CMenus::RenderSettingsCClient(CUIRect MainView)
 	Left.Check(&g_Config.m_CcShowCenter, Localize("Lines through the screen center"));
 	Left.Gap();
 
-	// ---- fast input ----
-	Left.Headline(Localize("Fast input"));
-	Left.Check(&g_Config.m_CcFastInput, Localize("Enable fast input"), Localize("Your tee reacts to your keys right away, before the server tick. Only changes what you see, not what the server gets."));
-	if(g_Config.m_CcFastInput)
-		Left.Slider(&g_Config.m_CcFastInputAmount, Localize("Amount"), 20, 100, "ms");
+	// ---- input modes ----
+	Left.Headline(Localize("Input"));
+	{
+		static CButtonContainer s_aInputButtons[4];
+		const char *apModes[] = {Localize("Off"), "Fast", "Sheylun", "Delta"};
+		Left.Choice(&g_Config.m_CcFastInput, Localize("Input mode"), apModes, 4, s_aInputButtons);
+		const ColorRGBA NoteColor(0.75f, 0.85f, 1.0f, 1.0f);
+		switch(g_Config.m_CcFastInput)
+		{
+		case 1:
+			Left.Note(Localize("Fast Input: your tee reacts before the server tick"), NoteColor);
+			Left.Slider(&g_Config.m_CcFastInputAmount, Localize("Amount"), 20, 100, "ms");
+			break;
+		case 2:
+			Left.Note(Localize("Sheylun Input: predicts whole ticks, as many as your ping needs"), NoteColor);
+			Left.Slider(&g_Config.m_CcSheylunStrength, Localize("Strength"), 25, 200, "%");
+			Left.Slider(&g_Config.m_CcSheylunMaxTicks, Localize("Max ticks"), 1, 6);
+			Left.Check(&g_Config.m_CcSheylunTickAim, Localize("Aim updates once per tick (calmer hook line)"));
+			{
+				char aBuf[64];
+				str_format(aBuf, sizeof(aBuf), "%s: %d", Localize("Ticks right now"), GameClient()->m_Controls.FastInputTicks());
+				Left.Note(aBuf, ColorRGBA(0.6f, 0.95f, 0.7f, 1.0f));
+			}
+			break;
+		case 3:
+			Left.Note(Localize("Delta Input: Fast Input plus finer aim for small mouse moves"), NoteColor);
+			Left.Slider(&g_Config.m_CcFastInputAmount, Localize("Amount"), 20, 100, "ms");
+			Left.Slider(&g_Config.m_CcDeltaPrecision, Localize("Small move sensitivity"), 20, 200, "%");
+			Left.Slider(&g_Config.m_CcDeltaThreshold, Localize("Small move size"), 1, 30);
+			break;
+		default:
+			Left.Note(Localize("Normal DDNet input"), NoteColor);
+		}
+		if(g_Config.m_CcFastInput == 1 || g_Config.m_CcFastInput == 2)
+			Left.Note(Localize("Only changes what you see, not what the server gets"), ColorRGBA(0.6f, 0.6f, 0.75f, 1.0f));
+	}
 	Left.Gap();
 
 	// ---- antiping ----
@@ -286,6 +317,108 @@ void CMenus::RenderSettingsCClient(CUIRect MainView)
 	}
 
 	// ================= right column =================
+
+	// ---- skin builder ----
+	Right.Headline(Localize("Skin Builder"));
+	{
+		CCClient &CClient = GameClient()->m_CClient;
+		CUIRect Area = Right.Line(170.0f);
+		CUIRect PreviewBox, Controls;
+		Area.VSplitLeft(130.0f, &PreviewBox, &Controls);
+		Controls.VSplitLeft(10.0f, nullptr, &Controls);
+		PreviewBox.h = 130.0f;
+		PreviewBox.Draw(ColorRGBA(0.06f, 0.02f, 0.12f, 0.8f), IGraphics::CORNER_ALL, 10.0f);
+
+		// preview: the composed skin drawn like a tee (back foot, body, front foot, eyes)
+		const IGraphics::CTextureHandle Texture = CClient.SkinBuilderPreview();
+		if(Texture.IsValid())
+		{
+			const vec2 Center = PreviewBox.Center() + vec2(0.0f, -6.0f);
+			const float Size = 96.0f;
+			Graphics()->TextureSet(Texture);
+			Graphics()->QuadsBegin();
+			Graphics()->SetColor(1.0f, 1.0f, 1.0f, 1.0f);
+			auto Part = [&](float U0, float V0, float U1, float V1, vec2 Pos, float PartW, float PartH) {
+				Graphics()->QuadsSetSubset(U0, V0, U1, V1);
+				IGraphics::CQuadItem Quad(Pos.x, Pos.y, PartW, PartH);
+				Graphics()->QuadsDraw(&Quad, 1);
+			};
+			const vec2 BackFoot = Center + vec2(-Size * 0.11f, Size * 0.3f);
+			const vec2 FrontFoot = Center + vec2(Size * 0.11f, Size * 0.33f);
+			const vec2 BodyPos = Center + vec2(0.0f, -Size * 0.04f);
+			// outlines first
+			Part(0.75f, 0.5f, 1.0f, 0.75f, BackFoot, Size * 0.5f, Size * 0.25f);
+			Part(0.375f, 0.0f, 0.75f, 0.75f, BodyPos, Size, Size);
+			Part(0.75f, 0.5f, 1.0f, 0.75f, FrontFoot, Size * 0.5f, Size * 0.25f);
+			Part(0.75f, 0.25f, 1.0f, 0.5f, BackFoot, Size * 0.5f, Size * 0.25f);
+			Part(0.0f, 0.0f, 0.375f, 0.75f, BodyPos, Size, Size);
+			Part(0.75f, 0.25f, 1.0f, 0.5f, FrontFoot, Size * 0.5f, Size * 0.25f);
+			const float EyeSize = Size * 0.4f;
+			Part(0.25f, 0.75f, 0.375f, 1.0f, BodyPos + vec2(Size * 0.05f, -Size * 0.09f), EyeSize, EyeSize);
+			Part(0.375f, 0.75f, 0.25f, 1.0f, BodyPos + vec2(Size * 0.2f, -Size * 0.09f), EyeSize, EyeSize);
+			Graphics()->QuadsSetSubset(0.0f, 0.0f, 1.0f, 1.0f);
+			Graphics()->QuadsEnd();
+		}
+		else
+		{
+			Ui()->DoLabel(&PreviewBox, Localize("Parts not found"), 11.0f, TEXTALIGN_MC);
+		}
+
+		// arrows for every part
+		static CButtonContainer s_aSbButtons[12];
+		int ButtonIndex = 0;
+		auto ArrowRow = [&](const char *pLabel, int *pValue, int Count, bool IsColor) {
+			CUIRect Row, Label, Prev, Next, Value;
+			Controls.HSplitTop(CC_LINE, &Row, &Controls);
+			Controls.HSplitTop(4.0f, nullptr, &Controls);
+			Row.VSplitLeft(70.0f, &Label, &Row);
+			Ui()->DoLabel(&Label, pLabel, 12.0f, TEXTALIGN_ML);
+			Row.VSplitLeft(22.0f, &Prev, &Row);
+			Row.VSplitRight(22.0f, &Row, &Next);
+			Value = Row;
+			if(DoButton_Menu(&s_aSbButtons[ButtonIndex++], "<", 0, &Prev, BUTTONFLAG_LEFT, nullptr, IGraphics::CORNER_L, 5.0f))
+				*pValue = (*pValue + Count - 1) % Count;
+			if(DoButton_Menu(&s_aSbButtons[ButtonIndex++], ">", 0, &Next, BUTTONFLAG_LEFT, nullptr, IGraphics::CORNER_R, 5.0f))
+				*pValue = (*pValue + 1) % Count;
+			if(IsColor)
+			{
+				Value.Draw(CCClient::SkinBuilderColor(*pValue), IGraphics::CORNER_NONE, 0.0f);
+			}
+			else
+			{
+				Value.Draw(ColorRGBA(0.15f, 0.08f, 0.25f, 0.8f), IGraphics::CORNER_NONE, 0.0f);
+				char aBuf[16];
+				str_format(aBuf, sizeof(aBuf), "%d / %d", *pValue + 1, Count);
+				Ui()->DoLabel(&Value, aBuf, 12.0f, TEXTALIGN_MC);
+			}
+		};
+		ArrowRow(Localize("Body"), &g_Config.m_CcSbBody, CCClient::SB_PARTS, false);
+		ArrowRow(Localize("Ears"), &g_Config.m_CcSbEars, CCClient::SB_PARTS, false);
+		ArrowRow(Localize("Feet"), &g_Config.m_CcSbFeet, CCClient::SB_PARTS, false);
+		ArrowRow(Localize("Face"), &g_Config.m_CcSbEyes, CCClient::SB_PARTS, false);
+		ArrowRow(Localize("Body color"), &g_Config.m_CcSbBodyColor, CCClient::SB_COLORS, true);
+		ArrowRow(Localize("Feet color"), &g_Config.m_CcSbFeetColor, CCClient::SB_COLORS, true);
+
+		// name + save
+		static CLineInput s_SkinNameInput(g_Config.m_CcSbName, sizeof(g_Config.m_CcSbName));
+		CUIRect Row = Right.Line();
+		CUIRect NameBox, SaveButton;
+		Row.VSplitRight(150.0f, &NameBox, &SaveButton);
+		NameBox.VSplitRight(6.0f, &NameBox, nullptr);
+		Ui()->DoEditBox(&s_SkinNameInput, &NameBox, 12.0f);
+		static CButtonContainer s_SaveSkinButton;
+		static float s_SavedTime = -100.0f;
+		static bool s_SaveOk = false;
+		if(DoButton_Menu(&s_SaveSkinButton, Localize("Save and wear"), 0, &SaveButton, BUTTONFLAG_LEFT, nullptr, IGraphics::CORNER_ALL, 6.0f, 0.0f, ColorRGBA(0.45f, 0.2f, 0.75f, 0.8f)))
+		{
+			s_SaveOk = CClient.SkinBuilderSave();
+			s_SavedTime = Client()->GlobalTime();
+		}
+		if(Client()->GlobalTime() - s_SavedTime < 4.0f)
+			Right.Note(s_SaveOk ? Localize("Saved to your skins and put on") : Localize("Could not save the skin"), s_SaveOk ? ColorRGBA(0.5f, 1.0f, 0.6f, 1.0f) : ColorRGBA(1.0f, 0.4f, 0.4f, 1.0f));
+		Right.Note(Localize("Others only see it if they have this skin too"), ColorRGBA(0.6f, 0.6f, 0.75f, 1.0f));
+	}
+	Right.Gap();
 
 	// ---- team ----
 	Right.Headline(Localize("Team"));

@@ -672,7 +672,7 @@ MACRO_CONFIG_INT(ClOverlayEntities, cl_overlay_entities, 0, 0, 100, CFGFLAG_CLIE
 MACRO_CONFIG_INT(ClShowQuads, cl_showquads, 1, 0, 1, CFGFLAG_CLIENT | CFGFLAG_SAVE, "Show background quads (only interesting for mappers, or if your system has extremely bad performance)")
 MACRO_CONFIG_COL(ClBackgroundColor, cl_background_color, 128, CFGFLAG_CLIENT | CFGFLAG_SAVE, "Background color") // 0 0 128
 // Cr1stal Client (C-Client) settings
-MACRO_CONFIG_INT(CcFastInput, cc_fast_input, 0, 0, 1, CFGFLAG_CLIENT | CFGFLAG_SAVE, "C-Client: apply your newest input to your own tee before the next tick is sent (feels more responsive)")
+MACRO_CONFIG_INT(CcFastInput, cc_fast_input, 0, 0, 3, CFGFLAG_CLIENT | CFGFLAG_SAVE, "C-Client input mode: 0 = off, 1 = Fast Input, 2 = Sheylun Input (tick based), 3 = Delta Input")
 MACRO_CONFIG_INT(CcFastInputAmount, cc_fast_input_amount, 20, 20, 100, CFGFLAG_CLIENT | CFGFLAG_SAVE, "C-Client: how far ahead fast input predicts your tee, in milliseconds (20 = 1 tick)")
 MACRO_CONFIG_INT(CcFrozenHud, cc_frozen_hud, 1, 0, 1, CFGFLAG_CLIENT | CFGFLAG_SAVE, "C-Client: show your team's tees at the top of the screen, frozen ones darkened")
 MACRO_CONFIG_INT(CcFrozenHudSize, cc_frozen_hud_size, 14, 8, 24, CFGFLAG_CLIENT | CFGFLAG_SAVE, "C-Client: size of the tees in the team freeze HUD")
@@ -715,6 +715,18 @@ MACRO_CONFIG_INT(CcMusicIslandText, cc_music_island_text, 1, 0, 1, CFGFLAG_CLIEN
 MACRO_CONFIG_INT(CcMusicIslandCover, cc_music_island_cover, 1, 0, 1, CFGFLAG_CLIENT | CFGFLAG_SAVE, "C-Client: show the cover picture in the music island")
 MACRO_CONFIG_INT(CcMusicIslandSize, cc_music_island_size, 100, 50, 200, CFGFLAG_CLIENT | CFGFLAG_SAVE, "C-Client: size of the music island in percent")
 MACRO_CONFIG_INT(CcMusicIslandY, cc_music_island_y, 2, 0, 250, CFGFLAG_CLIENT | CFGFLAG_SAVE, "C-Client: distance of the music island from the top of the screen")
+MACRO_CONFIG_INT(CcSheylunStrength, cc_sheylun_strength, 100, 25, 200, CFGFLAG_CLIENT | CFGFLAG_SAVE, "C-Client Sheylun Input: how much of your input delay is predicted, in percent")
+MACRO_CONFIG_INT(CcSheylunMaxTicks, cc_sheylun_max_ticks, 3, 1, 6, CFGFLAG_CLIENT | CFGFLAG_SAVE, "C-Client Sheylun Input: never predict more ticks than this")
+MACRO_CONFIG_INT(CcSheylunTickAim, cc_sheylun_tick_aim, 1, 0, 1, CFGFLAG_CLIENT | CFGFLAG_SAVE, "C-Client Sheylun Input: update the predicted aim once per tick (calmer hook line)")
+MACRO_CONFIG_INT(CcDeltaPrecision, cc_delta_precision, 60, 20, 200, CFGFLAG_CLIENT | CFGFLAG_SAVE, "C-Client Delta Input: sensitivity for small mouse movements in percent")
+MACRO_CONFIG_INT(CcDeltaThreshold, cc_delta_threshold, 6, 1, 30, CFGFLAG_CLIENT | CFGFLAG_SAVE, "C-Client Delta Input: mouse movements smaller than this count as small")
+MACRO_CONFIG_INT(CcSbBody, cc_sb_body, 0, 0, 9, CFGFLAG_CLIENT | CFGFLAG_SAVE, "C-Client skin builder: body")
+MACRO_CONFIG_INT(CcSbEars, cc_sb_ears, 0, 0, 9, CFGFLAG_CLIENT | CFGFLAG_SAVE, "C-Client skin builder: ears")
+MACRO_CONFIG_INT(CcSbFeet, cc_sb_feet, 0, 0, 9, CFGFLAG_CLIENT | CFGFLAG_SAVE, "C-Client skin builder: feet")
+MACRO_CONFIG_INT(CcSbEyes, cc_sb_eyes, 0, 0, 9, CFGFLAG_CLIENT | CFGFLAG_SAVE, "C-Client skin builder: face")
+MACRO_CONFIG_INT(CcSbBodyColor, cc_sb_body_color, 1, 0, 11, CFGFLAG_CLIENT | CFGFLAG_SAVE, "C-Client skin builder: body color")
+MACRO_CONFIG_INT(CcSbFeetColor, cc_sb_feet_color, 2, 0, 11, CFGFLAG_CLIENT | CFGFLAG_SAVE, "C-Client skin builder: feet color")
+MACRO_CONFIG_STR(CcSbName, cc_sb_name, 24, "cr1stal_skin", CFGFLAG_CLIENT | CFGFLAG_SAVE, "C-Client skin builder: name of the saved skin")
 MACRO_CONFIG_INT(CrNeonBackground, cr_neon_background, 1, 0, 1, CFGFLAG_CLIENT | CFGFLAG_SAVE, "Cr1stal Client: animated neon main menu background instead of the map theme")
 MACRO_CONFIG_COL(ClBackgroundEntitiesColor, cl_background_entities_color, 128, CFGFLAG_CLIENT | CFGFLAG_SAVE, "Background (entities) color") // 0 0 128
 MACRO_CONFIG_STR(ClBackgroundEntities, cl_background_entities, IO_MAX_PATH_LENGTH, "", CFGFLAG_CLIENT | CFGFLAG_SAVE, "Background (entities)")
