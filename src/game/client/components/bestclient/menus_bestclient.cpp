@@ -4148,6 +4148,28 @@ void CMenus::RenderSettingsBestClientOthers(CUIRect MainView)
 
 	Column.HSplitTop(MarginBetweenViews, nullptr, &Column);
 
+	// Cr1stal Client
+	{
+		const float CrystalBlockHeight = LineSize + MarginSmall + 3.0f * LineSize;
+		CUIRect CrystalBlock;
+		Column.HSplitTop(CrystalBlockHeight, &CrystalBlock, &Column);
+		CUIRect CrystalBlockBg = CrystalBlock;
+		CrystalBlockBg.w += BlockPadding;
+		CrystalBlockBg.h += BlockPadding;
+		CrystalBlockBg.x -= BlockPadding * 0.5f;
+		CrystalBlockBg.y -= BlockPadding * 0.5f;
+		BestClientUiTheme::DrawUiBlock(&CrystalBlockBg, IGraphics::CORNER_ALL, 10.0f);
+		BestClientSettingsSearch::DrawBlockHighlight(&g_Config.m_CcClientBadge, &CrystalBlockBg);
+
+		CrystalBlock.HSplitTop(LineSize, &Label, &CrystalBlock);
+		Ui()->DoLabel(&Label, Localize("Cr\xe2\x99\xb1stal Client"), HeadlineFontSize, TEXTALIGN_ML);
+		CrystalBlock.HSplitTop(MarginSmall, nullptr, &CrystalBlock);
+		DoButton_CheckBoxAutoVMarginAndSet(&g_Config.m_CcClientBadge, Localize("Show the client avatar next to Cr1stal Client players"), &g_Config.m_CcClientBadge, &CrystalBlock, LineSize);
+		DoButton_CheckBoxAutoVMarginAndSet(&g_Config.m_CcOthersPacks, Localize("Show their game texture packs"), &g_Config.m_CcOthersPacks, &CrystalBlock, LineSize);
+		DoButton_CheckBoxAutoVMarginAndSet(&g_Config.m_CcSharePresence, Localize("Let others see that I use Cr1stal Client"), &g_Config.m_CcSharePresence, &CrystalBlock, LineSize);
+		Column.HSplitTop(MarginBetweenViews, nullptr, &Column);
+	}
+
 	const float TwitchLogLineSize = 14.0f;
 	const float TwitchChatBlockHeight = LineSize + MarginSmall + LineSize + MarginSmall + LineSize;
 
