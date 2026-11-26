@@ -2922,6 +2922,9 @@ Predict freeze
 Prediction margin
 == 
 
+Smooth other tees
+== 
+
 Smooth antiping (TClient)
 == 
 

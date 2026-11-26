@@ -38,6 +38,7 @@ public:
 	CNetObj_PlayerInput m_aInputData[NUM_DUMMIES];
 	// C-Client: input debounce (left, right, jump, hook)
 	int m_aCcSnaps[NUM_DUMMIES] = {};
+	int m_SheylunTicks = 0; // C-Client: last Sheylun tick amount (changes with hysteresis)
 	int m_aaCcPressSnap[NUM_DUMMIES][4] = {};
 	bool m_aaCcPending[NUM_DUMMIES][4] = {};
 	CNetObj_PlayerInput m_aLastData[NUM_DUMMIES];

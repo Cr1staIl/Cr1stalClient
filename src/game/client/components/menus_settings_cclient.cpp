@@ -437,10 +437,12 @@ void CMenus::RenderSettingsCClient(CUIRect MainView)
 				g_Config.m_ClAntiPing = 1;
 				g_Config.m_ClAntiPingPlayers = 1;
 				g_Config.m_ClAntiPingPercent = 100;
-				g_Config.m_ClAntiPingSmooth = 0;
 				g_Config.m_ClAntiPingPreInput = 1;
 				g_Config.m_CcFastInputOthers = 1;
+				// with fast input the DDNet smoothing works on the future tick too, else TClient's
+				g_Config.m_ClAntiPingSmooth = g_Config.m_CcFastInput ? 1 : 0;
 				g_Config.m_CcAntiPingImproved = g_Config.m_CcFastInput ? 0 : 1;
+				g_Config.m_CcOthersSmooth = 40;
 				g_Config.m_CcAntiPingStableDirection = 1;
 				g_Config.m_CcUnpredOthersInFreeze = 0;
 				g_Config.m_ClPredictionMargin = 10;
@@ -461,6 +463,7 @@ void CMenus::RenderSettingsCClient(CUIRect MainView)
 		}
 		C.CheckValue(&g_Config.m_ClPredictFreeze, Localize("Predict freeze"), 1);
 		C.Slider(&g_Config.m_ClPredictionMargin, Localize("Prediction margin"), 1, 100, "ms");
+		C.Slider(&g_Config.m_CcOthersSmooth, Localize("Smooth other tees"), 0, 100, "%");
 		C.Gap(4.0f);
 		C.Caption(Localize("Smooth antiping (TClient)"));
 		C.Check(&g_Config.m_CcAntiPingImproved, Localize("New antiping smoothing"), Localize("Trusts the prediction of other tees only as far as they moved steadily before"));

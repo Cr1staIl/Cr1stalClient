@@ -2760,15 +2760,13 @@ void CGameClient::OnPredict()
 				m_aClients[m_aLocalIds[!g_Config.m_ClDummy]].m_Predicted = pDummyChar->GetCore();
 		}
 
-		if(!ExtraTick)
-		{
-			for(int i = 0; i < MAX_CLIENTS; i++)
-				if(CCharacter *pChar = m_PredictedWorld.GetCharacterById(i))
-				{
-					m_aClients[i].m_aPredPos[Tick % 200] = pChar->Core()->m_Pos;
-					m_aClients[i].m_aPredTick[Tick % 200] = Tick;
-				}
-		}
+		// (the future fast input ticks too, for the smoothing of other tees on that tick)
+		for(int i = 0; i < MAX_CLIENTS; i++)
+			if(CCharacter *pChar = m_PredictedWorld.GetCharacterById(i))
+			{
+				m_aClients[i].m_aPredPos[Tick % 200] = pChar->Core()->m_Pos;
+				m_aClients[i].m_aPredTick[Tick % 200] = Tick;
+			}
 
 		// C-Client (like TClient's "fast input others"): remember where the other tees are on the
 		// same future tick as your own tee, so your hook and them stay in the same moment
@@ -4130,7 +4128,7 @@ void CGameClient::UpdateRenderedCharacters()
 				if(g_Config.m_CcAntiPingImproved && m_aClients[i].m_ValidAntipingSmooth)
 					Pos = mix(m_aClients[i].m_PrevImprovedPredPos, m_aClients[i].m_ImprovedPredPos, Client()->PredIntraGameTick(g_Config.m_ClDummy));
 				else if(g_Config.m_CcFastInputOthers && m_Controls.FastInputTicks() > 0 && m_aClients[i].m_HasFastPos)
-					Pos = mix(m_aClients[i].m_FastPrevPos, m_aClients[i].m_FastPos, Client()->PredIntraGameTick(g_Config.m_ClDummy));
+					Pos = GetFastSmoothPos(i);
 				if(g_Config.m_CcRemoveAnti && Client()->m_IsLocalFrozen)
 					Pos = GetFreezePos(i);
 				if(g_Config.m_CcShowOthersGhosts && g_Config.m_CcSwapGhosts && !(m_aClients[i].m_FreezeEnd > 0 && g_Config.m_CcHideFrozenGhosts))
@@ -4139,6 +4137,30 @@ void CGameClient::UpdateRenderedCharacters()
 					Pos = UnpredPos;
 			}
 		}
+		// C-Client: soft smoothing of other tees. Moves with their real speed (no delay) and only
+		// eases out the small jumps when the prediction of them was wrong
+		const bool IsLocalTee = i == m_Snap.m_LocalClientId || (PredictDummy() && i == m_aLocalIds[!g_Config.m_ClDummy]);
+		if(g_Config.m_CcOthersSmooth > 0 && !IsLocalTee)
+		{
+			SCcSmooth &Smooth = m_aCcSmooth[i];
+			const float Dt = std::clamp(Client()->RenderFrameTime(), 0.0f, 0.05f);
+			if(!Smooth.m_Init || distance(Smooth.m_Pos, Pos) > 160.0f || Dt <= 0.0f)
+			{
+				Smooth.m_Pos = Pos;
+				Smooth.m_Init = true;
+			}
+			else
+			{
+				const vec2 Vel = m_aClients[i].m_Predicted.m_Vel * (float)Client()->GameTickSpeed();
+				const vec2 Ahead = Smooth.m_Pos + Vel * Dt;
+				const float Rate = 40.0f - g_Config.m_CcOthersSmooth * 0.32f; // 100 -> 8/s, 1 -> ~40/s
+				Smooth.m_Pos = Ahead + (Pos - Ahead) * (1.0f - std::exp(-Rate * Dt));
+				Pos = Smooth.m_Pos;
+			}
+		}
+		else
+			m_aCcSmooth[i].m_Init = false;
+
 		m_aClients[i].m_RenderPos = Pos;
 		if(Predict() && i == m_Snap.m_LocalClientId)
 			m_LocalCharacterPos = Pos;
@@ -4295,6 +4317,32 @@ void CGameClient::DetectStrongHook()
 			}
 		}
 	}
+}
+
+vec2 CGameClient::GetFastSmoothPos(int ClientId)
+{
+	// like GetSmoothPos, but on the fast input tick (TClient's fast input others)
+	const int FastTicks = m_Controls.FastInputTicks();
+	vec2 Pos = mix(m_aClients[ClientId].m_FastPrevPos, m_aClients[ClientId].m_FastPos, Client()->PredIntraGameTick(g_Config.m_ClDummy));
+	if(!g_Config.m_ClAntiPingSmooth)
+		return Pos;
+	const int64_t Now = time_get();
+	for(int i = 0; i < 2; i++)
+	{
+		const int64_t Len = std::clamp(m_aClients[ClientId].m_aSmoothLen[i], (int64_t)1, time_freq());
+		const int64_t TimePassed = Now - m_aClients[ClientId].m_aSmoothStart[i];
+		if(in_range(TimePassed, (int64_t)0, Len - 1))
+		{
+			const float MixAmount = 1.f - std::pow(1.f - TimePassed / (float)Len, 1.2f);
+			int SmoothTick;
+			float SmoothIntra;
+			Client()->GetSmoothTick(&SmoothTick, &SmoothIntra, MixAmount);
+			SmoothTick += FastTicks;
+			if(SmoothTick > 0 && m_aClients[ClientId].m_aPredTick[(SmoothTick - 1) % 200] >= Client()->PrevGameTick(g_Config.m_ClDummy) && m_aClients[ClientId].m_aPredTick[SmoothTick % 200] <= Client()->PredGameTick(g_Config.m_ClDummy) + FastTicks)
+				Pos[i] = mix(m_aClients[ClientId].m_aPredPos[(SmoothTick - 1) % 200][i], m_aClients[ClientId].m_aPredPos[SmoothTick % 200][i], SmoothIntra);
+		}
+	}
+	return Pos;
 }
 
 vec2 CGameClient::GetSmoothPos(int ClientId)

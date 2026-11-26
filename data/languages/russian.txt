@@ -3921,9 +3921,6 @@ Maps finished
 Most played maps
 == Больше всего играл
 
-Virtual joystick which only aims and moves the mouse pointer relatively.
-== 
-
 Best for saving teammates
 == Лучшее для сейва тиммейтов
 
@@ -3941,3 +3938,9 @@ Others are shown on the same future tick as you, so saving has no delay
 
 Floating signs in the menu background
 == Летающие символы на фоне меню
+
+Virtual joystick which only aims and moves the mouse pointer relatively.
+== 
+
+Smooth other tees
+== Сглаживание других ти

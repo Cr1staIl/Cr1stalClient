@@ -772,6 +772,13 @@ public:
 	// C-Client: check (and fix) our player info again after this many ticks
 	void SetCheckInfo(int Conn, int Ticks) { m_aCheckInfo[Conn] = Ticks; }
 	vec2 GetSmoothPos(int ClientId);
+	vec2 GetFastSmoothPos(int ClientId); // C-Client
+	struct SCcSmooth
+	{
+		vec2 m_Pos = vec2(0.0f, 0.0f);
+		bool m_Init = false;
+	};
+	SCcSmooth m_aCcSmooth[MAX_CLIENTS];
 	bool IsOtherTeam(int ClientId) const;
 	int SwitchStateTeam() const;
 	bool IsLocalCharSuper() const;

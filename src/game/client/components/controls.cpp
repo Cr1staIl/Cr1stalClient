@@ -662,7 +662,10 @@ int CControls::FastInputTicks()
 	{
 		// Sheylun Input: whole ticks, as many as your input needs to reach the server
 		const float DelayTicks = Client()->GetPredictionTime() / 20.0f * g_Config.m_CcSheylunStrength / 100.0f;
-		return std::clamp(round_to_int(DelayTicks), 1, g_Config.m_CcSheylunMaxTicks);
+		// only change when the ping really moved, or the tee jumps a whole tick back and forth
+		if(m_SheylunTicks <= 0 || absolute(DelayTicks - m_SheylunTicks) > 0.8f)
+			m_SheylunTicks = round_to_int(DelayTicks);
+		return std::clamp(m_SheylunTicks, 1, g_Config.m_CcSheylunMaxTicks);
 	}
 	default:
 		return 0;

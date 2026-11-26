@@ -674,6 +674,7 @@ MACRO_CONFIG_COL(ClBackgroundColor, cl_background_color, 128, CFGFLAG_CLIENT | C
 MACRO_CONFIG_INT(CcFastInput, cc_fast_input, 0, 0, 3, CFGFLAG_CLIENT | CFGFLAG_SAVE, "C-Client input mode: 0 = off, 1 = Fast Input, 2 = Sheylun Input (tick based), 3 = Delta Input")
 MACRO_CONFIG_INT(CcFastInputAmount, cc_fast_input_amount, 20, 20, 100, CFGFLAG_CLIENT | CFGFLAG_SAVE, "C-Client: how far ahead fast input predicts your tee, in milliseconds (20 = 1 tick)")
 MACRO_CONFIG_INT(CcFastInputOthers, cc_fast_input_others, 1, 0, 1, CFGFLAG_CLIENT | CFGFLAG_SAVE, "C-Client: other tees are shown on the same fast input tick as yours (needs antiping)")
+MACRO_CONFIG_INT(CcOthersSmooth, cc_others_smooth, 30, 0, 100, CFGFLAG_CLIENT | CFGFLAG_SAVE, "C-Client: eases out the jumps of other tees when their prediction was wrong (0 = off), without delaying their movement")
 MACRO_CONFIG_INT(CcRainbowTee, cc_rainbow_tee, 0, 0, 1, CFGFLAG_CLIENT | CFGFLAG_SAVE, "C-Client: rainbow colors for your own tee (only you see it)")
 MACRO_CONFIG_INT(CcRainbowSpeed, cc_rainbow_speed, 100, 10, 500, CFGFLAG_CLIENT | CFGFLAG_SAVE, "C-Client: speed of the rainbow tee in percent")
 MACRO_CONFIG_INT(CcCursorScale, cc_cursor_scale, 100, 50, 300, CFGFLAG_CLIENT | CFGFLAG_SAVE, "C-Client: size of the in-game cursor in percent")

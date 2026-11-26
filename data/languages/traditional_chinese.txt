@@ -2970,6 +2970,9 @@ Prediction strength
 Predict freeze
 == 
 
+Smooth other tees
+== 
+
 Smooth antiping (TClient)
 == 
 

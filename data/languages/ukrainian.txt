@@ -3231,6 +3231,9 @@ Fast input for other tees too
 Others are shown on the same future tick as you, so saving has no delay
 == 
 
+Smooth other tees
+== 
+
 Smooth antiping (TClient)
 == 
 
