@@ -2235,6 +2235,14 @@ int CGraphics_Threaded::IssueInit()
 		Flags |= IGraphicsBackend::INITFLAG_VSYNC;
 	}
 
+	// Cr1stal Client: older test builds forced 8x anti-aliasing, which costs a lot of FPS.
+	// Take that back once; it can be turned on again in the graphics settings.
+	if(!g_Config.m_CcPerfReset)
+	{
+		g_Config.m_GfxFsaaSamples = 0;
+		g_Config.m_CcPerfReset = 1;
+	}
+
 	const int Result = m_pBackend->Init("Cr\xe2\x99\xb1stal Client", &g_Config.m_GfxScreen, &g_Config.m_GfxScreenWidth, &g_Config.m_GfxScreenHeight, &g_Config.m_GfxScreenRefreshRate, &g_Config.m_GfxFsaaSamples, Flags, &m_DesktopSize.x, &m_DesktopSize.y, &m_ScreenWidth, &m_ScreenHeight, m_pStorage); // bestclient
 	m_DrawableWidth = m_ScreenWidth;
 	m_DrawableHeight = m_ScreenHeight;
