@@ -3939,8 +3939,14 @@ Others are shown on the same future tick as you, so saving has no delay
 Floating signs in the menu background
 == Летающие символы на фоне меню
 
+Smooth other tees
+== Сглаживание других ти
+
 Virtual joystick which only aims and moves the mouse pointer relatively.
 == 
 
-Smooth other tees
-== Сглаживание других ти
+Maximum smoothness
+== Максимальная плавность
+
+No FPS limit and no vsync, the game draws as many frames as your PC can, plus a light motion blur. Turn it off and your old settings come back.
+== Без лимита FPS и без vsync: игра рисует столько кадров, сколько тянет ПК, плюс лёгкое размытие движения. Выключишь — вернутся старые настройки.

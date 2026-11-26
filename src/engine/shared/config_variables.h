@@ -742,6 +742,8 @@ MACRO_CONFIG_INT(CcConfirmQuit, cc_confirm_quit, 0, 0, 1, CFGFLAG_CLIENT | CFGFL
 MACRO_CONFIG_INT(CcGoresMode, cc_gores_mode, 0, 0, 1, CFGFLAG_CLIENT | CFGFLAG_SAVE, "C-Client: gores mode, you hold the gun and fire swings the hammer")
 MACRO_CONFIG_INT(CcGoresModeWeapons, cc_gores_mode_weapons, 1, 0, 1, CFGFLAG_CLIENT | CFGFLAG_SAVE, "C-Client: gores mode pauses while you hold shotgun, grenade or laser")
 MACRO_CONFIG_INT(CcHighPriority, cc_high_priority, 0, 0, 1, CFGFLAG_CLIENT | CFGFLAG_SAVE, "C-Client: run the game with high process priority (Windows)")
+MACRO_CONFIG_INT(CcUltraSmooth, cc_ultra_smooth, 0, 0, 1, CFGFLAG_CLIENT | CFGFLAG_SAVE, "C-Client: as smooth as possible: no FPS limit, no vsync, a new frame for every screen refresh and a light motion blur")
+MACRO_CONFIG_STR(CcUltraSmoothBackup, cc_ultra_smooth_backup, 256, "", CFGFLAG_CLIENT | CFGFLAG_SAVE, "C-Client: internal, your settings from before the ultra smooth mode")
 MACRO_CONFIG_INT(CcFinishPrediction, cc_finish_prediction, 0, 0, 1, CFGFLAG_CLIENT | CFGFLAG_SAVE, "C-Client: show how far you are to the finish and when you will get there")
 MACRO_CONFIG_INT(CcEdgeInfo, cc_edge_info, 0, 0, 1, CFGFLAG_CLIENT | CFGFLAG_SAVE, "C-Client: how many tiles to the next freeze left, right and below you")
 MACRO_CONFIG_STR(CcFastAction1, cc_fast_action_1, 128, "kill", CFGFLAG_CLIENT | CFGFLAG_SAVE, "C-Client: command of fast action 1")

@@ -743,6 +743,7 @@ void CMenus::RenderSettingsCClient(CUIRect MainView)
 			if(Choice != Old)
 				g_Config.m_GfxFsaaSamples = s_aSamples[Choice];
 		}
+		C.Check(&g_Config.m_CcUltraSmooth, Localize("Maximum smoothness"), Localize("No FPS limit and no vsync, the game draws as many frames as your PC can, plus a light motion blur. Turn it off and your old settings come back."));
 		C.Check(&g_Config.m_CcOptimize, Localize("Optimize the game for my PC"), Localize("Turns off heavy effects; a weaker PC also hides the map decoration. Turn it off and your old settings come back."));
 		char aBuf[64];
 		str_format(aBuf, sizeof(aBuf), "%s: %d", Localize("FPS right now"), GameClient()->m_CClient.Fps());
