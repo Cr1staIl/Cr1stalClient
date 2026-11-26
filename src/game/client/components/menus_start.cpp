@@ -251,14 +251,15 @@ void CMenusStart::RenderStartMenu(CUIRect MainView)
 			DOCK_EDITOR,
 			DOCK_SERVER,
 			DOCK_PROFILE,
+			DOCK_STATS,
 			DOCK_NEWS,
 			DOCK_SETTINGS,
 			DOCK_QUIT,
 			NUM_DOCK,
 		};
-		const char *apIcons[NUM_DOCK] = {FontIcon::PLAY, FontIcon::FILM, FontIcon::PEN_TO_SQUARE, LocalServerRunning ? FontIcon::STOP : FontIcon::NETWORK_WIRED, FontIcon::USER, FontIcon::NEWSPAPER, FontIcon::GEAR, FontIcon::POWER_OFF};
-		const char *apLabels[NUM_DOCK] = {Localize("Play", "Start menu"), Localize("Demos"), Localize("Editor"), LocalServerRunning ? Localize("Stop server") : Localize("Run server"), Localize("Profile"), Localize("News"), Localize("Settings"), Localize("Quit")};
-		const bool aHighlighted[NUM_DOCK] = {false, false, GameClient()->Editor()->HasUnsavedData(), LocalServerRunning, false, g_Config.m_UiUnreadNews != 0, false, false};
+		const char *apIcons[NUM_DOCK] = {FontIcon::PLAY, FontIcon::FILM, FontIcon::PEN_TO_SQUARE, LocalServerRunning ? FontIcon::STOP : FontIcon::NETWORK_WIRED, FontIcon::USER, FontIcon::FLAG_CHECKERED, FontIcon::NEWSPAPER, FontIcon::GEAR, FontIcon::POWER_OFF};
+		const char *apLabels[NUM_DOCK] = {Localize("Play", "Start menu"), Localize("Demos"), Localize("Editor"), LocalServerRunning ? Localize("Stop server") : Localize("Run server"), Localize("Profile"), Localize("Statistics"), Localize("News"), Localize("Settings"), Localize("Quit")};
+		const bool aHighlighted[NUM_DOCK] = {false, false, GameClient()->Editor()->HasUnsavedData(), LocalServerRunning, false, false, g_Config.m_UiUnreadNews != 0, false, false};
 		const int Clicked = RenderDock(MainView, apIcons, apLabels, aHighlighted, NUM_DOCK);
 
 		bool UsedEscape = false;
@@ -285,6 +286,8 @@ void CMenusStart::RenderStartMenu(CUIRect MainView)
 			g_Config.m_UiSettingsPage = CMenus::SETTINGS_PLAYER;
 			NewPage = CMenus::PAGE_SETTINGS;
 		}
+		if(Clicked == DOCK_STATS)
+			NewPage = CMenus::PAGE_CC_STATS;
 		if(Clicked == DOCK_NEWS || CheckHotKey(KEY_N))
 			NewPage = CMenus::PAGE_NEWS;
 		if(Clicked == DOCK_SETTINGS || CheckHotKey(KEY_S))

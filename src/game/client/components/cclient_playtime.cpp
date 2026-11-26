@@ -12,6 +12,7 @@
 #include <engine/storage.h>
 
 #include <game/client/gameclient.h>
+#include <game/client/race.h>
 #include <game/localization.h>
 
 #include <algorithm>
@@ -170,6 +171,90 @@ void CCPlaytime::OnShutdown()
 		Save();
 }
 
+int CCPlaytime::CategoryPoints(int Category)
+{
+	switch(Category)
+	{
+	case CAT_EASY: return 5;
+	case CAT_MAIN: return 10;
+	case CAT_HARD: return 20;
+	case CAT_INSANE: return 35;
+	case CAT_EXTREME: return 50;
+	case CAT_MODS:
+	case CAT_JET:
+	case CAT_SOLO: return 15;
+	default: return 5;
+	}
+}
+
+int CCPlaytime::Points() const
+{
+	int Points = 0;
+	for(const SFinish &Finish : m_vFinishes)
+		Points += CategoryPoints(Finish.m_Category);
+	return Points;
+}
+
+void CCPlaytime::CategoryString(char *pBuf, int BufSize) const
+{
+	pBuf[0] = '\0';
+	for(int i = 0; i < NUM_CATEGORIES; i++)
+	{
+		char aPart[24];
+		str_format(aPart, sizeof(aPart), i == 0 ? "%lld" : ",%lld", (long long)CategorySeconds(i));
+		str_append(pBuf, aPart, BufSize);
+	}
+}
+
+void CCPlaytime::AddFinish(int TimeMs)
+{
+	if(Client()->State() != IClient::STATE_ONLINE || !GameClient()->Map())
+		return;
+	const char *pMap = GameClient()->Map()->BaseName();
+	for(SFinish &Finish : m_vFinishes)
+	{
+		if(Finish.m_Map == pMap)
+		{
+			if(TimeMs > 0 && (Finish.m_BestMs <= 0 || TimeMs < Finish.m_BestMs))
+				Finish.m_BestMs = TimeMs;
+			m_Dirty = true;
+			return;
+		}
+	}
+	SFinish Finish;
+	Finish.m_Map = pMap;
+	Finish.m_Category = CategoryFromServerName(Client()->ServerInfo().m_aName);
+	Finish.m_BestMs = std::max(0, TimeMs);
+	Finish.m_When = time_timestamp();
+	m_vFinishes.push_back(Finish);
+	m_Dirty = true;
+	Save();
+}
+
+void CCPlaytime::OnMessage(int MsgType, void *pRawMsg)
+{
+	const int LocalId = GameClient()->m_Snap.m_LocalClientId;
+	if(LocalId < 0)
+		return;
+	if(MsgType == NETMSGTYPE_SV_RACEFINISH)
+	{
+		const CNetMsg_Sv_RaceFinish *pMsg = (CNetMsg_Sv_RaceFinish *)pRawMsg;
+		if(pMsg->m_ClientId == LocalId)
+			AddFinish(pMsg->m_Time);
+	}
+	else if(MsgType == NETMSGTYPE_SV_CHAT)
+	{
+		// servers that only say it in the chat ("name finished in: 01:23.45")
+		const CNetMsg_Sv_Chat *pMsg = (CNetMsg_Sv_Chat *)pRawMsg;
+		if(pMsg->m_ClientId != -1)
+			return;
+		char aName[MAX_NAME_LENGTH];
+		const int Time = CRaceHelper::TimeFromFinishMessage(pMsg->m_pMessage, aName, sizeof(aName));
+		if(Time > 0 && str_comp(aName, GameClient()->m_aClients[LocalId].m_aName) == 0)
+			AddFinish(Time);
+	}
+}
+
 void CCPlaytime::Load()
 {
 	char *pFile = Storage()->ReadFileStr(s_pPlaytimeFile, IStorage::TYPE_SAVE);
@@ -186,6 +271,29 @@ void CCPlaytime::Load()
 		if(str_startswith(pLine, "since "))
 		{
 			m_Since = str_toint64_base(pLine + 6);
+		}
+		else if(str_startswith(pLine, "F\t"))
+		{
+			// F <tab> category <tab> best ms <tab> unix time <tab> map
+			char *apParts[5] = {pLine};
+			int Num = 1;
+			for(char *p = pLine; *p && Num < 5; p++)
+				if(*p == '\t')
+				{
+					*p = '\0';
+					apParts[Num++] = p + 1;
+				}
+			if(Num == 5)
+			{
+				str_utf8_trim_right(apParts[4]);
+				SFinish Finish;
+				Finish.m_Category = std::clamp(str_toint(apParts[1]), 0, NUM_CATEGORIES - 1);
+				Finish.m_BestMs = str_toint(apParts[2]);
+				Finish.m_When = str_toint64_base(apParts[3]);
+				Finish.m_Map = apParts[4];
+				if(!Finish.m_Map.empty())
+					m_vFinishes.push_back(Finish);
+			}
 		}
 		else
 		{
@@ -221,6 +329,11 @@ void CCPlaytime::Save()
 	for(const SMap &Map : m_vMaps)
 	{
 		str_format(aLine, sizeof(aLine), "%lld\t%d\t%s\n", (long long)Map.m_Seconds, Map.m_Category, Map.m_Name.c_str());
+		io_write(File, aLine, str_length(aLine));
+	}
+	for(const SFinish &Finish : m_vFinishes)
+	{
+		str_format(aLine, sizeof(aLine), "F\t%d\t%d\t%lld\t%s\n", Finish.m_Category, Finish.m_BestMs, (long long)Finish.m_When, Finish.m_Map.c_str());
 		io_write(File, aLine, str_length(aLine));
 	}
 	io_close(File);

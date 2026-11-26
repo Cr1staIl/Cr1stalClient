@@ -2919,9 +2919,6 @@ Hold Shift and press Q or E: save wheel
 Middle mouse button: marker for your team
 == Средняя кнопка мыши: метка для команды
 
-Others with Cr1stal Client see pictures and markers
-== Игроки с Cr1stal Client видят картинки и метки
-
 Updates
 == Обновления
 
@@ -2960,9 +2957,6 @@ Customization
 
 Font
 == Шрифт
-
-The font changes all text in the game right away
-== Шрифт сразу меняет весь текст в игре
 
 Normal
 == Обычный
@@ -3075,14 +3069,8 @@ Small move size
 Normal DDNet input
 == Обычный ввод DDNet
 
-Only changes what you see, not what the server gets
-== Меняет только то, что видишь ты, а не то, что получает сервер
-
 Show the song title
 == Показывать название песни
-
-A long title slides from side to side
-== Длинное название двигается из стороны в сторону
 
 [Playtime category]
 Easy
@@ -3123,17 +3111,11 @@ Other
 In game
 == В игре
 
-Maps played
-== Сыграно карт
-
 Favourite map
 == Любимая карта
 
 Playtime
 == Время в игре
-
-Counted on this computer since %s
-== Считается на этом компьютере с %s
 
 Most time spent on maps
 == Больше всего времени на картах
@@ -3164,9 +3146,6 @@ Strong mode: your PC was under 144 FPS
 
 Light mode: your PC is fast
 == Лёгкий режим: ПК быстрый
-
-Turning it off brings your settings back
-== Если выключить, настройки вернутся
 
 Failed to create bgdraw folder
 == Не удалось создать папку для рисунков
@@ -3894,14 +3873,8 @@ Action
 Key
 == Клавиша
 
-Virtual joystick which only aims and moves the mouse pointer relatively.
-== 
-
 Configs
 == Конфиги
-
-Save all your settings and binds under a name and switch between them
-== Сохраняй все настройки и бинды под именем и переключайся между ними
 
 No saved configs yet
 == Пока нет сохранённых конфигов
@@ -3920,3 +3893,33 @@ Delete the selected config
 
 Open the configs folder
 == Открыть папку конфигов
+
+Statistics
+== Статистика
+
+Search a player
+== Найти игрока
+
+Hours
+== Часы
+
+Maps
+== Карты
+
+Points
+== Поинты
+
+Loading...
+== Загрузка...
+
+No players found
+== Игроки не найдены
+
+Maps finished
+== Пройдено карт
+
+Most played maps
+== Больше всего играл
+
+Virtual joystick which only aims and moves the mouse pointer relatively.
+== 

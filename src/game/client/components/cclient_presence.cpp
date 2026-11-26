@@ -48,6 +48,11 @@ static bool IsHash(const char *pText)
 	return true;
 }
 
+const char *CCPresence::DatabaseUrl()
+{
+	return DATABASE_URL;
+}
+
 void CCPresence::OnInit()
 {
 	Storage()->CreateFolder(PACK_FOLDER, IStorage::TYPE_SAVE);
@@ -375,8 +380,48 @@ void CCPresence::UpdateDownload()
 	}
 }
 
+void CCPresence::UploadStats()
+{
+	// your public statistics for the Statistics page, under the hash of your name
+	if(!g_Config.m_CcSharePresence || !g_Config.m_PlayerName[0])
+		return;
+	const CCPlaytime &Playtime = GameClient()->m_CPlaytime;
+	char aKey[17];
+	ShortHash(aKey, g_Config.m_PlayerName);
+	char aPath[64];
+	str_format(aPath, sizeof(aPath), "s/%s", aKey);
+	char aCategories[160];
+	Playtime.CategoryString(aCategories, sizeof(aCategories));
+	std::string Top;
+	for(const CCPlaytime::SMap *pMap : Playtime.TopMaps(3))
+	{
+		if(!Top.empty())
+			Top += "|";
+		Top += pMap->m_Name;
+	}
+	char aName[64], aClan[32], aTop[512];
+	EscapeJson(aName, sizeof(aName), g_Config.m_PlayerName);
+	EscapeJson(aClan, sizeof(aClan), g_Config.m_PlayerClan);
+	EscapeJson(aTop, sizeof(aTop), Top.substr(0, 380).c_str());
+	char aBody[1024];
+	str_format(aBody, sizeof(aBody), "{\"n\":\"%s\",\"cl\":\"%s\",\"h\":%lld,\"m\":%d,\"pl\":%d,\"p\":%d,\"c\":\"%s\",\"f\":\"%s\",\"t\":{\".sv\":\"timestamp\"}}",
+		aName, aClan, (long long)Playtime.Total(), Playtime.NumFinished(), Playtime.NumMaps(), Playtime.Points(), aCategories, aTop);
+	Send(aPath, "PUT", aBody);
+}
+
 void CCPresence::OnUpdate()
 {
+	{
+		const int64_t NowStats = time_get();
+		if(m_NextStats == 0)
+			m_NextStats = NowStats + time_freq() * 20;
+		else if(NowStats > m_NextStats)
+		{
+			UploadStats();
+			m_NextStats = NowStats + time_freq() * 300;
+		}
+	}
+
 	m_vpSent.erase(std::remove_if(m_vpSent.begin(), m_vpSent.end(), [](const std::shared_ptr<IHttpRequest> &pRequest) { return pRequest->Done(); }), m_vpSent.end());
 
 	UpdateOwnPack();

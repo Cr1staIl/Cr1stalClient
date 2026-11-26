@@ -2891,9 +2891,6 @@ Hold Shift and press Q or E: save wheel
 Middle mouse button: marker for your team
 == Середня кнопка миші: мітка для команди
 
-Others with Cr1stal Client see pictures and markers
-== Гравці з Cr1stal Client бачать картинки та мітки
-
 Updates
 == Оновлення
 
@@ -2932,9 +2929,6 @@ Customization
 
 Font
 == Шрифт
-
-The font changes all text in the game right away
-== Шрифт одразу змінює весь текст у грі
 
 Normal
 == Звичайний
@@ -3047,9 +3041,6 @@ Small move size
 Normal DDNet input
 == Звичайне введення DDNet
 
-Only changes what you see, not what the server gets
-== Змінює лише те, що бачиш ти, а не те, що отримує сервер
-
 Hold Shift to be more precise.
 == 
 
@@ -3139,6 +3130,39 @@ Tap to dismiss…
 == 
 
 Initializing layers
+== 
+
+Statistics
+== 
+
+Search a player
+== 
+
+Hours
+== 
+
+Maps
+== 
+
+Points
+== 
+
+Loading...
+== 
+
+No players found
+== 
+
+In game
+== 
+
+Maps finished
+== 
+
+Playtime
+== 
+
+Most played maps
 == 
 
 Credits
@@ -3396,9 +3420,6 @@ Freeze line only on the open side, not along walls
 Show the song title
 == 
 
-A long title slides from side to side
-== 
-
 Optimization
 == 
 
@@ -3418,9 +3439,6 @@ Strong mode: your PC was under 144 FPS
 == 
 
 Light mode: your PC is fast
-== 
-
-Turning it off brings your settings back
 == 
 
 Show when frozen tees unfreeze
@@ -3577,9 +3595,6 @@ Key
 == 
 
 Configs
-== 
-
-Save all your settings and binds under a name and switch between them
 == 
 
 No saved configs yet
@@ -3882,19 +3897,7 @@ Teleport dummy to cursor
 Practice
 == 
 
-In game
-== 
-
-Maps played
-== 
-
 Favourite map
-== 
-
-Playtime
-== 
-
-Counted on this computer since %s
 == 
 
 Most time spent on maps

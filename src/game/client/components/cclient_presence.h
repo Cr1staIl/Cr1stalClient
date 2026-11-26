@@ -30,6 +30,7 @@ public:
 	void OnUpdate() override;
 	void OnStateChange(int NewState, int OldState) override;
 	void OnShutdown() override;
+	static const char *DatabaseUrl();
 
 	// this player uses Cr1stal Client (you always do)
 	bool IsCrystal(int ClientId) const;
@@ -75,6 +76,8 @@ private:
 	std::vector<std::shared_ptr<IHttpRequest>> m_vpSent; // fire and forget
 
 	void Send(const char *pPath, const char *pMethod, const char *pBody);
+	void UploadStats();
+	int64_t m_NextStats = 0;
 	void Publish();
 	void Unpublish();
 	void Poll();

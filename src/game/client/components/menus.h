@@ -569,6 +569,28 @@ protected:
 	void RenderSettingsAssets(CUIRect MainView);
 	// C-Client: skins, sound packs and menu backgrounds on the textures page
 	void RenderCcAssetsTab(CUIRect MainView, int Tab);
+	// C-Client: statistics page
+	void RenderCcStats(CUIRect MainView);
+	struct SCcStatsEntry
+	{
+		std::string m_Name;
+		std::string m_Clan;
+		int64_t m_Seconds = 0;
+		int m_Finished = 0;
+		int m_Played = 0;
+		int m_Points = 0;
+		int64_t m_aCategories[9] = {};
+		std::string m_TopMaps;
+		bool m_Me = false;
+	};
+	std::vector<SCcStatsEntry> m_vCcStats;
+	std::shared_ptr<class IHttpRequest> m_pCcStatsRequest;
+	int64_t m_CcStatsFetched = 0;
+	int m_CcStatsSort = 0;
+	std::string m_CcStatsSelected;
+	char m_aCcStatsSearch[64] = "";
+	void CcStatsFetch();
+	void CcStatsRead();
 	struct SCcBackground
 	{
 		char m_aName[64];
@@ -721,6 +743,7 @@ public:
 		PAGE_SETTINGS,
 		PAGE_NETWORK,
 		PAGE_GHOST,
+		PAGE_CC_STATS, // C-Client: statistics of all Cr1stal Client players
 
 		PAGE_LENGTH,
 	};

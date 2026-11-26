@@ -220,18 +220,19 @@ void CMenus::RenderSettingsPlayer(CUIRect MainView)
 	// ---- quick stats ----
 	{
 		const std::vector<const CCPlaytime::SMap *> vpTop = Playtime.TopMaps(5);
-		char aTotal[32], aMaps[16];
+		char aTotal[32], aMaps[16], aPoints[16];
 		CCPlaytime::FormatTime(Total, aTotal, sizeof(aTotal));
-		str_format(aMaps, sizeof(aMaps), "%d", Playtime.NumMaps());
-		const char *apValues[3] = {aTotal, aMaps, vpTop.empty() ? "-" : vpTop[0]->m_Name.c_str()};
-		const char *apNames[3] = {Localize("In game"), Localize("Maps played"), Localize("Favourite map")};
-		static char s_aStatKeys[3];
-		for(int i = 0; i < 3; i++)
+		str_format(aMaps, sizeof(aMaps), "%d", Playtime.NumFinished());
+		str_format(aPoints, sizeof(aPoints), "%d", Playtime.Points());
+		const char *apValues[4] = {aTotal, aMaps, aPoints, vpTop.empty() ? "-" : vpTop[0]->m_Name.c_str()};
+		const char *apNames[4] = {Localize("In game"), Localize("Maps finished"), Localize("Points"), Localize("Favourite map")};
+		static char s_aStatKeys[4];
+		for(int i = 0; i < 4; i++)
 		{
 			CUIRect Tile;
-			const float TileW = (StatsCard.w - 8.0f * (2 - i)) / (3 - i);
+			const float TileW = (StatsCard.w - 8.0f * (3 - i)) / (4 - i);
 			StatsCard.VSplitLeft(TileW, &Tile, &StatsCard);
-			if(i < 2)
+			if(i < 3)
 				StatsCard.VSplitLeft(8.0f, nullptr, &StatsCard);
 			const float HoverA = Ui()->StateAnim(&s_aStatKeys[i], Ui()->MouseHovered(&Tile), 10.0f);
 			CCStyle::DrawCard(Tile, CCStyle::CARD_ROUNDING, CCStyle::CARD, 0.5f * HoverA);
@@ -244,7 +245,7 @@ void CMenus::RenderSettingsPlayer(CUIRect MainView)
 			Props.m_EllipsisAtEnd = true;
 			Props.SetColor(CCStyle::TEXT);
 			Inner.y -= 3.0f * HoverA; // lifts a little on hover
-			Ui()->DoLabel(&Inner, apValues[i], i == 2 ? 15.0f : 22.0f, TEXTALIGN_ML, Props);
+			Ui()->DoLabel(&Inner, apValues[i], i == 3 ? 15.0f : 22.0f, TEXTALIGN_ML, Props);
 		}
 	}
 
@@ -260,12 +261,6 @@ void CMenus::RenderSettingsPlayer(CUIRect MainView)
 			CUIRect Title;
 			Header.VSplitLeft(80.0f, &Title, &Header);
 			DrawSmallTitle(Ui(), &Title, Localize("Playtime"), 14.0f);
-			char aDate[64];
-			str_timestamp_ex(Playtime.Since(), aDate, sizeof(aDate), "%d.%m.%y");
-			str_format(aBuf, sizeof(aBuf), Localize("Counted on this computer since %s"), aDate);
-			SLabelProperties Props;
-			Props.SetColor(CCStyle::ACCENT_TEXT.WithAlpha(0.7f));
-			Ui()->DoLabel(&Header, aBuf, 10.0f, TEXTALIGN_ML, Props);
 		}
 
 		CUIRect Ring, Tiles, MapList;

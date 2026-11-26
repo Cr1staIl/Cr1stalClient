@@ -1951,6 +1951,39 @@ Server filter
 Friends
 == 
 
+Statistics
+== 
+
+Search a player
+== 
+
+Hours
+== 
+
+Maps
+== 
+
+Points
+== 
+
+Loading...
+== 
+
+No players found
+== 
+
+In game
+== 
+
+Maps finished
+== 
+
+Playtime
+== 
+
+Most played maps
+== 
+
 [Demo playback]
 Live
 == 
@@ -2754,9 +2787,6 @@ Small move size
 Normal DDNet input
 == 
 
-Only changes what you see, not what the server gets
-== 
-
 Antiping
 == 
 
@@ -2863,9 +2893,6 @@ Ice
 == 
 
 Font
-== 
-
-The font changes all text in the game right away
 == 
 
 Normal
@@ -3126,9 +3153,6 @@ Island size
 Distance from the top
 == 
 
-A long title slides from side to side
-== 
-
 Optimization
 == 
 
@@ -3148,9 +3172,6 @@ Strong mode: your PC was under 144 FPS
 == 
 
 Light mode: your PC is fast
-== 
-
-Turning it off brings your settings back
 == 
 
 Warn when you are the last one alive
@@ -3348,9 +3369,6 @@ Key
 Configs
 == 
 
-Save all your settings and binds under a name and switch between them
-== 
-
 No saved configs yet
 == 
 
@@ -3529,9 +3547,6 @@ Hold Shift and press Q or E: save wheel
 == 
 
 Middle mouse button: marker for your team
-== 
-
-Others with Cr1stal Client see pictures and markers
 == 
 
 Keys
@@ -3769,19 +3784,7 @@ Graphics card
 Player info change cooldown
 == 
 
-In game
-== 
-
-Maps played
-== 
-
 Favourite map
-== 
-
-Playtime
-== 
-
-Counted on this computer since %s
 == 
 
 Most time spent on maps

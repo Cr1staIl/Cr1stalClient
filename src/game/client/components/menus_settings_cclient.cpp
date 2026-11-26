@@ -422,8 +422,6 @@ void CMenus::RenderSettingsCClient(CUIRect MainView)
 		default:
 			C.Note(Localize("Normal DDNet input"));
 		}
-		if(g_Config.m_CcFastInput == 1 || g_Config.m_CcFastInput == 2)
-			C.Note(Localize("Only changes what you see, not what the server gets"));
 		C.EndCard();
 	}
 
@@ -539,7 +537,6 @@ void CMenus::RenderSettingsCClient(CUIRect MainView)
 			}
 			Ui()->DoLabel(&Name, CCClient::FontDisplayName(g_Config.m_CcFont), 12.0f, TEXTALIGN_MC);
 			C.Gap(2.0f);
-			C.Note(Localize("The font changes all text in the game right away"));
 		}
 		{
 			static CButtonContainer s_aHammerButtons[3];
@@ -696,7 +693,6 @@ void CMenus::RenderSettingsCClient(CUIRect MainView)
 			C.Check(&g_Config.m_CcMusicIslandCover, Localize("Show cover picture"));
 			C.Slider(&g_Config.m_CcMusicIslandSize, Localize("Island size"), 50, 200, "%");
 			C.Slider(&g_Config.m_CcMusicIslandY, Localize("Distance from the top"), 0, 250);
-			C.Note(Localize("A long title slides from side to side"));
 		}
 		C.EndCard();
 	}
@@ -727,8 +723,6 @@ void CMenus::RenderSettingsCClient(CUIRect MainView)
 		C.Note(aBuf, ColorRGBA(0.55f, 0.9f, 0.65f, 1.0f));
 		if(g_Config.m_CcOptimize)
 			C.Note(GameClient()->m_CClient.OptimizeStrong() ? Localize("Strong mode: your PC was under 144 FPS") : Localize("Light mode: your PC is fast"));
-		else
-			C.Note(Localize("Turning it off brings your settings back"));
 		C.EndCard();
 	}
 
@@ -848,7 +842,6 @@ void CMenus::RenderSettingsCClient(CUIRect MainView)
 	{
 		CCcColumn &C = Col(CARD_CONFIGS);
 		C.BeginCard(CARD_CONFIGS, Localize("Configs"));
-		C.Note(Localize("Save all your settings and binds under a name and switch between them"));
 		static std::vector<SCcConfigFile> s_vConfigs;
 		static bool s_Scanned = false;
 		static int s_Selected = -1;
@@ -1028,7 +1021,6 @@ void CMenus::RenderSettingsCClient(CUIRect MainView)
 		C.BeginCard(CARD_SAVES, Localize("Saves and markers"));
 		C.Note(Localize("Hold Shift and press Q or E: save wheel"), CCStyle::TEXT);
 		C.Note(Localize("Middle mouse button: marker for your team"), CCStyle::TEXT);
-		C.Note(Localize("Others with Cr1stal Client see pictures and markers"));
 		C.Gap(4.0f);
 		C.Caption(Localize("Keys"));
 		{
