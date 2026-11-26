@@ -3923,3 +3923,21 @@ Most played maps
 
 Virtual joystick which only aims and moves the mouse pointer relatively.
 == 
+
+Best for saving teammates
+== Лучшее для сейва тиммейтов
+
+Without antiping other tees are drawn where they were a ping ago, so hooking them feels late
+== Без антипинга другие ти рисуются там, где были пинг назад, и хук по ним ощущается с задержкой
+
+Use the inputs others send early
+== Учитывать ранние инпуты других
+
+Fast input for other tees too
+== Fast input и для других ти
+
+Others are shown on the same future tick as you, so saving has no delay
+== Другие показываются на том же тике, что и ты, сейв без задержки
+
+Floating signs in the menu background
+== Летающие символы на фоне меню

@@ -429,16 +429,38 @@ void CMenus::RenderSettingsCClient(CUIRect MainView)
 	{
 		CCcColumn &C = Col(CARD_ANTIPING);
 		C.BeginCard(CARD_ANTIPING, Localize("Antiping"));
+		{
+			// one click for gores: other tees, your hook and your tee all in the same moment
+			static CButtonContainer s_GoresPreset;
+			if(C.Button(&s_GoresPreset, Localize("Best for saving teammates")))
+			{
+				g_Config.m_ClAntiPing = 1;
+				g_Config.m_ClAntiPingPlayers = 1;
+				g_Config.m_ClAntiPingPercent = 100;
+				g_Config.m_ClAntiPingSmooth = 0;
+				g_Config.m_ClAntiPingPreInput = 1;
+				g_Config.m_CcFastInputOthers = 1;
+				g_Config.m_CcAntiPingImproved = g_Config.m_CcFastInput ? 0 : 1;
+				g_Config.m_CcAntiPingStableDirection = 1;
+				g_Config.m_CcUnpredOthersInFreeze = 0;
+				g_Config.m_ClPredictionMargin = 10;
+			}
+			C.Note(Localize("Without antiping other tees are drawn where they were a ping ago, so hooking them feels late"));
+		}
 		C.Check(&g_Config.m_ClAntiPing, Localize("Enable antiping"), Localize("Predicts other players and projectiles so the game feels like a lower ping"));
 		if(g_Config.m_ClAntiPing)
 		{
 			C.CheckValue(&g_Config.m_ClAntiPingPlayers, Localize("Predict other players"), 1);
+			C.Check(&g_Config.m_ClAntiPingPreInput, Localize("Use the inputs others send early"));
+			if(g_Config.m_CcFastInput)
+				C.Check(&g_Config.m_CcFastInputOthers, Localize("Fast input for other tees too"), Localize("Others are shown on the same future tick as you, so saving has no delay"));
 			C.Check(&g_Config.m_ClAntiPingSmooth, Localize("Smooth other players"));
 			C.Check(&g_Config.m_ClAntiPingGrenade, Localize("Predict grenades"));
 			C.Check(&g_Config.m_ClAntiPingWeapons, Localize("Predict weapons"));
 			C.Slider(&g_Config.m_ClAntiPingPercent, Localize("Prediction strength"), 0, 100, "%");
 		}
 		C.CheckValue(&g_Config.m_ClPredictFreeze, Localize("Predict freeze"), 1);
+		C.Slider(&g_Config.m_ClPredictionMargin, Localize("Prediction margin"), 1, 100, "ms");
 		C.Gap(4.0f);
 		C.Caption(Localize("Smooth antiping (TClient)"));
 		C.Check(&g_Config.m_CcAntiPingImproved, Localize("New antiping smoothing"), Localize("Trusts the prediction of other tees only as far as they moved steadily before"));
@@ -611,6 +633,7 @@ void CMenus::RenderSettingsCClient(CUIRect MainView)
 		CCcColumn &C = Col(CARD_LOOKS);
 		C.BeginCard(CARD_LOOKS, Localize("Looks"));
 		C.Check(&g_Config.m_CrNeonBackground, Localize("Neon menu background"));
+		C.Check(&g_Config.m_CcMenuSymbols, Localize("Floating signs in the menu background"));
 		C.Gap(4.0f);
 		C.Caption(Localize("Cr1stal players"));
 		C.Check(&g_Config.m_CcClientBadge, Localize("Client avatar before their names"), Localize("In the scoreboard and above the tees"));

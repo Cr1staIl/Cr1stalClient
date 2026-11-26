@@ -2949,6 +2949,12 @@ Normal DDNet input
 Antiping
 == 
 
+Best for saving teammates
+== 
+
+Without antiping other tees are drawn where they were a ping ago, so hooking them feels late
+== 
+
 Enable antiping
 == 
 
@@ -2956,6 +2962,15 @@ Predicts other players and projectiles so the game feels like a lower ping
 == 
 
 Predict other players
+== 
+
+Use the inputs others send early
+== 
+
+Fast input for other tees too
+== 
+
+Others are shown on the same future tick as you, so saving has no delay
 == 
 
 Smooth other players
@@ -3163,6 +3178,9 @@ Looks
 == 
 
 Neon menu background
+== 
+
+Floating signs in the menu background
 == 
 
 Cr1stal players

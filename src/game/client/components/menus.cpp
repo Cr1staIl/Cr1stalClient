@@ -2565,7 +2565,71 @@ void CMenus::RenderNeonBackground()
 	Graphics()->QuadsEnd();
 	Graphics()->BlendNormal();
 
+	RenderMenuSymbols(ScreenWidth, ScreenHeight);
 	Ui()->MapScreen();
+}
+
+// C-Client: the signs of the client (crosses and small diamonds) slowly float up and fade out
+void CMenus::RenderMenuSymbols(float ScreenWidth, float ScreenHeight)
+{
+	if(!g_Config.m_CcMenuSymbols)
+		return;
+	const float Time = Client()->GlobalTime();
+	const ColorRGBA Base = CCStyle::Mix(CCStyle::ACCENT_TEXT, ColorRGBA(1.0f, 1.0f, 1.0f, 1.0f), 0.25f);
+	constexpr int Num = 22;
+	for(int i = 0; i < Num; i++)
+	{
+		const float Speed = 3.0f + 5.0f * NeonHash(i, 31);
+		const float Range = ScreenHeight * 1.1f;
+		const float Py = ScreenHeight + 12.0f - std::fmod(NeonHash(i, 32) * Range + Time * Speed, Range);
+		const float Px = NeonHash(i, 33) * ScreenWidth + 10.0f * std::sin(Time * (0.25f + 0.2f * NeonHash(i, 34)) + i * 1.7f);
+		// fully there in the lower half, gone towards the top
+		const float Fade = std::clamp((Py - ScreenHeight * 0.15f) / (ScreenHeight * 0.45f), 0.0f, 1.0f) * std::clamp((ScreenHeight + 12.0f - Py) / 20.0f, 0.0f, 1.0f);
+		const float Pulse = 0.75f + 0.25f * std::sin(Time * 2.0f + i * 2.3f);
+		const float Size = 4.0f + 5.0f * NeonHash(i, 35);
+		const float Alpha = 0.45f * Fade * Pulse;
+		if(Alpha <= 0.01f)
+			continue;
+		const float Spin = std::sin(Time * 0.5f + i) * 0.35f;
+		if(i % 3 != 0)
+		{
+			// the cross of the name, with a soft glow
+			const char *pCross = "\xE2\x99\xB1";
+			const float W = TextRender()->TextWidth(Size, pCross);
+			TextRender()->TextOutlineColor(0.0f, 0.0f, 0.0f, 0.0f);
+			TextRender()->TextColor(Base.WithAlpha(Alpha * 0.25f));
+			for(int g = 0; g < 4; g++)
+			{
+				const vec2 Off = direction(g * pi / 2.0f + Spin) * 0.6f;
+				TextRender()->Text(Px - W / 2.0f + Off.x, Py - Size / 2.0f + Off.y, Size, pCross, -1.0f);
+			}
+			TextRender()->TextColor(Base.WithAlpha(Alpha));
+			TextRender()->Text(Px - W / 2.0f, Py - Size / 2.0f, Size, pCross, -1.0f);
+			TextRender()->TextColor(TextRender()->DefaultTextColor());
+			TextRender()->TextOutlineColor(TextRender()->DefaultTextOutlineColor());
+		}
+		else
+		{
+			// a small turning diamond outline
+			const float R = Size * 0.45f;
+			const vec2 C(Px, Py);
+			const vec2 aCorners[4] = {C + direction(Spin - pi / 2.0f) * R, C + direction(Spin) * R * 0.75f, C + direction(Spin + pi / 2.0f) * R, C + direction(Spin + pi) * R * 0.75f};
+			Graphics()->TextureClear();
+			Graphics()->BlendAdditive();
+			Graphics()->QuadsBegin();
+			Graphics()->SetColor(Base.WithAlpha(Alpha));
+			for(int e = 0; e < 4; e++)
+			{
+				const vec2 A = aCorners[e], B = aCorners[(e + 1) % 4];
+				const vec2 Dir = normalize(B - A);
+				const vec2 Out = vec2(Dir.y, -Dir.x) * 0.3f;
+				const IGraphics::CFreeformItem Edge(A - Out, A + Out, B - Out, B + Out);
+				Graphics()->QuadsDrawFreeform(&Edge, 1);
+			}
+			Graphics()->QuadsEnd();
+			Graphics()->BlendNormal();
+		}
+	}
 }
 
 void CMenus::RenderBackground()

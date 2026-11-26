@@ -2770,6 +2770,28 @@ void CGameClient::OnPredict()
 				}
 		}
 
+		// C-Client (like TClient's "fast input others"): remember where the other tees are on the
+		// same future tick as your own tee, so your hook and them stay in the same moment
+		if(FastInputTicks > 0 && (Tick == FinalTickSelf - 1 || Tick == FinalTickSelf))
+		{
+			for(int i = 0; i < MAX_CLIENTS; i++)
+			{
+				CCharacter *pChar = m_PredictedWorld.GetCharacterById(i);
+				if(!pChar)
+				{
+					m_aClients[i].m_HasFastPos = false;
+					continue;
+				}
+				if(Tick == FinalTickSelf - 1)
+					m_aClients[i].m_FastPrevPos = pChar->Core()->m_Pos;
+				else
+				{
+					m_aClients[i].m_FastPos = pChar->Core()->m_Pos;
+					m_aClients[i].m_HasFastPos = true;
+				}
+			}
+		}
+
 		// check if we want to trigger effects
 		if(!ExtraTick && Tick > m_aLastNewPredictedTick[Dummy])
 		{
@@ -4107,6 +4129,8 @@ void CGameClient::UpdateRenderedCharacters()
 				// C-Client (from TClient)
 				if(g_Config.m_CcAntiPingImproved && m_aClients[i].m_ValidAntipingSmooth)
 					Pos = mix(m_aClients[i].m_PrevImprovedPredPos, m_aClients[i].m_ImprovedPredPos, Client()->PredIntraGameTick(g_Config.m_ClDummy));
+				else if(g_Config.m_CcFastInputOthers && m_Controls.FastInputTicks() > 0 && m_aClients[i].m_HasFastPos)
+					Pos = mix(m_aClients[i].m_FastPrevPos, m_aClients[i].m_FastPos, Client()->PredIntraGameTick(g_Config.m_ClDummy));
 				if(g_Config.m_CcRemoveAnti && Client()->m_IsLocalFrozen)
 					Pos = GetFreezePos(i);
 				if(g_Config.m_CcShowOthersGhosts && g_Config.m_CcSwapGhosts && !(m_aClients[i].m_FreezeEnd > 0 && g_Config.m_CcHideFrozenGhosts))

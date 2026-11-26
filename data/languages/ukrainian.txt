@@ -3216,6 +3216,21 @@ Also behind the map in game
 Neon
 == 
 
+Best for saving teammates
+== 
+
+Without antiping other tees are drawn where they were a ping ago, so hooking them feels late
+== 
+
+Use the inputs others send early
+== 
+
+Fast input for other tees too
+== 
+
+Others are shown on the same future tick as you, so saving has no delay
+== 
+
 Smooth antiping (TClient)
 == 
 
@@ -3331,6 +3346,9 @@ Fake CTF flags
 == 
 
 Moving tiles in entities
+== 
+
+Floating signs in the menu background
 == 
 
 Cr1stal players

@@ -604,6 +604,7 @@ protected:
 	char m_aCcMenuBgLoaded[64] = "";
 	float m_CcMenuBgAspect = 16.0f / 9.0f;
 	bool RenderCcMenuBackgroundImage();
+	void RenderMenuSymbols(float ScreenWidth, float ScreenHeight);
 	void ClearCcBackgrounds();
 
 	// found in menus_settings_appearance.cpp

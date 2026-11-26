@@ -561,6 +561,10 @@ public:
 		float m_Uncertainty = 0.0f;
 		vec2 m_ImprovedPredPos = vec2(0.0f, 0.0f);
 		vec2 m_PrevImprovedPredPos = vec2(0.0f, 0.0f);
+		// C-Client: position on the fast input tick (fast input others)
+		vec2 m_FastPos = vec2(0.0f, 0.0f);
+		vec2 m_FastPrevPos = vec2(0.0f, 0.0f);
+		bool m_HasFastPos = false;
 		bool m_ValidAntipingSmooth = false;
 
 		vec2 m_aPredPos[200];

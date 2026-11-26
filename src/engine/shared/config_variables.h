@@ -673,6 +673,7 @@ MACRO_CONFIG_COL(ClBackgroundColor, cl_background_color, 128, CFGFLAG_CLIENT | C
 // Cr1stal Client (C-Client) settings
 MACRO_CONFIG_INT(CcFastInput, cc_fast_input, 0, 0, 3, CFGFLAG_CLIENT | CFGFLAG_SAVE, "C-Client input mode: 0 = off, 1 = Fast Input, 2 = Sheylun Input (tick based), 3 = Delta Input")
 MACRO_CONFIG_INT(CcFastInputAmount, cc_fast_input_amount, 20, 20, 100, CFGFLAG_CLIENT | CFGFLAG_SAVE, "C-Client: how far ahead fast input predicts your tee, in milliseconds (20 = 1 tick)")
+MACRO_CONFIG_INT(CcFastInputOthers, cc_fast_input_others, 1, 0, 1, CFGFLAG_CLIENT | CFGFLAG_SAVE, "C-Client: other tees are shown on the same fast input tick as yours (needs antiping)")
 MACRO_CONFIG_INT(CcRainbowTee, cc_rainbow_tee, 0, 0, 1, CFGFLAG_CLIENT | CFGFLAG_SAVE, "C-Client: rainbow colors for your own tee (only you see it)")
 MACRO_CONFIG_INT(CcRainbowSpeed, cc_rainbow_speed, 100, 10, 500, CFGFLAG_CLIENT | CFGFLAG_SAVE, "C-Client: speed of the rainbow tee in percent")
 MACRO_CONFIG_INT(CcCursorScale, cc_cursor_scale, 100, 50, 300, CFGFLAG_CLIENT | CFGFLAG_SAVE, "C-Client: size of the in-game cursor in percent")
@@ -703,6 +704,7 @@ MACRO_CONFIG_INT(CcScoreboardScale, cc_scoreboard_scale, 100, 50, 100, CFGFLAG_C
 MACRO_CONFIG_INT(CcWheelScale, cc_wheel_scale, 100, 50, 100, CFGFLAG_CLIENT | CFGFLAG_SAVE, "C-Client: emote wheel size in percent")
 MACRO_CONFIG_INT(CcUiScale, cc_ui_scale, 100, 75, 110, CFGFLAG_CLIENT | CFGFLAG_SAVE, "C-Client: size of the whole interface in percent")
 MACRO_CONFIG_INT(CcTheme, cc_theme, 0, 0, 5, CFGFLAG_CLIENT | CFGFLAG_SAVE, "C-Client: interface color, 0 crimson, 1 ocean, 2 violet, 3 emerald, 4 gold, 5 ice")
+MACRO_CONFIG_INT(CcMenuSymbols, cc_menu_symbols, 1, 0, 1, CFGFLAG_CLIENT | CFGFLAG_SAVE, "C-Client: crosses and small diamonds float up in the menu background")
 MACRO_CONFIG_INT(CcFlyingNamePlates, cc_flying_name_plates, 0, 0, 1, CFGFLAG_CLIENT | CFGFLAG_SAVE, "C-Client: name plates fly after the tee on a soft spring")
 MACRO_CONFIG_INT(CcFlyingNamePlatesSpeed, cc_flying_name_plates_speed, 50, 1, 100, CFGFLAG_CLIENT | CFGFLAG_SAVE, "C-Client: how fast the flying name plates catch up")
 MACRO_CONFIG_INT(CcCursorTrail, cc_cursor_trail, 0, 0, 1, CFGFLAG_CLIENT | CFGFLAG_SAVE, "C-Client: a fading trail behind the cursor in game")
