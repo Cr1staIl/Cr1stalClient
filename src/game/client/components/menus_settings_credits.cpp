@@ -8,30 +8,11 @@
 
 void CMenus::RenderSettingsCredits(CUIRect MainView)
 {
+	// C-Client: only the author of the client and the game it is built on
 	static constexpr const char *const CREDITS =
 		"\n"
-		"Help and code by eeeee, HMH, east, CookieMichal, Learath2, "
-		"Savander, laxa, Tobii, BeaR, Wohoo, nuborn, timakro, Shiki, "
-		"trml, Soreu, hi_leute_gll, Lady Saavik, Chairn, heinrich5991, "
-		"swick, oy, necropotame, Ryozuki, Redix, d3fault, marcelherd, "
-		"BannZay, ACTom, SiuFuWong, PathosEthosLogos, TsFreddie, "
-		"Jupeyy, noby, ChillerDragon, ZombieToad, weez15, z6zzz, "
-		"Piepow, QingGo, RafaelFF, sctt, jao, daverck, fokkonaut, "
-		"Bojidar, FallenKN, ardadem, archimede67, sirius1242, Aerll, "
-		"trafilaw, Zwelf, Patiga, Konsti, ElXreno, MikiGamer, "
-		"Fireball, Banana090, axblk, yangfl, Kaffeine, Zodiac, "
-		"c0d3d3v, GiuCcc, Ravie, Robyt3, simpygirl, Tater, Cellegen, "
-		"srdante, Nouaa, Voxel, luk51, Vy0x2, Avolicious, louis, "
-		"Marmare314, hus3h, ArijanJ, tarunsamanta2k20, Possseidon, "
-		"+KZ, Teero, furo, dobrykafe, Moiman, JSaurusRex, "
-		"Steinchen, ewancg, gerdoe-jr, melon, KebsCS, bencie, "
-		"DynamoFox, MilkeeyCat, iMilchshake, SchrodingerZhu, "
-		"catseyenebulous, Rei-Tw, Matodor, Emilcha, art0007i, SollyBunny, "
-		"0xfaulty, AssassinTee, Pioooooo, ASKLL-STAR, K1nop1c0, "
-		"Bamcane, qxdFox, ZerolAcqua, swarfeya, Scrumplex, 12944qwerty, "
-		"Pointer31, ProfSapphire, 0xpixty, GlimmeR, horoni & others\n"
-		"\n"
-		"Based on DDRace by the DDRace developers,";
+		"Cr\xE2\x99\xB1stal Client is made by Cr\xE2\x99\xB1stal.\n"
+		"\n";
 	const float FontSize = 16.0f;
 
 	static CScrollRegion s_ScrollRegion;
@@ -77,11 +58,6 @@ void CMenus::RenderSettingsCredits(CUIRect MainView)
 		Ui()->DoLabel(&Line, pSuffix, FontSize, TEXTALIGN_TL);
 	};
 
-	static char s_StaffLinkId;
-	RenderCreditsLink(&s_StaffLinkId, "DDNet is run by the ", "DDNet staff", ".", "https://ddnet.org/staff");
-	static char s_MapsLinkId;
-	RenderCreditsLink(&s_MapsLinkId, "", "Great maps", " and many ideas from the community.", "https://ddnet.org/releases/");
-
 	CTextCursor Cursor;
 	Cursor.m_FontSize = FontSize;
 	Cursor.m_LineWidth = MainView.w;
@@ -100,8 +76,8 @@ void CMenus::RenderSettingsCredits(CUIRect MainView)
 		TextRender()->DeleteTextContainer(CreditsTextContainer);
 	}
 
-	static char s_TeeworldsLinkId;
-	RenderCreditsLink(&s_TeeworldsLinkId, "which is a mod of ", "Teeworlds", " by the Teeworlds developers.", "https://teeworlds.com/");
+	static char s_DDNetLinkId;
+	RenderCreditsLink(&s_DDNetLinkId, "Built on ", "DDNet", ".", "https://ddnet.org/");
 
 	s_ScrollRegion.End();
 }
