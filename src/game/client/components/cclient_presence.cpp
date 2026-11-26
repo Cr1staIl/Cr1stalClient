@@ -474,10 +474,14 @@ void CCPresence::OnUpdate()
 
 void CCPresence::RenderBadge(vec2 Center, float Size, float Alpha) const
 {
-	// the client icon, like a small avatar of Cr1stal Client
-	const IGraphics::CTextureHandle Icon = GameClient()->m_CClient.IconTexture();
-	if(!Icon.IsValid() || Icon.IsNullTexture())
+	// the client sign (no plate behind it) like a small avatar
+	const IGraphics::CTextureHandle Badge = GameClient()->m_CClient.BadgeTexture();
+	if(!Badge.IsValid() || Badge.IsNullTexture())
 		return;
-	Graphics()->TextureSet(Icon);
-	CCStyle::TexturedRoundRect(Graphics(), Center.x - Size / 2.0f, Center.y - Size / 2.0f, Size, Size, Size * 0.22f, ColorRGBA(1.0f, 1.0f, 1.0f, Alpha));
+	Graphics()->TextureSet(Badge);
+	Graphics()->QuadsBegin();
+	Graphics()->SetColor(1.0f, 1.0f, 1.0f, Alpha);
+	const IGraphics::CQuadItem Quad(Center.x - Size / 2.0f, Center.y - Size / 2.0f, Size, Size);
+	Graphics()->QuadsDrawTL(&Quad, 1);
+	Graphics()->QuadsEnd();
 }

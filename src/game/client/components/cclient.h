@@ -80,6 +80,7 @@ public:
 	void RenderAura(vec2 Pos);
 	IGraphics::CTextureHandle AuraTexture(int Index) const { return m_aAuraTextures[Index]; }
 	IGraphics::CTextureHandle IconTexture() const { return m_IconTexture; }
+	IGraphics::CTextureHandle BadgeTexture() const { return m_BadgeTexture; }
 
 	// music island at the top of the screen (called by the HUD, HUD coordinates)
 	void RenderMusicIsland(float ScreenWidth);
@@ -113,6 +114,7 @@ private:
 	CMediaWatcher::SInfo m_MediaInfo;
 	IGraphics::CTextureHandle m_CoverTexture;
 	IGraphics::CTextureHandle m_IconTexture;
+	IGraphics::CTextureHandle m_BadgeTexture; // the client sign without its plate, next to names
 	int m_CoverVersion = -1;
 	float m_NextMediaPoll = 0.0f;
 	float m_IslandWidth = 0.0f; // animated

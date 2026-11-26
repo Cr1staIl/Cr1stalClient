@@ -169,6 +169,7 @@ void CCClient::OnInit()
 	for(int i = 0; i < NUM_AURAS; i++)
 		m_aAuraTextures[i] = Graphics()->LoadTexture(s_apAuraFiles[i], IStorage::TYPE_ALL);
 	m_IconTexture = Graphics()->LoadTexture("cclient/icon.png", IStorage::TYPE_ALL);
+	m_BadgeTexture = Graphics()->LoadTexture("cclient/badge.png", IStorage::TYPE_ALL);
 	ApplyFont();
 	m_Media.Start();
 

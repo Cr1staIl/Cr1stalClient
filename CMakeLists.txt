@@ -1359,6 +1359,7 @@ set(EXPECTED_DATA
   cclient/aura_cross_ring.png
   cclient/aura_gothic.png
   cclient/aura_holy.png
+  cclient/badge.png
   cclient/icon.png
   cclient/save_hammer.png
   cclient/save_hook_down.png
