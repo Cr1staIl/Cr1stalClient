@@ -210,8 +210,11 @@ CClientIndicator::CClientIndicator()
 	OnReset();
 }
 
+// Cr1stal Client: the indicator of the original client talks to that client's servers and shows its
+// logo. It is switched off completely; Cr1stal Client has its own presence (CCPresence).
 void CClientIndicator::OnInit()
 {
+	return;
 	NormalizeBestClientIndicatorConfig();
 	if(m_ClientInstanceId == UUID_ZEROED)
 		m_ClientInstanceId = RandomUuid();
@@ -226,6 +229,7 @@ void CClientIndicator::OnReset()
 
 void CClientIndicator::OnStateChange(int NewState, int OldState)
 {
+	return;
 	(void)OldState;
 	if(NewState == IClient::STATE_OFFLINE)
 	{
@@ -249,6 +253,7 @@ void CClientIndicator::OnShutdown()
 
 bool CClientIndicator::IsPlayerBestClient(int ClientId) const
 {
+	return false;
 	if(Client()->State() != IClient::STATE_ONLINE)
 		return false;
 	for(const int LocalId : GameClient()->m_aLocalIds)
@@ -288,6 +293,7 @@ bool CClientIndicator::IsPlayerBestClient(int ClientId) const
 
 bool CClientIndicator::IsPlayerDeveloper(int ClientId) const
 {
+	return false;
 	if(Client()->State() != IClient::STATE_ONLINE)
 		return false;
 	if(m_DeveloperClientIds.find(ClientId) != m_DeveloperClientIds.end())
@@ -323,6 +329,7 @@ bool CClientIndicator::IsPlayerDeveloper(int ClientId) const
 
 bool CClientIndicator::IsPlayerFakeVersion(int ClientId) const
 {
+	return false;
 	if(!IsPlayerBestClient(ClientId))
 		return false;
 
@@ -365,6 +372,7 @@ bool CClientIndicator::IsPlayerFakeVersion(int ClientId) const
 
 bool CClientIndicator::IsPlayerLightEdition(int ClientId) const
 {
+	return false;
 	if(Client()->State() != IClient::STATE_ONLINE)
 		return false;
 	for(const int LocalId : GameClient()->m_aLocalIds)
@@ -405,6 +413,7 @@ bool CClientIndicator::IsPlayerLightEdition(int ClientId) const
 
 bool CClientIndicator::GetPlayerVersionLabel(int ClientId, char *pVersion, int VersionSize) const
 {
+	return false;
 	if(!pVersion || VersionSize <= 0)
 		return false;
 	pVersion[0] = '\0';
@@ -518,6 +527,7 @@ void CClientIndicator::RefreshToken(bool Force)
 
 void CClientIndicator::OnUpdate()
 {
+	return;
 	const bool PresenceEnabled = IsPresenceEnabled();
 	const int64_t Now = time_get();
 	const int64_t PerfStart = g_Config.m_DbgClientIndicator >= 2 ? Now : 0;

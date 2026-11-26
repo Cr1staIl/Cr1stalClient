@@ -305,9 +305,9 @@ void CUpdater::Init()
 	m_pStorage = Kernel()->RequestInterface<IStorage>();
 	m_pHttp = Kernel()->RequestInterface<IHttp>();
 
-#if !defined(CONF_HEADLESS_CLIENT) && (defined(CONF_FAMILY_WINDOWS) || defined(CONF_PLATFORM_LINUX))
-	m_AutoCheckPending = true;
-#endif
+	// Cr1stal Client: the updater of the original client looked at the releases of that client
+	// and would replace this one. No automatic check until Cr1stal Client has its own updater.
+	m_AutoCheckPending = false;
 }
 
 void CUpdater::SetCurrentState(EUpdaterState NewState)
@@ -478,6 +478,8 @@ bool CUpdater::LaunchApplyScriptAndQuit()
 
 void CUpdater::CheckForUpdate()
 {
+	// Cr1stal Client: no update source yet (see Init)
+	return;
 	const EUpdaterState State = GetCurrentState();
 	if(State == IUpdater::GETTING_MANIFEST || State == IUpdater::DOWNLOADING)
 		return;
@@ -496,6 +498,8 @@ void CUpdater::CheckForUpdate()
 
 void CUpdater::InitiateUpdate()
 {
+	// Cr1stal Client: no update source yet (see Init)
+	return;
 	const EUpdaterState State = GetCurrentState();
 	if(State == IUpdater::GETTING_MANIFEST || State == IUpdater::DOWNLOADING)
 		return;

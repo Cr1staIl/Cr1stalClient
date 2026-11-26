@@ -1,4 +1,5 @@
 /* Copyright © 2026 BestProject Team */
+#include <game/client/cclient_version.h>
 #include <engine/shared/config.h>
 #include <engine/storage.h>
 #include <engine/textrender.h>
@@ -4685,31 +4686,16 @@ void CMenus::RenderSettingsBestClientInfo(CUIRect MainView)
 	RightView.VSplitRight(MarginSmall, &RightView, nullptr);
 	LeftView.HSplitMid(&LeftView, &LowerLeftView, 0.0f);
 
-	// ── BestClient Links ───────────────────────────────────────────────────
+	// ── Cr1stal Client ─────────────────────────────────────────────────────
 	LeftView.HSplitTop(HeadlineHeight, &Label, &LeftView);
-	Ui()->DoLabel(&Label, BcLocalize("BestClient Links"), HeadlineFontSize, TEXTALIGN_ML);
+	Ui()->DoLabel(&Label, Localize("Cr\xe2\x99\xb1stal Client"), HeadlineFontSize, TEXTALIGN_ML);
 	LeftView.HSplitTop(MarginSmall, nullptr, &LeftView);
-
-	static CButtonContainer s_DiscordButton, s_WebsiteButton, s_TelegramButton;
-	CUIRect ButtonLeft, ButtonRight;
-
-	LeftView.HSplitTop(LineSize * 2.0f, &Button, &LeftView);
-	Button.VSplitMid(&ButtonLeft, &ButtonRight, MarginSmall);
-	if(DoButtonLineSize_Menu(&s_DiscordButton, BcLocalize("Discord"), 0, &ButtonLeft, LineSize, false, nullptr, IGraphics::CORNER_ALL, 5.0f, 0.0f, ColorRGBA(0.0f, 0.0f, 0.0f, 0.25f)))
-		Client()->ViewLink("https://discord.gg/bestclient");
-	if(DoButtonLineSize_Menu(&s_TelegramButton, BcLocalize("Telegram"), 0, &ButtonRight, LineSize, false, nullptr, IGraphics::CORNER_ALL, 5.0f, 0.0f, ColorRGBA(0.0f, 0.0f, 0.0f, 0.25f)))
-		Client()->ViewLink("https://t.me/bestddnet");
-
-	LeftView.HSplitTop(MarginSmall, nullptr, &LeftView);
-	LeftView.HSplitTop(LineSize * 2.0f, &Button, &LeftView);
-	Button.VSplitMid(&ButtonLeft, &ButtonRight, MarginSmall);
-	if(DoButtonLineSize_Menu(&s_WebsiteButton, BcLocalize("Website"), 0, &ButtonLeft, LineSize, false, nullptr, IGraphics::CORNER_ALL, 5.0f, 0.0f, ColorRGBA(0.0f, 0.0f, 0.0f, 0.25f)))
-		Client()->ViewLink("https://bestclient.fun");
-#if defined(CONF_AUTOUPDATE)
-	static CButtonContainer s_CheckUpdateButton;
-	if(DoButtonLineSize_Menu(&s_CheckUpdateButton, BcLocalize("Check update"), 0, &ButtonRight, LineSize, false, nullptr, IGraphics::CORNER_ALL, 5.0f, 0.0f, ColorRGBA(0.0f, 0.0f, 0.0f, 0.25f)))
-		Updater()->CheckForUpdate();
-#endif
+	LeftView.HSplitTop(LineSize, &Label, &LeftView);
+	{
+		char aBuild[64];
+		str_format(aBuild, sizeof(aBuild), "%s %d", Localize("Build"), CCLIENT_BUILD);
+		Ui()->DoLabel(&Label, aBuild, 14.0f, TEXTALIGN_ML);
+	}
 
 	// ── Config Files (anchored to the bottom of the left column) ──────────
 	LeftView = LowerLeftView;
@@ -4724,61 +4710,27 @@ void CMenus::RenderSettingsBestClientInfo(CUIRect MainView)
 	BestClientConfig = Button;
 
 	static CButtonContainer s_Config;
-	if(DoButtonLineSize_Menu(&s_Config, BcLocalize("BestClient Settings"), 0, &BestClientConfig, LineSize, false, nullptr, IGraphics::CORNER_ALL, 5.0f, 0.0f, ColorRGBA(0.0f, 0.0f, 0.0f, 0.25f)))
+	if(DoButtonLineSize_Menu(&s_Config, Localize("Cr\xe2\x99\xb1stal Client settings"), 0, &BestClientConfig, LineSize, false, nullptr, IGraphics::CORNER_ALL, 5.0f, 0.0f, ColorRGBA(0.0f, 0.0f, 0.0f, 0.25f)))
 	{
 		Storage()->GetCompletePath(IStorage::TYPE_SAVE, s_aConfigDomains[ConfigDomain::BESTCLIENT].m_aConfigPath, aBuf, sizeof(aBuf));
 		Client()->ViewFile(aBuf);
 	}
 
-	// ── BestClient Developers ─────────────────────────────────────────────
+	// ── Author ─────────────────────────────────────────────────────────────
 	RightView.HSplitTop(HeadlineHeight, &Label, &RightView);
-	Ui()->DoLabel(&Label, BcLocalize("BestClient Developers"), HeadlineFontSize, TEXTALIGN_ML);
+	Ui()->DoLabel(&Label, Localize("Author"), HeadlineFontSize, TEXTALIGN_ML);
 	RightView.HSplitTop(MarginSmall, nullptr, &RightView);
 	RightView.HSplitTop(MarginSmall, nullptr, &RightView);
 
-	const float TeeSize = 64.0f;
-	const float DevNameFontSize = 24.0f;
-	const float CardSize = TeeSize + MarginSmall * 2.0f;
-	CUIRect TeeRect, DevCardRect;
-	static CButtonContainer s_LinkButton1, s_LinkButton2, s_LinkButton3;
 	{
+		const float TeeSize = 64.0f;
+		const float DevNameFontSize = 24.0f;
+		const float CardSize = TeeSize + MarginSmall * 2.0f;
+		CUIRect TeeRect, DevCardRect;
 		RightView.HSplitTop(CardSize, &DevCardRect, &RightView);
 		DevCardRect.VSplitLeft(CardSize, &TeeRect, &Label);
-		Label.VSplitLeft(TextRender()->TextWidth(DevNameFontSize, "RoflikBEST"), &Label, &Button);
-		Button.VSplitLeft(MarginSmall, nullptr, &Button);
-		Button.w = DevNameFontSize;
-		Button.h = DevNameFontSize;
-		Button.y = Label.y + (Label.h / 2.0f - Button.h / 2.0f);
-		Ui()->DoLabel(&Label, "RoflikBEST", DevNameFontSize, TEXTALIGN_ML);
-		if(Ui()->DoButton_FontIcon(&s_LinkButton1, FontIcon::ARROW_UP_RIGHT_FROM_SQUARE, 0, &Button, IGraphics::CORNER_ALL))
-			Client()->ViewLink("https://github.com/roflikbest");
-		RenderDevSkin(TeeRect.Center(), TeeSize, "10Nanami_glow", "nanami", true, 0, 0, 0, false, true, ColorRGBA(1.0f, 1.0f, 1.0f, 1.0f), ColorRGBA(0.94f, 0.74f, 0.92f, 1.0f));
-	}
-	{
-		RightView.HSplitTop(CardSize, &DevCardRect, &RightView);
-		DevCardRect.VSplitLeft(CardSize, &TeeRect, &Label);
-		Label.VSplitLeft(TextRender()->TextWidth(DevNameFontSize, "noxygalaxy"), &Label, &Button);
-		Button.VSplitLeft(MarginSmall, nullptr, &Button);
-		Button.w = DevNameFontSize;
-		Button.h = DevNameFontSize;
-		Button.y = Label.y + (Label.h / 2.0f - Button.h / 2.0f);
-		Ui()->DoLabel(&Label, "noxygalaxy", DevNameFontSize, TEXTALIGN_ML);
-		if(Ui()->DoButton_FontIcon(&s_LinkButton3, FontIcon::ARROW_UP_RIGHT_FROM_SQUARE, 0, &Button, IGraphics::CORNER_ALL))
-			Client()->ViewLink("https://github.com/noxygalaxy");
-		RenderDevSkin(TeeRect.Center(), TeeSize, "Niko_OneShot", "Niko_OneShot", false, 0, 0, 0, false, true);
-	}
-	{
-		RightView.HSplitTop(CardSize, &DevCardRect, &RightView);
-		DevCardRect.VSplitLeft(CardSize, &TeeRect, &Label);
-		Label.VSplitLeft(TextRender()->TextWidth(DevNameFontSize, "sqwinix"), &Label, &Button);
-		Button.VSplitLeft(MarginSmall, nullptr, &Button);
-		Button.w = DevNameFontSize;
-		Button.h = DevNameFontSize;
-		Button.y = Label.y + (Label.h / 2.0f - Button.h / 2.0f);
-		Ui()->DoLabel(&Label, "sqwinix", DevNameFontSize, TEXTALIGN_ML);
-		if(Ui()->DoButton_FontIcon(&s_LinkButton2, FontIcon::ARROW_UP_RIGHT_FROM_SQUARE, 0, &Button, IGraphics::CORNER_ALL))
-			Client()->ViewLink("https://github.com/sqwinixxx");
-		RenderDevSkin(TeeRect.Center(), TeeSize, "sticker_nanami", "sticker_nanami", true, 0, 0, 0, false, true, ColorRGBA(1.0f, 1.0f, 1.0f, 1.0f), ColorRGBA(1.0f, 1.0f, 1.0f, 1.0f));
+		Ui()->DoLabel(&Label, "Cr\xe2\x99\xb1stal", DevNameFontSize, TEXTALIGN_ML);
+		RenderDevSkin(TeeRect.Center(), TeeSize, "default", "default", false, 0, 0, 0, false, true);
 	}
 
 	// ── Hide Settings Tabs ────────────────────────────────────────────────

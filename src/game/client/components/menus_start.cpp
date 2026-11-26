@@ -57,16 +57,6 @@ void CMenusStart::RenderStartMenu(CUIRect MainView)
 	if(GameClient()->m_Menus.DoButton_Menu(&s_StatsButton, Localize("Statistics"), 0, &Button, BUTTONFLAG_LEFT, nullptr, IGraphics::CORNER_ALL, 5.0f, 0.0f, ColorRGBA(0.0f, 0.0f, 0.0f, 0.25f))) // Cr1stal Client
 		NewPage = CMenus::PAGE_CC_STATS;
 
-	ExtMenu.HSplitBottom(5.0f, &ExtMenu, nullptr);
-	ExtMenu.HSplitBottom(20.0f, &ExtMenu, &Button);
-	static CButtonContainer s_CheckUpdateButton;
-	if(GameClient()->m_Menus.DoButton_Menu(&s_CheckUpdateButton, BcLocalize("Check update"), 0, &Button, BUTTONFLAG_LEFT, nullptr, IGraphics::CORNER_ALL, 5.0f, 0.0f, ColorRGBA(0.0f, 0.0f, 0.0f, 0.25f))) // bestclient
-	{
-#if defined(CONF_AUTOUPDATE)
-		Updater()->CheckForUpdate();
-#endif
-	}
-
 	constexpr float LogoW = 360.0f;
 	constexpr float LogoH = 103.0f;
 	constexpr float LogoGap = 30.0f;
@@ -258,11 +248,6 @@ void CMenusStart::RenderStartMenu(CUIRect MainView)
 				static CButtonContainer s_MenuUpdateDownload;
 				if(GameClient()->m_Menus.DoButton_Menu(&s_MenuUpdateDownload, Localize("Download"), 0, &UpdateButton, BUTTONFLAG_LEFT, nullptr, IGraphics::CORNER_ALL, 5.0f, 0.0f, ColorRGBA(0.0f, 0.0f, 0.0f, 0.25f)))
 					Updater()->InitiateUpdate();
-				// bestclient
-				static CButtonContainer s_MenuUpdateChangelog;
-				if(GameClient()->m_Menus.DoButton_Menu(&s_MenuUpdateChangelog, BcLocalize("Changelog"), 0, &ChangelogButton, BUTTONFLAG_LEFT, nullptr, IGraphics::CORNER_ALL, 5.0f, 0.0f, ColorRGBA(0.0f, 0.0f, 0.0f, 0.25f)))
-					NewPage = CMenus::PAGE_CHANGELOG;
-				// bestclient
 			}
 			else if(ShowRestartButton)
 			{

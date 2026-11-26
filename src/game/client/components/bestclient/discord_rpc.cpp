@@ -161,8 +161,8 @@ public:
 		mem_zero(&m_Activity, sizeof(DiscordActivity));
 
 		str_copy(m_Activity.assets.large_image, "bestclientlogo");
-		str_copy(m_Activity.assets.large_text, "discord.gg/bestclient");
-		str_copy(m_Activity.details, "discord.gg/bestclient");
+		str_copy(m_Activity.assets.large_text, "");
+		str_copy(m_Activity.details, "");
 		m_Activity.timestamps.start = 0;
 		m_Activity.instance = false;
 
@@ -174,7 +174,7 @@ public:
 		mem_zero(&m_Activity, sizeof(DiscordActivity));
 
 		str_copy(m_Activity.assets.large_image, "bestclientlogo");
-		str_copy(m_Activity.assets.large_text, "discord.gg/bestclient");
+		str_copy(m_Activity.assets.large_text, "");
 		m_Activity.timestamps.start = time_timestamp();
 		m_Activity.instance = true;
 		m_ShowMap = ShowMap;
@@ -190,7 +190,7 @@ public:
 			str_copy(m_Activity.assets.small_text, "BestClient player");
 		}
 
-		str_copy(m_Activity.details, "discord.gg/bestclient");
+		str_copy(m_Activity.details, "");
 		if(m_ShowMap)
 		{
 			const char *pDisplayMap = (pMapName && pMapName[0] != '\0') ? pMapName : ServerInfo.m_aMap;
