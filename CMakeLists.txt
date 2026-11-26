@@ -3035,6 +3035,7 @@ if(CLIENT)
     components/cclient_playtime.h
     components/cclient_presence.cpp
     components/cclient_presence.h
+    components/cclient_style.cpp
     components/cclient_style.h
     components/menus_cc_stats.cpp
     components/bestclient/clientindicator/presence_cache.cpp
