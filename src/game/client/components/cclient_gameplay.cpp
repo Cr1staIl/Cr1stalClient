@@ -249,13 +249,23 @@ void CCGameplay::OnUpdate()
 		m_PriorityApplied = g_Config.m_CcHighPriority;
 	}
 
+	// the old ultra smooth also turned on motion blur (ghost copies of tees) and the old async
+	// renderer: give those settings back once, then it is applied again without them
+	if(str_find(g_Config.m_CcUltraSmoothBackup, "cc_motion_blur"))
+	{
+		char aBackup[256];
+		str_copy(aBackup, g_Config.m_CcUltraSmoothBackup);
+		g_Config.m_CcUltraSmoothBackup[0] = '\0';
+		Console()->ExecuteLine(aBackup, IConsole::CLIENT_ID_UNSPECIFIED);
+	}
+
 	// ultra smooth: turn on once and remember the old values, give them back when turned off
 	if(g_Config.m_CcUltraSmooth && !g_Config.m_CcUltraSmoothBackup[0])
 	{
 		str_format(g_Config.m_CcUltraSmoothBackup, sizeof(g_Config.m_CcUltraSmoothBackup),
-			"gfx_refresh_rate %d; gfx_vsync %d; cl_refresh_rate %d; gfx_asyncrender_old %d; cc_motion_blur %d; cc_motion_blur_strength %d",
-			g_Config.m_GfxRefreshRate, g_Config.m_GfxVsync, g_Config.m_ClRefreshRate, g_Config.m_GfxAsyncRenderOld, g_Config.m_CcMotionBlur, g_Config.m_CcMotionBlurStrength);
-		Console()->ExecuteLine("gfx_refresh_rate 0; gfx_vsync 0; cl_refresh_rate 0; gfx_asyncrender_old 1; cc_motion_blur 1; cc_motion_blur_strength 25", IConsole::CLIENT_ID_UNSPECIFIED);
+			"gfx_refresh_rate %d; gfx_vsync %d; cl_refresh_rate %d",
+			g_Config.m_GfxRefreshRate, g_Config.m_GfxVsync, g_Config.m_ClRefreshRate);
+		Console()->ExecuteLine("gfx_refresh_rate 0; gfx_vsync 0; cl_refresh_rate 0", IConsole::CLIENT_ID_UNSPECIFIED);
 	}
 	else if(!g_Config.m_CcUltraSmooth && g_Config.m_CcUltraSmoothBackup[0])
 	{

@@ -442,7 +442,7 @@ void CMenus::RenderSettingsCClient(CUIRect MainView)
 				// with fast input the DDNet smoothing works on the future tick too, else TClient's
 				g_Config.m_ClAntiPingSmooth = g_Config.m_CcFastInput ? 1 : 0;
 				g_Config.m_CcAntiPingImproved = g_Config.m_CcFastInput ? 0 : 1;
-				g_Config.m_CcOthersSmooth = 40;
+				g_Config.m_CcOthersEase = 0;
 				g_Config.m_CcAntiPingStableDirection = 1;
 				g_Config.m_CcUnpredOthersInFreeze = 0;
 				g_Config.m_ClPredictionMargin = 10;
@@ -463,7 +463,7 @@ void CMenus::RenderSettingsCClient(CUIRect MainView)
 		}
 		C.CheckValue(&g_Config.m_ClPredictFreeze, Localize("Predict freeze"), 1);
 		C.Slider(&g_Config.m_ClPredictionMargin, Localize("Prediction margin"), 1, 100, "ms");
-		C.Slider(&g_Config.m_CcOthersSmooth, Localize("Smooth other tees"), 0, 100, "%");
+		C.Slider(&g_Config.m_CcOthersEase, Localize("Smooth other tees"), 0, 100, "%");
 		C.Gap(4.0f);
 		C.Caption(Localize("Smooth antiping (TClient)"));
 		C.Check(&g_Config.m_CcAntiPingImproved, Localize("New antiping smoothing"), Localize("Trusts the prediction of other tees only as far as they moved steadily before"));
@@ -743,7 +743,7 @@ void CMenus::RenderSettingsCClient(CUIRect MainView)
 			if(Choice != Old)
 				g_Config.m_GfxFsaaSamples = s_aSamples[Choice];
 		}
-		C.Check(&g_Config.m_CcUltraSmooth, Localize("Maximum smoothness"), Localize("No FPS limit and no vsync, the game draws as many frames as your PC can, plus a light motion blur. Turn it off and your old settings come back."));
+		C.Check(&g_Config.m_CcUltraSmooth, Localize("Maximum smoothness"), Localize("No FPS limit and no vsync, the game draws as many frames as your PC can. Turn it off and your old settings come back."));
 		C.Check(&g_Config.m_CcOptimize, Localize("Optimize the game for my PC"), Localize("Turns off heavy effects; a weaker PC also hides the map decoration. Turn it off and your old settings come back."));
 		char aBuf[64];
 		str_format(aBuf, sizeof(aBuf), "%s: %d", Localize("FPS right now"), GameClient()->m_CClient.Fps());

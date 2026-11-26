@@ -2760,8 +2760,9 @@ void CGameClient::OnPredict()
 				m_aClients[m_aLocalIds[!g_Config.m_ClDummy]].m_Predicted = pDummyChar->GetCore();
 		}
 
-		// (the future fast input ticks too, for the smoothing of other tees on that tick)
-		for(int i = 0; i < MAX_CLIENTS; i++)
+		// only the real ticks: the fast input ticks are guessed with your future input and would
+		// mix wrong positions into the smoothing history (that made tees jump back and forth)
+		for(int i = 0; i < MAX_CLIENTS && !ExtraTick; i++)
 			if(CCharacter *pChar = m_PredictedWorld.GetCharacterById(i))
 			{
 				m_aClients[i].m_aPredPos[Tick % 200] = pChar->Core()->m_Pos;
@@ -4140,7 +4141,8 @@ void CGameClient::UpdateRenderedCharacters()
 		// C-Client: soft smoothing of other tees. Moves with their real speed (no delay) and only
 		// eases out the small jumps when the prediction of them was wrong
 		const bool IsLocalTee = i == m_Snap.m_LocalClientId || (PredictDummy() && i == m_aLocalIds[!g_Config.m_ClDummy]);
-		if(g_Config.m_CcOthersSmooth > 0 && !IsLocalTee)
+		const bool OthersPredicted = Predict() && AntiPingPlayers() && !IsOtherTeam(i);
+		if(g_Config.m_CcOthersEase > 0 && !IsLocalTee && OthersPredicted)
 		{
 			SCcSmooth &Smooth = m_aCcSmooth[i];
 			const float Dt = std::clamp(Client()->RenderFrameTime(), 0.0f, 0.05f);
@@ -4153,7 +4155,7 @@ void CGameClient::UpdateRenderedCharacters()
 			{
 				const vec2 Vel = m_aClients[i].m_Predicted.m_Vel * (float)Client()->GameTickSpeed();
 				const vec2 Ahead = Smooth.m_Pos + Vel * Dt;
-				const float Rate = 40.0f - g_Config.m_CcOthersSmooth * 0.32f; // 100 -> 8/s, 1 -> ~40/s
+				const float Rate = 40.0f - g_Config.m_CcOthersEase * 0.32f; // 100 -> 8/s, 1 -> ~40/s
 				Smooth.m_Pos = Ahead + (Pos - Ahead) * (1.0f - std::exp(-Rate * Dt));
 				Pos = Smooth.m_Pos;
 			}
@@ -4321,28 +4323,17 @@ void CGameClient::DetectStrongHook()
 
 vec2 CGameClient::GetFastSmoothPos(int ClientId)
 {
-	// like GetSmoothPos, but on the fast input tick (TClient's fast input others)
-	const int FastTicks = m_Controls.FastInputTicks();
-	vec2 Pos = mix(m_aClients[ClientId].m_FastPrevPos, m_aClients[ClientId].m_FastPos, Client()->PredIntraGameTick(g_Config.m_ClDummy));
-	if(!g_Config.m_ClAntiPingSmooth)
-		return Pos;
-	const int64_t Now = time_get();
-	for(int i = 0; i < 2; i++)
-	{
-		const int64_t Len = std::clamp(m_aClients[ClientId].m_aSmoothLen[i], (int64_t)1, time_freq());
-		const int64_t TimePassed = Now - m_aClients[ClientId].m_aSmoothStart[i];
-		if(in_range(TimePassed, (int64_t)0, Len - 1))
-		{
-			const float MixAmount = 1.f - std::pow(1.f - TimePassed / (float)Len, 1.2f);
-			int SmoothTick;
-			float SmoothIntra;
-			Client()->GetSmoothTick(&SmoothTick, &SmoothIntra, MixAmount);
-			SmoothTick += FastTicks;
-			if(SmoothTick > 0 && m_aClients[ClientId].m_aPredTick[(SmoothTick - 1) % 200] >= Client()->PrevGameTick(g_Config.m_ClDummy) && m_aClients[ClientId].m_aPredTick[SmoothTick % 200] <= Client()->PredGameTick(g_Config.m_ClDummy) + FastTicks)
-				Pos[i] = mix(m_aClients[ClientId].m_aPredPos[(SmoothTick - 1) % 200][i], m_aClients[ClientId].m_aPredPos[SmoothTick % 200][i], SmoothIntra);
-		}
-	}
-	return Pos;
+	// the normal smoothed position, moved by how far the tee gets in the extra fast input ticks
+	// (TClient's fast input others), so the smoothing history stays clean
+	const float Intra = Client()->PredIntraGameTick(g_Config.m_ClDummy);
+	const vec2 Regular = mix(m_aClients[ClientId].m_PrevPredicted.m_Pos, m_aClients[ClientId].m_Predicted.m_Pos, Intra);
+	const vec2 Fast = mix(m_aClients[ClientId].m_FastPrevPos, m_aClients[ClientId].m_FastPos, Intra);
+	const vec2 Base = g_Config.m_ClAntiPingSmooth ? GetSmoothPos(ClientId) : Regular;
+	const vec2 Offset = Fast - Regular;
+	// a big gap means the tee died, teleported or was reset in the guessed ticks: do not follow that
+	if(length(Offset) > 32.0f * (m_Controls.FastInputTicks() + 1))
+		return Base;
+	return Base + Offset;
 }
 
 vec2 CGameClient::GetSmoothPos(int ClientId)

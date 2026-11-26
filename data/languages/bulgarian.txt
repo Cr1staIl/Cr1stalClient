@@ -2754,7 +2754,7 @@ Smooth edges (after restart)
 Maximum smoothness
 == 
 
-No FPS limit and no vsync, the game draws as many frames as your PC can, plus a light motion blur. Turn it off and your old settings come back.
+No FPS limit and no vsync, the game draws as many frames as your PC can. Turn it off and your old settings come back.
 == 
 
 Optimize the game for my PC
