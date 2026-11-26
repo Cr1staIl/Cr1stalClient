@@ -64,8 +64,7 @@ public:
 	void OnRender() override;
 
 	void ClearQueue();
-	// C-Client: load the sounds again from the chosen sound pack
-	void ReloadSoundPack();
+	void Clear();
 	void Enqueue(int Channel, int SetId);
 	void Play(int Channel, int SetId, float Volume);
 	void PlayAt(int Channel, int SetId, float Volume, vec2 Position);

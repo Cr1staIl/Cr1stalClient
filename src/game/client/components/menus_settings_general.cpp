@@ -8,6 +8,7 @@
 #include <engine/storage.h>
 
 #include <game/client/components/menu_background.h>
+#include <game/client/components/tooltips.h>
 #include <game/client/gameclient.h>
 #include <game/client/ui.h>
 #include <game/client/ui_listbox.h>
@@ -16,16 +17,19 @@
 void CMenus::RenderSettingsGeneral(CUIRect MainView)
 {
 	char aBuf[128 + IO_MAX_PATH_LENGTH];
-	CUIRect Label, Button, Left, Right, Game, ClientSettings;
-	MainView.HSplitTop(150.0f, &Game, &ClientSettings);
+	CUIRect Label, Button, Left, Right, Game, ClientSettings; // bestclient
+	MainView.HSplitTop(190.0f, &Game, &ClientSettings); // bestclient
 
 	// game
 	{
 		// headline
+		CUIRect GameLabel, LanguageLabel;
 		Game.HSplitTop(30.0f, &Label, &Game);
-		Ui()->DoLabel(&Label, Localize("Game"), 20.0f, TEXTALIGN_ML);
+		Label.VSplitMid(&GameLabel, &LanguageLabel, 20.0f); // bestclient
+		Ui()->DoLabel(&GameLabel, Localize("Game"), 20.0f, TEXTALIGN_ML);
+		Ui()->DoLabel(&LanguageLabel, Localize("Language"), 20.0f, TEXTALIGN_ML); // bestclient
 		Game.HSplitTop(5.0f, nullptr, &Game);
-		Game.VSplitMid(&Left, nullptr, 20.0f);
+		Game.VSplitMid(&Left, &Right, 20.0f); // bestclient
 
 		// dynamic camera
 		Left.HSplitTop(20.0f, &Button, &Left);
@@ -73,6 +77,9 @@ void CMenus::RenderSettingsGeneral(CUIRect MainView)
 		Left.HSplitTop(20.0f, &Button, &Left);
 		if(DoButton_CheckBox(&g_Config.m_ClAutoswitchWeaponsOutOfAmmo, Localize("Switch weapon when out of ammo"), g_Config.m_ClAutoswitchWeaponsOutOfAmmo, &Button))
 			g_Config.m_ClAutoswitchWeaponsOutOfAmmo ^= 1;
+
+		Right.HSplitTop(5.0f, nullptr, &Right);
+		RenderLanguageSelection(Right); // bestclient
 	}
 
 	// client
@@ -105,10 +112,10 @@ void CMenus::RenderSettingsGeneral(CUIRect MainView)
 		static CButtonContainer s_SettingsButtonId;
 		if(DoButton_Menu(&s_SettingsButtonId, Localize("Settings file"), 0, &SettingsButton))
 		{
-			Storage()->GetCompletePath(IStorage::TYPE_SAVE, CONFIG_FILE, aBuf, sizeof(aBuf));
+			Storage()->GetCompletePath(IStorage::TYPE_SAVE, s_aConfigDomains[ConfigDomain::DDNET].m_aConfigPath, aBuf, sizeof(aBuf));
 			Client()->ViewFile(aBuf);
 		}
-		Ui()->DoToolTip(&s_SettingsButtonId, &SettingsButton, Localize("Open the settings file"));
+		GameClient()->m_Tooltips.DoToolTip(&s_SettingsButtonId, &SettingsButton, Localize("Open the settings file"));
 
 		CUIRect SavesButton;
 		Left.HSplitBottom(20.0f, &Left, &SavesButton);
@@ -119,7 +126,7 @@ void CMenus::RenderSettingsGeneral(CUIRect MainView)
 			Storage()->GetCompletePath(IStorage::TYPE_SAVE, SAVES_FILE, aBuf, sizeof(aBuf));
 			Client()->ViewFile(aBuf);
 		}
-		Ui()->DoToolTip(&s_SavesButtonId, &SavesButton, Localize("Open the saves file"));
+		GameClient()->m_Tooltips.DoToolTip(&s_SavesButtonId, &SavesButton, Localize("Open the saves file"));
 
 		CUIRect ConfigButton;
 		Left.HSplitBottom(20.0f, &Left, &ConfigButton);
@@ -130,7 +137,7 @@ void CMenus::RenderSettingsGeneral(CUIRect MainView)
 			Storage()->GetCompletePath(IStorage::TYPE_SAVE, "", aBuf, sizeof(aBuf));
 			Client()->ViewFile(aBuf);
 		}
-		Ui()->DoToolTip(&s_ConfigButtonId, &ConfigButton, Localize("Open the directory that contains the configuration and user files"));
+		GameClient()->m_Tooltips.DoToolTip(&s_ConfigButtonId, &ConfigButton, Localize("Open the directory that contains the configuration and user files"));
 
 		CUIRect DirectoryButton;
 		Left.HSplitBottom(20.0f, &Left, &DirectoryButton);
@@ -142,7 +149,7 @@ void CMenus::RenderSettingsGeneral(CUIRect MainView)
 			Storage()->CreateFolder("themes", IStorage::TYPE_SAVE);
 			Client()->ViewFile(aBuf);
 		}
-		Ui()->DoToolTip(&s_ThemesButtonId, &DirectoryButton, Localize("Open the directory to add custom themes"));
+		GameClient()->m_Tooltips.DoToolTip(&s_ThemesButtonId, &DirectoryButton, Localize("Open the directory to add custom themes"));
 
 		Left.HSplitTop(20.0f, nullptr, &Left);
 		RenderThemeSelection(Left);

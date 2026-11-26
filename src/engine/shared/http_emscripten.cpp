@@ -5,7 +5,6 @@
 #include <base/log.h>
 #include <base/str.h>
 #include <base/thread.h>
-#include <base/time.h>
 
 #include <engine/shared/config.h>
 #include <engine/storage.h>
@@ -37,34 +36,19 @@ void CHttpRequestEmscripten::Header(const char *pNameColonValue)
 
 void CHttpRequestEmscripten::Abort()
 {
-	if(m_Abort.load(std::memory_order_acquire))
+	if(m_Abort)
 	{
 		return;
 	}
 
 	IHttpRequest::Abort();
 
-	if(m_Initialized.load(std::memory_order_acquire))
-	{
-		m_pHttp->AddPendingStateChange(m_RequestId, EHttpState::ABORTED);
-	}
+	m_pHttp->AddPendingStateChange(m_RequestId, EHttpState::ABORTED);
 }
 
 EM_JS(void, FormatTimestampJsImpl, (char *pBuf, size_t Size, time_t Timestamp), {
 	const timestampString = new Date(Number(Timestamp) * 1000).toUTCString();
 	stringToUTF8(timestampString, pBuf, Size);
-});
-
-EM_JS(bool, IsValidUrlJsImpl, (const char *pUrl), {
-	try
-	{
-		new URL(UTF8ToString(pUrl));
-		return true;
-	}
-	catch(_)
-	{
-		return false;
-	}
 });
 
 bool CHttpRequestEmscripten::ConfigureAndRun()
@@ -74,16 +58,12 @@ bool CHttpRequestEmscripten::ConfigureAndRun()
 		return false;
 	}
 
+	// bestclient
 	if(!str_startswith(m_aUrl, "https://") &&
-		(!g_Config.m_HttpAllowInsecure || !str_startswith(m_aUrl, "http://")))
+		((!g_Config.m_HttpAllowInsecure && !m_AllowHttp) || !str_startswith(m_aUrl, "http://")))
+	// bestclient
 	{
 		log_error("http", "unsupported protocol: %s", m_aUrl);
-		return false;
-	}
-
-	if(!IsValidUrlJsImpl(m_aUrl))
-	{
-		log_error("http", "invalid URL: %s", m_aUrl);
 		return false;
 	}
 
@@ -105,9 +85,6 @@ bool CHttpRequestEmscripten::ConfigureAndRun()
 		HeaderString("If-Modified-Since", aTimestamp);
 	}
 
-	m_LowSpeedOffset = 0;
-	m_LowSpeedCheckTime = time_get_nanoseconds();
-
 	std::vector<const char *> vpPackedHeaders;
 	vpPackedHeaders.reserve(2 * m_vRequestHeaders.size() + 1);
 	for(const auto &[Name, Value] : m_vRequestHeaders)
@@ -125,8 +102,7 @@ bool CHttpRequestEmscripten::ConfigureAndRun()
 	FetchAttributes.onerror = FetchCallbackFailure;
 	FetchAttributes.onprogress = FetchCallbackProgress;
 	FetchAttributes.attributes = EMSCRIPTEN_FETCH_LOAD_TO_MEMORY;
-	// Only timeout property for whole transfer is supported by Fetch API.
-	// We implement low speed timeout ourselves in `OnProgress` function.
+	// Only timeout property for whole transfer is supported.
 	FetchAttributes.timeoutMSecs = m_Timeout.m_TimeoutMs;
 	FetchAttributes.requestHeaders = vpPackedHeaders.data();
 	FetchAttributes.requestData = reinterpret_cast<const char *>(m_pBody);
@@ -162,9 +138,7 @@ void CHttpRequestEmscripten::OnFailure()
 	}
 	m_CallbackFinished = true;
 
-	const bool Success = m_pFetch->status >= 200 && (m_pFetch->status < 400 || !m_FailOnErrorStatus);
-
-	m_pHttp->AddPendingStateChange(m_RequestId, Success ? EHttpState::DONE : EHttpState::ERROR);
+	m_pHttp->AddPendingStateChange(m_RequestId, !m_FailOnErrorStatus && m_pFetch->status >= 400 ? EHttpState::DONE : EHttpState::ERROR);
 }
 
 void CHttpRequestEmscripten::OnProgress()
@@ -176,22 +150,6 @@ void CHttpRequestEmscripten::OnProgress()
 		m_pHttp->AddPendingStateChange(m_RequestId, EHttpState::ERROR);
 		return;
 	}
-
-	if(m_Timeout.m_LowSpeedLimit > 0 && m_Timeout.m_LowSpeedTime > 0)
-	{
-		const std::chrono::nanoseconds Now = time_get_nanoseconds();
-		if(m_pFetch->dataOffset - m_LowSpeedOffset >= (uint64_t)m_Timeout.m_LowSpeedLimit)
-		{
-			m_LowSpeedOffset = m_pFetch->dataOffset;
-			m_LowSpeedCheckTime = Now;
-		}
-		else if(Now - m_LowSpeedCheckTime > std::chrono::seconds(m_Timeout.m_LowSpeedTime))
-		{
-			m_pHttp->AddPendingStateChange(m_RequestId, EHttpState::ERROR);
-			return;
-		}
-	}
-
 	m_Current.store(m_pFetch->dataOffset, std::memory_order_relaxed);
 	m_Size.store(m_pFetch->totalBytes, std::memory_order_relaxed);
 	m_Progress.store(m_pFetch->totalBytes == 0 ? 0 : (100 * m_pFetch->dataOffset) / m_pFetch->totalBytes, std::memory_order_relaxed);
@@ -355,7 +313,6 @@ void CHttpEmscripten::Run(std::shared_ptr<IHttpRequest> pRequest)
 		std::shared_ptr<CHttpRequestEmscripten> pRequestImpl = std::static_pointer_cast<CHttpRequestEmscripten>(pRequest);
 		pRequestImpl->m_pHttp = this;
 		pRequestImpl->m_RequestId = m_NextRequestId;
-		pRequestImpl->m_Initialized.store(true, std::memory_order_release);
 		++m_NextRequestId;
 		if(m_Shutdown)
 		{
@@ -472,7 +429,7 @@ void CHttpEmscripten::RunLoop()
 
 			if(!pRequest->ConfigureAndRun())
 			{
-				pRequest->OnCompletionInternal(EHttpState::ERROR, "Failed to initialize request");
+				pRequest->OnCompletionInternal(EHttpState::ABORTED, "Failed to initialize request");
 				PendingRequests.pop_front();
 				continue;
 			}

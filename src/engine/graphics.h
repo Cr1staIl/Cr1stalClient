@@ -248,6 +248,10 @@ protected:
 	int m_ScreenRefreshRate;
 	float m_ScreenHiDPIScale;
 	ivec2 m_DesktopSize;
+	// bestclient
+	float m_ScreenAspectOverride = 0.0f;
+	bool m_ScreenAspectOverrideEnabled = true;
+	// bestclient
 
 public:
 	enum
@@ -277,7 +281,9 @@ public:
 	int ScreenWidth() const { return m_ScreenWidth; }
 	int ScreenHeight() const { return m_ScreenHeight; }
 	vec2 ScreenSize() const { return vec2(m_ScreenWidth, m_ScreenHeight); }
-	float ScreenAspect() const { return (float)ScreenWidth() / (float)ScreenHeight(); }
+	// bestclient
+	float ScreenAspect() const { return m_ScreenAspectOverrideEnabled && m_ScreenAspectOverride > 0.0f ? m_ScreenAspectOverride : (float)ScreenWidth() / (float)ScreenHeight(); }
+	// bestclient
 	float ScreenHiDPIScale() const { return m_ScreenHiDPIScale; }
 	int WindowWidth() const { return m_ScreenWidth / m_ScreenHiDPIScale; }
 	int WindowHeight() const { return m_ScreenHeight / m_ScreenHiDPIScale; }
@@ -327,10 +333,6 @@ public:
 
 	virtual void MapScreen(const CScreenRect &ScreenRect) = 0;
 
-	// C-Client: when above 0 the game world is drawn with this aspect ratio and stretched to the
-	// screen (like stretched 4:3); the interface keeps the real one
-	float m_WorldAspectOverride = 0.0f;
-
 	// helper functions
 	void CalcScreenParams(float Aspect, float Zoom, float *pWidth, float *pHeight) const;
 	CScreenRect MapScreenToWorld(float CenterX, float CenterY, float ParallaxX, float ParallaxY,
@@ -371,6 +373,7 @@ public:
 	virtual bool LoadTextTextures(size_t Width, size_t Height, CTextureHandle &TextTexture, CTextureHandle &TextOutlineTexture, uint8_t *pTextData, uint8_t *pTextOutlineData) = 0;
 	virtual bool UnloadTextTextures(CTextureHandle &TextTexture, CTextureHandle &TextOutlineTexture) = 0;
 	virtual bool UpdateTextTexture(CTextureHandle TextureId, int x, int y, size_t Width, size_t Height, uint8_t *pData, bool IsMovedPointer) = 0;
+	virtual bool UpdateTextureRaw(CTextureHandle TextureId, int x, int y, size_t Width, size_t Height, uint8_t *pData, bool IsMovedPointer) = 0;
 
 	virtual CTextureHandle LoadSpriteTexture(const CImageInfo &FromImageInfo, const std::optional<CImageInfo> &FallbackImageInfo, const struct CDataSprite *pSprite) = 0;
 
@@ -488,8 +491,8 @@ public:
 	virtual int CreateQuadContainer(bool AutomaticUpload = true) = 0;
 	virtual void QuadContainerChangeAutomaticUpload(int ContainerIndex, bool AutomaticUpload) = 0;
 	virtual void QuadContainerUpload(int ContainerIndex) = 0;
-	virtual int QuadContainerAddQuads(int ContainerIndex, const CQuadItem *pArray, int Num) = 0;
-	virtual int QuadContainerAddQuads(int ContainerIndex, const CFreeformItem *pArray, int Num) = 0;
+	virtual int QuadContainerAddQuads(int ContainerIndex, CQuadItem *pArray, int Num) = 0;
+	virtual int QuadContainerAddQuads(int ContainerIndex, CFreeformItem *pArray, int Num) = 0;
 	virtual void QuadContainerReset(int ContainerIndex) = 0;
 	virtual void DeleteQuadContainer(int &ContainerIndex) = 0;
 	virtual void RenderQuadContainer(int ContainerIndex, int QuadDrawNum) = 0;
@@ -676,6 +679,15 @@ protected:
 		Tex.m_Id = Index;
 		return Tex;
 	}
+
+public:
+	// TClient
+	virtual void SetForcedAspect(bool Force, bool ApplyCustomAspect = true) = 0;
+	// bestclient
+	virtual void SetScreenAspectOverrideEnabled(bool Enabled) = 0;
+	virtual void PushPreviewViewport(int X, int Y, int W, int H) = 0;
+	virtual void PopPreviewViewport() = 0;
+	// bestclient
 };
 
 class IEngineGraphics : public IGraphics

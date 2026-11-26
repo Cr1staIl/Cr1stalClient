@@ -53,7 +53,9 @@ void CPrompt::SetInactive()
 
 bool CPrompt::OnInput(const IInput::CEvent &Event)
 {
-	if(Editor()->m_Dialog == DIALOG_NONE && Input()->ModifierIsPressed() && Input()->KeyPress(KEY_P))
+	// bestclient
+	if(Editor()->m_Dialog == DIALOG_NONE && Input()->ModifierIsPressed() && !Input()->ShiftIsPressed() && Input()->KeyPress(KEY_P))
+	// bestclient
 	{
 		SetActive();
 	}
@@ -161,16 +163,9 @@ void CPrompt::Render()
 		if(m_PromptSelectedIndex >= 0)
 		{
 			CQuickAction *pBtn = m_vpFilteredPromptList[m_PromptSelectedIndex];
-			if(pBtn->Disabled())
-			{
-				m_ResetFilterResults = true;
-			}
-			else
-			{
-				SetInactive();
-				pBtn->Call();
-				m_pLastAction = pBtn;
-			}
+			SetInactive();
+			pBtn->Call();
+			m_pLastAction = pBtn;
 		}
 	}
 }

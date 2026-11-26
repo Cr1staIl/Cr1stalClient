@@ -1,20 +1,10 @@
 {
     "font files": [
         "DejaVuSans.ttf",
-        "DejaVuSans-Bold.ttf",
         "Font_Awesome_6_Free-Solid-900.otf",
         "GlowSansJ-Compressed-Book.otf",
         "SourceHanSans.ttc",
-        "Comfortaa.ttf",
-        "Exo2.ttf",
-        "Jura.ttf",
-        "Lobster.ttf",
-        "Montserrat.ttf",
-        "Play.ttf",
-        "PressStart2P.ttf",
-        "Rubik.ttf",
-        "RussoOne.ttf",
-        "Unbounded.ttf"
+        "NotoEmoji-Regular.ttf"
     ],
     "default": "DejaVu Sans",
     "language variants": {
@@ -24,9 +14,8 @@
         "traditional_chinese": "Source Han Sans TC"
     },
     "fallbacks": [
-        "DejaVu Sans",
-        "Source Han Sans"
+        "Source Han Sans",
+        "Noto Emoji"
     ],
-    "icon": "Font Awesome 6 Free",
-    "title": "DejaVu Sans Bold"
+    "icon": "Font Awesome 6 Free"
 }

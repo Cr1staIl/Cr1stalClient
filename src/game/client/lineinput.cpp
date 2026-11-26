@@ -8,6 +8,7 @@
 #include <base/mem.h>
 #include <base/str.h>
 
+#include <engine/external/tinyexpr.h>
 #include <engine/graphics.h>
 #include <engine/keys.h>
 #include <engine/shared/config.h>
@@ -22,6 +23,8 @@ EInputPriority CLineInput::ms_ActiveInputPriority = EInputPriority::NONE;
 
 vec2 CLineInput::ms_CompositionWindowPosition = vec2(0.0f, 0.0f);
 float CLineInput::ms_CompositionLineHeight = 0.0f;
+
+char CLineInput::ms_aStars[128] = "";
 
 void CLineInput::SetBuffer(char *pStr, size_t MaxSize, size_t MaxChars)
 {
@@ -40,6 +43,9 @@ void CLineInput::SetBuffer(char *pStr, size_t MaxSize, size_t MaxChars)
 		m_CaretPosition = vec2(0.0f, 0.0f);
 		m_MouseSelection.m_Selecting = false;
 		m_Hidden = false;
+		// bestclient
+		m_HideCursor = false;
+		// bestclient
 		m_pEmptyText = nullptr;
 		m_WasRendered = false;
 	}
@@ -79,7 +85,7 @@ void CLineInput::SetRange(const char *pString, size_t Begin, size_t End)
 		{
 			if(AddedCharSize)
 				mem_copy(m_pStr + Begin, pString, AddedCharSize);
-			mem_move(m_pStr + Begin + AddedCharSize, m_pStr + Begin + RemovedCharSize, m_Len - Begin - RemovedCharSize);
+			mem_move(m_pStr + Begin + AddedCharSize, m_pStr + Begin + RemovedCharSize, m_Len - Begin - AddedCharSize);
 		}
 		else if(AddedCharSize > RemovedCharSize)
 			mem_move(m_pStr + End + AddedCharSize - RemovedCharSize, m_pStr + End, m_Len - End);
@@ -124,8 +130,11 @@ const char *CLineInput::GetDisplayedString()
 	if(!IsHidden())
 		return m_pStr;
 
-	m_StarsBuffer.resize(GetNumChars(), '*');
-	return m_StarsBuffer.c_str();
+	const size_t NumStars = std::min(GetNumChars(), sizeof(ms_aStars) - 1);
+	for(size_t i = 0; i < NumStars; ++i)
+		ms_aStars[i] = '*';
+	ms_aStars[NumStars] = '\0';
+	return ms_aStars;
 }
 
 void CLineInput::MoveCursor(EMoveDirection Direction, bool MoveWord, const char *pStr, size_t MaxSize, size_t *pCursorPos)
@@ -184,7 +193,7 @@ size_t CLineInput::OffsetFromActualToDisplay(size_t ActualOffset)
 size_t CLineInput::OffsetFromDisplayToActual(size_t DisplayOffset)
 {
 	if(IsHidden() || (m_pfnCalculateOffsetCallback && m_pfnCalculateOffsetCallback()))
-		return str_utf8_offset_chars_to_bytes(m_pStr, DisplayOffset);
+		return str_utf8_offset_bytes_to_chars(m_pStr, DisplayOffset);
 	return DisplayOffset;
 }
 
@@ -450,6 +459,9 @@ STextBoundingBox CLineInput::Render(const CUIRect *pRect, float FontSize, int Al
 		Cursor.m_FontSize = FontSize;
 		Cursor.m_LineWidth = LineWidth;
 		Cursor.m_ForceCursorRendering = Changed;
+		// bestclient
+		Cursor.m_HideCursorQuad = m_HideCursor;
+		// bestclient
 		Cursor.m_LineSpacing = LineSpacing;
 		Cursor.m_PressMouse.x = m_MouseSelection.m_PressMouse.x;
 		Cursor.m_ReleaseMouse.x = m_MouseSelection.m_ReleaseMouse.x;
@@ -691,6 +703,12 @@ void CLineInputNumber::SetInteger(int Number, int Base, int HexPrefix)
 
 int CLineInputNumber::GetInteger(int Base) const
 {
+	if(Base == 10)
+	{
+		double Result = te_interp(GetString(), nullptr);
+		if(std::isfinite(Result))
+			return (int)std::round(Result);
+	}
 	return str_toint_base(GetString(), Base);
 }
 
@@ -714,6 +732,12 @@ void CLineInputNumber::SetInteger64(int64_t Number, int Base, int HexPrefix)
 
 int64_t CLineInputNumber::GetInteger64(int Base) const
 {
+	if(Base == 10)
+	{
+		double Result = te_interp(GetString(), nullptr);
+		if(std::isfinite(Result))
+			return (int64_t)std::round(Result);
+	}
 	return str_toint64_base(GetString(), Base);
 }
 
@@ -727,5 +751,6 @@ void CLineInputNumber::SetFloat(float Number)
 
 float CLineInputNumber::GetFloat() const
 {
-	return str_tofloat(GetString());
+	// return str_tofloat(GetString());
+	return (float)te_interp(GetString(), nullptr);
 }

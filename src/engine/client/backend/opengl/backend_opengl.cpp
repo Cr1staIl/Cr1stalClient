@@ -942,6 +942,11 @@ void CCommandProcessorFragment_OpenGL::Cmd_TextTexture_Update(const CCommandBuff
 	TextureUpdate(pCommand->m_Slot, pCommand->m_X, pCommand->m_Y, pCommand->m_Width, pCommand->m_Height, GL_ALPHA, pCommand->m_pData);
 }
 
+void CCommandProcessorFragment_OpenGL::Cmd_Texture_Update(const CCommandBuffer::SCommand_Texture_Update *pCommand)
+{
+	TextureUpdate(pCommand->m_Slot, pCommand->m_X, pCommand->m_Y, pCommand->m_Width, pCommand->m_Height, GL_RGBA, pCommand->m_pData);
+}
+
 void CCommandProcessorFragment_OpenGL::Cmd_TextTextures_Destroy(const CCommandBuffer::SCommand_TextTextures_Destroy *pCommand)
 {
 	DestroyTexture(pCommand->m_Slot);
@@ -1009,10 +1014,6 @@ void CCommandProcessorFragment_OpenGL::Cmd_Render(const CCommandBuffer::SCommand
 	default:
 		dbg_assert_failed("Invalid primitive type: %d", (int)pCommand->m_PrimType);
 	};
-
-	glDisableClientState(GL_VERTEX_ARRAY);
-	glDisableClientState(GL_TEXTURE_COORD_ARRAY);
-	glDisableClientState(GL_COLOR_ARRAY);
 #endif
 }
 
@@ -1113,6 +1114,9 @@ ERunCommandReturnTypes CCommandProcessorFragment_OpenGL::RunCommand(const CComma
 	case CCommandBuffer::CMD_TEXT_TEXTURE_UPDATE:
 		Cmd_TextTexture_Update(static_cast<const CCommandBuffer::SCommand_TextTexture_Update *>(pBaseCommand));
 		break;
+	case CCommandBuffer::CMD_TEXTURE_UPDATE:
+		Cmd_Texture_Update(static_cast<const CCommandBuffer::SCommand_Texture_Update *>(pBaseCommand));
+		break;
 	case CCommandBuffer::CMD_CLEAR:
 		Cmd_Clear(static_cast<const CCommandBuffer::SCommand_Clear *>(pBaseCommand));
 		break;
@@ -1151,6 +1155,11 @@ ERunCommandReturnTypes CCommandProcessorFragment_OpenGL::RunCommand(const CComma
 	case CCommandBuffer::CMD_RENDER_QUAD_CONTAINER: Cmd_RenderQuadContainer(static_cast<const CCommandBuffer::SCommand_RenderQuadContainer *>(pBaseCommand)); break;
 	case CCommandBuffer::CMD_RENDER_QUAD_CONTAINER_EX: Cmd_RenderQuadContainerEx(static_cast<const CCommandBuffer::SCommand_RenderQuadContainerEx *>(pBaseCommand)); break;
 	case CCommandBuffer::CMD_RENDER_QUAD_CONTAINER_SPRITE_MULTIPLE: Cmd_RenderQuadContainerAsSpriteMultiple(static_cast<const CCommandBuffer::SCommand_RenderQuadContainerAsSpriteMultiple *>(pBaseCommand)); break;
+	// bestclient
+	case CCommandBuffer::CMD_SWAP:
+		Cmd_BeforeSwap();
+		return ERunCommandReturnTypes::RUN_COMMAND_COMMAND_UNHANDLED;
+	// bestclient
 	default: return ERunCommandReturnTypes::RUN_COMMAND_COMMAND_UNHANDLED;
 	}
 
@@ -1650,9 +1659,9 @@ bool CCommandProcessorFragment_OpenGL2::Cmd_Init(const SCommand_Init *pCommand)
 			ShaderCompiler.SetHasTextureArray(pCommand->m_pCapabilities->m_2DArrayTextures);
 
 			if(pCommand->m_pCapabilities->m_2DArrayTextures)
-				ShaderCompiler.SetTextureReplaceType(CGLSLCompiler::ETextureReplaceType::TEXTURE_2D_ARRAY);
+				ShaderCompiler.SetTextureReplaceType(CGLSLCompiler::GLSL_COMPILER_TEXTURE_REPLACE_TYPE_2D_ARRAY);
 			else
-				ShaderCompiler.SetTextureReplaceType(CGLSLCompiler::ETextureReplaceType::TEXTURE_3D);
+				ShaderCompiler.SetTextureReplaceType(CGLSLCompiler::GLSL_COMPILER_TEXTURE_REPLACE_TYPE_3D);
 
 			{
 				CGLSL PrimitiveVertexShader;

@@ -9,6 +9,8 @@
 #include <generated/protocol.h>
 
 #include <game/client/component.h>
+#include <game/client/render.h>
+#include <game/client/ui_rect.h> // bestclient
 
 struct SScoreInfo
 {
@@ -45,6 +47,9 @@ struct SScoreInfo
 class CHud : public CComponent
 {
 	float m_Width, m_Height;
+	// bestclient
+	float m_LastHudWidth = -1.0f;
+	// bestclient
 
 	int m_HudQuadContainerIndex;
 	SScoreInfo m_aScoreInfo[2];
@@ -68,17 +73,6 @@ class CHud : public CComponent
 	void RenderCursor();
 
 	void RenderTextInfo();
-	void RenderCClientTeamHud();
-
-public:
-	// game timer as text (for the music island), false if there is none
-	bool GameTimerText(char *pBuf, int BufSize, bool *pWarning);
-
-private:
-	void RenderCClientWorld();
-	void RenderCClientOverlay();
-	void RenderCClientIndicators();
-
 	void RenderConnectionWarning();
 	void RenderTeambalanceWarning();
 
@@ -89,16 +83,19 @@ private:
 	void RenderPlayerState(int ClientId);
 
 	int m_LastSpectatorCountTick;
-	// C-Client
-	float m_CcFpsShortest = 1.0f;
-	float m_CcFpsWindow = 0.0f;
-	int m_CcFpsMax = 0;
-	float m_CcBelowPhase = 0.0f;
-	void RenderSpectatorCount();
-	void RenderDummyActions();
-	void RenderMovementInformation();
+	bool m_FreezeInfoInitialized = false;
+	uint64_t m_CachedFreezeSkinRevision = 0;
+	CTeeRenderInfo m_CachedFreezeInfo;
+	int m_LastFps = -1;
+	float m_LastFpsWidth = -1.0f;
+	float m_PracticeLine1Width = -1.0f;
+	float m_PracticeLine2Width = -1.0f;
+	int m_LastMovementInfoTick = -1;
+	void RenderSpectatorCount(bool ForcePreview = false); // bestclient
+	void RenderDummyActions(bool ForcePreview = false); // bestclient
+	void RenderMovementInformation(bool ForcePreview = false); // bestclient
 
-	void UpdateMovementInformationTextContainer(STextContainerIndex &TextContainer, float FontSize, float Value, float &PrevValue);
+	void UpdateMovementInformationTextContainer(STextContainerIndex &TextContainer, float FontSize, float Value, float &PrevValue, bool AllowUpdate);
 	void RenderMovementInformationTextContainer(STextContainerIndex &TextContainer, const ColorRGBA &Color, float X, float Y);
 
 	class CMovementInformation
@@ -114,12 +111,14 @@ private:
 	void RenderPauseNotification();
 	void RenderSuddenDeath();
 
-	void RenderScoreHud();
+	void RenderScoreHud(bool ForcePreview = false); // bestclient
 	int m_LastLocalClientId = -1;
 
 	void RenderSpectatorHud();
 	void RenderWarmupTimer();
-	void RenderLocalTime(float x);
+	void RenderLocalTime(bool ForcePreview = false); // bestclient
+	void RenderFrozenHud(bool ForcePreview = false); // bestclient
+	void RenderNotifyLast(bool ForcePreview = false); // bestclient
 
 	static constexpr float MOVEMENT_INFORMATION_LINE_HEIGHT = 8.0f;
 
@@ -134,6 +133,38 @@ public:
 	void OnInit() override;
 	void OnNewSnapshot() override;
 
+	// bestclient
+	void EnsureHudSize(float Width, float Height)
+	{
+		m_Width = Width;
+		m_Height = Height;
+	}
+	CUIRect GetScoreHudRect(bool ForcePreview = false) const;
+	CUIRect GetSpectatorCountRect(bool ForcePreview = false);
+	CUIRect GetDummyActionsRect(bool ForcePreview = false) const;
+	CUIRect GetMovementInformationRect(bool ForcePreview = false) const;
+	CUIRect GetLocalTimeRect(bool ForcePreview = false) const;
+	CUIRect GetFrozenHudRect(bool ForcePreview = false) const;
+	CUIRect GetNotifyLastRect(bool ForcePreview = false) const;
+
+	CUIRect GetScoreHudEditorRect() const { return GetScoreHudRect(true); }
+	void RenderScoreHudPreview() { RenderScoreHud(true); }
+	CUIRect GetSpectatorCountHudEditorRect() { return GetSpectatorCountRect(true); }
+	void RenderSpectatorCountPreview() { RenderSpectatorCount(true); }
+	CUIRect GetDummyActionsHudEditorRect() const { return GetDummyActionsRect(true); }
+	void RenderDummyActionsPreview() { RenderDummyActions(true); }
+	CUIRect GetMovementInformationHudEditorRect() { return GetMovementInformationRect(true); }
+	void RenderMovementInformationPreview() { RenderMovementInformation(true); }
+	CUIRect GetLocalTimeHudEditorRect() const { return GetLocalTimeRect(true); }
+	void RenderLocalTimePreview() { RenderLocalTime(true); }
+	CUIRect GetFrozenHudEditorRect() const { return GetFrozenHudRect(true); }
+	void RenderFrozenHudPreview() { RenderFrozenHud(true); }
+	CUIRect GetNotifyLastHudEditorRect() const { return GetNotifyLastRect(true); }
+	void RenderNotifyLastPreview() { RenderNotifyLast(true); }
+	// bestclient
+	float GetPlayerRecordSeconds(int Dummy) const { return m_aPlayerRecord[Dummy]; }
+	// bestclient
+
 	// DDRace
 
 	void OnMessage(int MsgType, void *pRawMsg) override;
@@ -142,6 +173,7 @@ public:
 private:
 	void RenderRecord();
 	void RenderDDRaceEffects();
+	void GetFrozenTeamCounts(int &NumInTeam, int &NumFrozen, int &LocalTeamId, int *pNumUnfreezing = nullptr) const; // bestclient
 	float m_TimeCpDiff;
 	float m_aPlayerRecord[NUM_DUMMIES];
 	float m_FinishTimeDiff;
@@ -150,7 +182,7 @@ private:
 	int m_TimeCpLastReceivedTick;
 	bool m_ShowFinishTime;
 
-	inline float GetMovementInformationBoxHeight();
+	inline float GetMovementInformationBoxHeight() const; // bestclient
 	inline int GetDigitsIndex(int Value, int Max);
 
 	// Quad Offsets

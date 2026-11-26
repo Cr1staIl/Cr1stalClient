@@ -1,6 +1,6 @@
 /* (c) Magnus Auvinen. See licence.txt in the root of the distribution for more information. */
 /* If you are missing that file, acquire a complete release at teeworlds.com.                */
-
+#include <base/dbg.h>
 #include <base/logger.h>
 #include <base/mem.h>
 #include <base/net.h>
@@ -10,8 +10,6 @@
 #include <cstdlib>
 #include <iterator> // std::size
 #include <thread>
-
-static constexpr const char *const TOOL_NAME = "crapnet";
 
 struct SPacket
 {
@@ -66,7 +64,7 @@ static void Run(unsigned short Port, NETADDR Dest)
 		SPingConfig Ping = g_aConfigPings[n];
 
 		if(n != s_Lastcfg)
-			log_info(TOOL_NAME, "cfg = %d", n);
+			dbg_msg("crapnet", "cfg = %d", n);
 		s_Lastcfg = n;
 
 		// handle incoming packets
@@ -83,7 +81,7 @@ static void Run(unsigned short Port, NETADDR Dest)
 			if((rand() % 100) < Ping.m_Loss) // drop the packet
 			{
 				if(g_ConfigLog)
-					log_info(TOOL_NAME, "dropped packet");
+					dbg_msg("crapnet", "dropped packet");
 				continue;
 			}
 
@@ -139,7 +137,7 @@ static void Run(unsigned short Port, NETADDR Dest)
 			{
 				char aAddrStr[NETADDR_MAXSTRSIZE];
 				net_addr_str(&From, aAddrStr, sizeof(aAddrStr), true);
-				log_info(TOOL_NAME, "<< %08d %s (%d)", p->m_Id, aAddrStr, p->m_DataSize);
+				dbg_msg("crapnet", "<< %08d %s (%d)", p->m_Id, aAddrStr, p->m_DataSize);
 			}
 		}
 
@@ -191,7 +189,7 @@ static void Run(unsigned short Port, NETADDR Dest)
 				{
 					char aAddrStr[NETADDR_MAXSTRSIZE];
 					net_addr_str(&p->m_SendTo, aAddrStr, sizeof(aAddrStr), true);
-					log_info(TOOL_NAME, ">> %08d %s (%d) %s", p->m_Id, aAddrStr, p->m_DataSize, aFlags);
+					dbg_msg("crapnet", ">> %08d %s (%d) %s", p->m_Id, aAddrStr, p->m_DataSize, aFlags);
 				}
 
 				free(p);

@@ -252,11 +252,6 @@ int net_socket_read_wait(NETSOCKET sock, std::chrono::nanoseconds nanoseconds);
 /**
  * Creates a UDP socket and binds it to a port.
  *
- * In case a port is already in use on any of the protocol families, the whole
- * bind operation fails. Otherwise, if binding at least one protocol family
- * succeeds, the operation is treated as a success: the host may not support all
- * protocol families.
- *
  * @ingroup Network-UDP
  *
  * @param bindaddr Address to bind the socket to.
@@ -324,11 +319,6 @@ void net_udp_close(NETSOCKET sock);
 /**
  * Creates a TCP socket.
  *
- * In case a port is already in use on any of the protocol families, the whole
- * bind operation fails. Otherwise, if binding at least one protocol family
- * succeeds, the operation is treated as a success: the host may not support all
- * protocol families.
- *
  * @ingroup Network-TCP
  *
  * @param bindaddr Address to bind the socket to.
@@ -386,6 +376,21 @@ int net_tcp_connect(NETSOCKET sock, const NETADDR *addr);
  * @returns `0` on success.
  */
 int net_tcp_connect_non_blocking(NETSOCKET sock, NETADDR bindaddr);
+
+// bestclient
+/**
+ * Connects a TCP socket with a timeout.
+ *
+ * @ingroup Network-TCP
+ *
+ * @param sock Socket to connect.
+ * @param addr Address to connect to.
+ * @param TimeoutMs Timeout in milliseconds.
+ *
+ * @return `0` on success.
+ */
+int net_tcp_connect_timeout(NETSOCKET sock, const NETADDR *addr, int TimeoutMs);
+// bestclient
 
 /**
  * Sends data to a TCP stream.

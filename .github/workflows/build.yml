@@ -1,14 +1,11 @@
 name: Build
 
 on:
-  # Cr1stal Client: the full DDNet CI only runs on master or by hand,
-  # day-to-day test builds come from test-build.yml
   push:
-    branches:
-      - master
+    branches-ignore:
+      - gh-readonly-queue/**
   pull_request:
   merge_group:
-  workflow_dispatch:
 
 concurrency:
   group: ${{ github.workflow }}-${{ github.ref }}
@@ -117,15 +114,17 @@ jobs:
       if: contains(matrix.os, 'ubuntu') && contains(matrix.name, 'fancy')
       run: |
         sudo apt-get install cmake libmariadb-dev libwebsockets-dev mariadb-server -y
-        sudo systemctl start mariadb
-        sudo mariadb --protocol=socket <<'EOF'
+        sudo systemctl stop mysql
+        sudo rm -rf /var/lib/mysql/
+        sudo mysql_install_db --user=mysql --datadir=/var/lib/mysql/
+        cd /usr; sudo mysqld_safe --datadir='/var/lib/mysql/' --no-watch
+        sleep 10
+        sudo mysql <<EOF
         CREATE DATABASE ddnet;
         CREATE USER 'ddnet'@'localhost' IDENTIFIED BY 'thebestpassword';
         GRANT ALL PRIVILEGES ON ddnet.* TO 'ddnet'@'localhost';
         FLUSH PRIVILEGES;
         EOF
-        sudo mariadb --protocol=socket \
-          -e "SELECT VERSION(), @@datadir, @@socket;"
 
     - name: Prepare macOS
       if: contains(matrix.os, 'macOS')
@@ -154,6 +153,7 @@ jobs:
     - name: Cache Rust dependencies
       uses: Swatinem/rust-cache@v2.9.2
       with:
+          cache-bin: false # WORKAROUND(https://github.com/Swatinem/rust-cache/issues/341)
           workspaces: |
               src/mastersrv
               src/masterping
@@ -369,6 +369,7 @@ jobs:
     - name: Cache Rust dependencies
       uses: Swatinem/rust-cache@v2.9.2
       with:
+          cache-bin: false # WORKAROUND(https://github.com/Swatinem/rust-cache/issues/341)
           workspaces: |
               src/mastersrv
               src/masterping
@@ -418,6 +419,7 @@ jobs:
     - name: Cache Rust dependencies
       uses: Swatinem/rust-cache@v2.9.2
       with:
+          cache-bin: false # WORKAROUND(https://github.com/Swatinem/rust-cache/issues/341)
           workspaces: |
               src/mastersrv
               src/masterping
@@ -479,6 +481,7 @@ jobs:
     - name: Cache Rust dependencies
       uses: Swatinem/rust-cache@v2.9.2
       with:
+          cache-bin: false # WORKAROUND(https://github.com/Swatinem/rust-cache/issues/341)
           workspaces: ./
 
     - name: Build iOS simulator app in debug mode

@@ -81,12 +81,13 @@ void CEnvelopeExtrema::CalculateEnvelope(const CMapItemEnvelope *pEnvelopeItem, 
 
 void CEnvelopeExtrema::CalculateExtrema()
 {
-	m_vEnvelopeExtrema.resize(m_EnvelopePoints.Envelopes().size());
-	int EnvelopeIndex = 0;
-	for(const CMapItemEnvelope *pEnvelope : m_EnvelopePoints.Envelopes())
+	int EnvelopeStart, EnvelopeNum;
+	m_pMap->GetType(MAPITEMTYPE_ENVELOPE, &EnvelopeStart, &EnvelopeNum);
+	m_vEnvelopeExtrema.resize(EnvelopeNum);
+	for(int EnvelopeIndex = 0; EnvelopeIndex < EnvelopeNum; ++EnvelopeIndex)
 	{
-		CalculateEnvelope(pEnvelope, EnvelopeIndex);
-		++EnvelopeIndex;
+		const CMapItemEnvelope *pItem = static_cast<const CMapItemEnvelope *>(m_pMap->GetItem(EnvelopeStart + EnvelopeIndex));
+		CalculateEnvelope(pItem, EnvelopeIndex);
 	}
 }
 

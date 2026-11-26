@@ -10,9 +10,12 @@
 
 #include <generated/protocol.h>
 
+#include <game/client/components/bestclient/bestclient.h> // bestclient
+#include <game/client/components/hud_layout.h> // bestclient
 #include <game/client/components/scoreboard.h>
 #include <game/client/components/sounds.h>
 #include <game/client/gameclient.h>
+#include <game/client/ui.h> // bestclient
 #include <game/localization.h>
 
 void CVoting::ConCallvote(IConsole::IResult *pResult, void *pUserData)
@@ -335,60 +338,37 @@ void CVoting::OnMessage(int MsgType, void *pRawMsg)
 	}
 }
 
-void CVoting::Render()
+void CVoting::Render(bool ForcePreview)
 {
-	if((!g_Config.m_ClShowVotesAfterVoting && !GameClient()->m_Scoreboard.IsActive() && TakenChoice()) || !IsVoting())
+	// bestclient
+	if(!ForcePreview && !HudLayout::IsEnabled(HudLayout::MODULE_VOTES))
 		return;
-	const int Seconds = SecondsLeft();
-	if(Seconds < 0)
+	if(!ForcePreview && ((!g_Config.m_ClShowVotesAfterVoting && !GameClient()->m_Scoreboard.IsActive() && TakenChoice()) || !IsVoting()))
+		return;
+	const int Seconds = ForcePreview ? 12 : SecondsLeft();
+	if(!ForcePreview && Seconds < 0)
 	{
 		OnReset();
 		return;
 	}
 
-	// C-Client: small vote window (cc_mini_vote_hud): what, time left, bars and keys, nothing more
-	if(g_Config.m_CcMiniVoteHud)
+	if(g_Config.m_TcMiniVoteHud > 0)
 	{
-		CUIRect Mini = {0.0f, 60.0f, 78.0f, 21.0f};
-		Mini.Draw(ColorRGBA(0.06f, 0.055f, 0.065f, 0.75f), IGraphics::CORNER_R, 4.0f);
-		Mini.Margin(vec2(3.0f, 2.5f), &Mini);
-
-		CUIRect Line, Left, Right;
-		char aMini[64];
-		str_format(aMini, sizeof(aMini), "%ds", Seconds);
-		Mini.HSplitTop(5.5f, &Line, &Mini);
-		Line.VSplitRight(TextRender()->TextWidth(4.5f, aMini) + 1.0f, &Left, &Right);
-		SLabelProperties MiniProps;
-		MiniProps.m_EllipsisAtEnd = true;
-		MiniProps.m_MaxWidth = Left.w - 2.0f;
-		Ui()->DoLabel(&Left, VoteDescription(), 5.0f, TEXTALIGN_ML, MiniProps);
-		SLabelProperties TimeProps;
-		TimeProps.SetColor(ColorRGBA(0.7f, 0.7f, 0.75f, 1.0f));
-		Ui()->DoLabel(&Right, aMini, 4.5f, TEXTALIGN_MR, TimeProps);
-
-		Mini.HSplitTop(2.0f, nullptr, &Mini);
-		Mini.HSplitTop(3.0f, &Line, &Mini);
-		RenderBars(Line);
-
-		Mini.HSplitTop(2.0f, nullptr, &Mini);
-		Mini.HSplitTop(4.5f, &Line, &Mini);
-		Line.VSplitMid(&Left, &Right, 2.0f);
-		char aKeyMini[64];
-		GameClient()->m_Binds.GetKey("vote yes", aKeyMini, sizeof(aKeyMini));
-		str_format(aMini, sizeof(aMini), "%s %s", aKeyMini, Localize("yes"));
-		TextRender()->TextColor(TakenChoice() == 1 ? ColorRGBA(0.2f, 0.9f, 0.2f, 0.9f) : ColorRGBA(0.85f, 0.85f, 0.85f, 0.8f));
-		Ui()->DoLabel(&Left, aMini, 4.0f, TEXTALIGN_ML);
-		GameClient()->m_Binds.GetKey("vote no", aKeyMini, sizeof(aKeyMini));
-		str_format(aMini, sizeof(aMini), "%s %s", Localize("no"), aKeyMini);
-		TextRender()->TextColor(TakenChoice() == -1 ? ColorRGBA(0.95f, 0.25f, 0.25f, 0.9f) : ColorRGBA(0.85f, 0.85f, 0.85f, 0.8f));
-		Ui()->DoLabel(&Right, aMini, 4.0f, TEXTALIGN_MR);
-		TextRender()->TextColor(TextRender()->DefaultTextColor());
+		GameClient()->m_TClient.RenderMiniVoteHud(ForcePreview);
 		return;
 	}
 
-	CUIRect View = {0.0f, 60.0f, 120.0f, 38.0f};
-	View.Draw(ColorRGBA(0.0f, 0.0f, 0.0f, 0.4f), IGraphics::CORNER_R, 3.0f);
-	View.Margin(3.0f, &View);
+	const float HudHeight = 300.0f;
+	const float HudWidth = HudHeight * Graphics()->ScreenAspect();
+	CUIRect View = GetHudRect(HudWidth, HudHeight, ForcePreview);
+	if(View.w <= 0.0f || View.h <= 0.0f)
+		return;
+	const auto Layout = HudLayout::Get(HudLayout::MODULE_VOTES, HudWidth, HudHeight);
+	const float Scale = std::clamp(Layout.m_Scale / 100.0f, 0.25f, 3.0f);
+	const float ModuleAlpha = HudLayout::AlphaFactor(HudLayout::MODULE_VOTES);
+	const int Corners = HudLayout::BackgroundCorners(IGraphics::CORNER_ALL, View.x, View.y, View.w, View.h, HudWidth, HudHeight);
+	View.Draw(ColorRGBA(0.0f, 0.0f, 0.0f, 0.4f * ModuleAlpha), Corners, 3.0f * Scale);
+	View.Margin(3.0f * Scale, &View);
 
 	SLabelProperties Props;
 	Props.m_EllipsisAtEnd = true;
@@ -397,48 +377,73 @@ void CVoting::Render()
 	str_format(aBuf, sizeof(aBuf), Localize("%ds left"), Seconds);
 
 	CUIRect Row, LeftColumn, RightColumn, ProgressSpinner;
-	View.HSplitTop(6.0f, &Row, &View);
-	Row.VSplitRight(TextRender()->TextWidth(6.0f, aBuf), &LeftColumn, &RightColumn);
-	LeftColumn.VSplitRight(2.0f, &LeftColumn, nullptr);
-	LeftColumn.VSplitRight(6.0f, &LeftColumn, &ProgressSpinner);
-	LeftColumn.VSplitRight(2.0f, &LeftColumn, nullptr);
+	View.HSplitTop(6.0f * Scale, &Row, &View);
+	Row.VSplitRight(TextRender()->TextWidth(6.0f * Scale, aBuf), &LeftColumn, &RightColumn);
+	LeftColumn.VSplitRight(2.0f * Scale, &LeftColumn, nullptr);
+	LeftColumn.VSplitRight(6.0f * Scale, &LeftColumn, &ProgressSpinner);
+	LeftColumn.VSplitRight(2.0f * Scale, &LeftColumn, nullptr);
 
 	SProgressSpinnerProperties ProgressProps;
-	ProgressProps.m_Progress = std::clamp((time() - m_Opentime) / (float)(m_Closetime - m_Opentime), 0.0f, 1.0f);
+	ProgressProps.m_Progress = ForcePreview ? 0.33f : std::clamp((time() - m_Opentime) / (float)(m_Closetime - m_Opentime), 0.0f, 1.0f);
 	Ui()->RenderProgressSpinner(ProgressSpinner.Center(), ProgressSpinner.h / 2.0f, ProgressProps);
 
-	Ui()->DoLabel(&RightColumn, aBuf, 6.0f, TEXTALIGN_MR);
+	Ui()->DoLabel(&RightColumn, aBuf, 6.0f * Scale, TEXTALIGN_MR);
 
 	Props.m_MaxWidth = LeftColumn.w;
-	Ui()->DoLabel(&LeftColumn, VoteDescription(), 6.0f, TEXTALIGN_ML, Props);
+	Ui()->DoLabel(&LeftColumn, ForcePreview ? Localize("Change map to Kobra 3") : VoteDescription(), 6.0f * Scale, TEXTALIGN_ML, Props);
 
-	View.HSplitTop(3.0f, nullptr, &View);
-	View.HSplitTop(6.0f, &Row, &View);
-	str_format(aBuf, sizeof(aBuf), "%s %s", Localize("Reason:"), VoteReason());
+	View.HSplitTop(3.0f * Scale, nullptr, &View);
+	View.HSplitTop(6.0f * Scale, &Row, &View);
+	str_format(aBuf, sizeof(aBuf), "%s %s", Localize("Reason:"), ForcePreview ? Localize("Editor preview") : VoteReason());
 	Props.m_MaxWidth = Row.w;
-	Ui()->DoLabel(&Row, aBuf, 6.0f, TEXTALIGN_ML, Props);
+	Ui()->DoLabel(&Row, aBuf, 6.0f * Scale, TEXTALIGN_ML, Props);
 
-	View.HSplitTop(3.0f, nullptr, &View);
-	View.HSplitTop(4.0f, &Row, &View);
+	View.HSplitTop(3.0f * Scale, nullptr, &View);
+	View.HSplitTop(4.0f * Scale, &Row, &View);
 	RenderBars(Row);
 
-	View.HSplitTop(3.0f, nullptr, &View);
-	View.HSplitTop(6.0f, &Row, &View);
-	Row.VSplitMid(&LeftColumn, &RightColumn, 4.0f);
+	View.HSplitTop(3.0f * Scale, nullptr, &View);
+	View.HSplitTop(6.0f * Scale, &Row, &View);
+	Row.VSplitMid(&LeftColumn, &RightColumn, 4.0f * Scale);
 
 	char aKey[64];
 	GameClient()->m_Binds.GetKey("vote yes", aKey, sizeof(aKey));
 	str_format(aBuf, sizeof(aBuf), "%s - %s", aKey, Localize("Vote yes"));
 	TextRender()->TextColor(TakenChoice() == 1 ? ColorRGBA(0.2f, 0.9f, 0.2f, 0.85f) : TextRender()->DefaultTextColor());
-	Ui()->DoLabel(&LeftColumn, aBuf, 6.0f, TEXTALIGN_ML);
+	Ui()->DoLabel(&LeftColumn, aBuf, 6.0f * Scale, TEXTALIGN_ML);
 
 	GameClient()->m_Binds.GetKey("vote no", aKey, sizeof(aKey));
 	str_format(aBuf, sizeof(aBuf), "%s - %s", Localize("Vote no"), aKey);
 	TextRender()->TextColor(TakenChoice() == -1 ? ColorRGBA(0.95f, 0.25f, 0.25f, 0.85f) : TextRender()->DefaultTextColor());
-	Ui()->DoLabel(&RightColumn, aBuf, 6.0f, TEXTALIGN_MR);
+	Ui()->DoLabel(&RightColumn, aBuf, 6.0f * Scale, TEXTALIGN_MR);
 
 	TextRender()->TextColor(TextRender()->DefaultTextColor());
+	// bestclient
 }
+
+// bestclient
+CUIRect CVoting::GetHudRect(float HudWidth, float HudHeight, bool ForcePreview) const
+{
+	if(!ForcePreview && !HudLayout::IsEnabled(HudLayout::MODULE_VOTES))
+		return {0.0f, 0.0f, 0.0f, 0.0f};
+	if(!ForcePreview && !IsVoting())
+		return {0.0f, 0.0f, 0.0f, 0.0f};
+
+	const auto Layout = HudLayout::Get(HudLayout::MODULE_VOTES, HudWidth, HudHeight);
+	const float Scale = std::clamp(Layout.m_Scale / 100.0f, 0.25f, 3.0f);
+	const bool Mini = g_Config.m_TcMiniVoteHud > 0;
+	CUIRect Rect = {Layout.m_X, Layout.m_Y, (Mini ? 70.0f : 120.0f) * Scale, (Mini ? 35.0f : 38.0f) * Scale};
+	Rect.x = std::clamp(Rect.x, 0.0f, std::max(0.0f, HudWidth - Rect.w));
+	Rect.y = std::clamp(Rect.y, 0.0f, std::max(0.0f, HudHeight - Rect.h));
+	if(!ForcePreview)
+	{
+		const vec2 Offset = GameClient()->m_MusicPlayer.GetHudPushOffsetForRect(Rect, HudWidth, HudHeight, 2.0f);
+		Rect.x += Offset.x;
+		Rect.y += Offset.y;
+	}
+	return Rect;
+}
+// bestclient
 
 void CVoting::RenderBars(CUIRect Bars) const
 {
@@ -463,18 +468,9 @@ void CVoting::RenderBars(CUIRect Bars) const
 			Bars.VSplitRight(Bars.w * m_No / m_Total, nullptr, &NoArea);
 			NoArea.Draw(ColorRGBA(0.9f, 0.2f, 0.2f, 0.85f), IGraphics::CORNER_ALL, NoArea.h / 2.0f);
 		}
-
-		// C-Client: yes and no in percent on the bar
-		if(g_Config.m_CcVotePercent)
-		{
-			char aBuf[16];
-			CUIRect Text;
-			Bars.VMargin(Bars.h * 0.4f, &Text);
-			const float FontSize = Bars.h * 0.85f;
-			str_format(aBuf, sizeof(aBuf), "%d%%", (m_Yes * 100 + m_Total / 2) / m_Total);
-			Ui()->DoLabel(&Text, aBuf, FontSize, TEXTALIGN_ML);
-			str_format(aBuf, sizeof(aBuf), "%d%%", (m_No * 100 + m_Total / 2) / m_Total);
-			Ui()->DoLabel(&Text, aBuf, FontSize, TEXTALIGN_MR);
-		}
 	}
+
+	// bestclient
+	BestClientRenderVotePercentages(Ui(), TextRender(), Bars, m_Yes, m_No, m_Total);
+	// bestclient
 }

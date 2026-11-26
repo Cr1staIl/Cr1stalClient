@@ -10,7 +10,6 @@
 
 #include <engine/console.h>
 #include <engine/shared/linereader.h>
-#include <engine/shared/protocol.h>
 #include <engine/storage.h>
 
 const char *Localize(const char *pStr, const char *pContext)
@@ -18,6 +17,20 @@ const char *Localize(const char *pStr, const char *pContext)
 	const char *pNewStr = g_Localization.FindString(str_quickhash(pStr), str_quickhash(pContext));
 	return pNewStr ? pNewStr : pStr;
 }
+
+// TClient
+const char *TCLocalize(const char *pStr, const char *pContext)
+{
+	return Localize(pStr, pContext);
+}
+
+// bestclient
+const char *BcLocalize(const char *pStr)
+{
+	const char *pNewStr = g_Localization.FindString(str_quickhash(pStr), str_quickhash("BestClient"));
+	return pNewStr ? pNewStr : Localize(pStr);
+}
+// bestclient
 
 void CLocalizationDatabase::LoadIndexfile(IStorage *pStorage, IConsole *pConsole)
 {
@@ -72,19 +85,6 @@ void CLocalizationDatabase::LoadIndexfile(IStorage *pStorage, IConsole *pConsole
 		}
 		char aCountryCode[128];
 		str_copy(aCountryCode, pLine + 3);
-		int CountryCode;
-		if(!str_toint(aCountryCode, &CountryCode))
-		{
-			log_error("localization", "Country code '%s' for language '%s' is not a number", aCountryCode, aEnglishName);
-			(void)LineReader.Get();
-			continue;
-		}
-		if(!in_range(CountryCode, CountryCode::MINIMUM, CountryCode::MAXIMUM))
-		{
-			log_error("localization", "Country code '%d' for language '%s' is not within valid code range [%d..%d]", CountryCode, aEnglishName, CountryCode::MINIMUM, CountryCode::MAXIMUM);
-			(void)LineReader.Get();
-			continue;
-		}
 
 		pLine = LineReader.Get();
 		if(!pLine)
@@ -115,7 +115,7 @@ void CLocalizationDatabase::LoadIndexfile(IStorage *pStorage, IConsole *pConsole
 
 		char aFilename[IO_MAX_PATH_LENGTH];
 		str_format(aFilename, sizeof(aFilename), "languages/%s.txt", aEnglishName);
-		m_vLanguages.emplace_back(aNativeName, aFilename, CountryCode, vLanguageCodes);
+		m_vLanguages.emplace_back(aNativeName, aFilename, str_toint(aCountryCode), vLanguageCodes);
 	}
 
 	std::sort(m_vLanguages.begin(), m_vLanguages.end());
@@ -180,7 +180,7 @@ void CLocalizationDatabase::SelectDefaultLanguage(IConsole *pConsole, char *pFil
 	}
 }
 
-bool CLocalizationDatabase::Load(const char *pFilename, IStorage *pStorage, IConsole *pConsole)
+bool CLocalizationDatabase::Load(const char *pFilename, IStorage *pStorage, IConsole *pConsole, bool Clear)
 {
 	// empty string means unload
 	if(pFilename[0] == 0)
@@ -195,17 +195,18 @@ bool CLocalizationDatabase::Load(const char *pFilename, IStorage *pStorage, ICon
 		return false;
 
 	log_info("localization", "loaded '%s'", pFilename);
-	m_vStrings.clear();
-	m_StringsHeap.Reset();
-
-	std::string Context;
-	std::string Origin;
-	std::string Replacement;
+	if(Clear)
+	{
+		m_vStrings.clear();
+		m_StringsHeap.Reset();
+	}
+	char aContext[512];
+	char aOrigin[512];
 	int Line = 0;
 	while(const char *pLine = LineReader.Get())
 	{
 		Line++;
-		if(pLine[0] == '\0')
+		if(!str_length(pLine))
 			continue;
 
 		if(pLine[0] == '#') // skip comments
@@ -213,48 +214,46 @@ bool CLocalizationDatabase::Load(const char *pFilename, IStorage *pStorage, ICon
 
 		if(pLine[0] == '[') // context
 		{
-			const size_t Len = str_length(pLine);
-			if(Len <= 2 || pLine[Len - 1] != ']')
+			size_t Len = str_length(pLine);
+			if(Len < 1 || pLine[Len - 1] != ']')
 			{
 				log_error("localization", "malformed context '%s' on line %d", pLine, Line);
 				continue;
 			}
-			Context = pLine + 1;
-			Context.erase(Len - 2); // remove ']'
+			str_truncate(aContext, sizeof(aContext), pLine + 1, Len - 2);
 			pLine = LineReader.Get();
 			if(!pLine)
 			{
-				log_error("localization", "unexpected end of file after context line '%s' on line %d", Context.c_str(), Line);
+				log_error("localization", "unexpected end of file after context line '%s' on line %d", aContext, Line);
 				break;
 			}
 			Line++;
 		}
 		else
 		{
-			Context = "";
+			aContext[0] = '\0';
 		}
 
-		Origin = pLine;
-		str_unescape_newlines(Origin.data());
-
+		str_copy(aOrigin, pLine);
 		const char *pReplacement = LineReader.Get();
 		if(!pReplacement)
 		{
-			log_error("localization", "unexpected end of file after original '%s' on line %d", Origin.c_str(), Line);
+			log_error("localization", "unexpected end of file after original '%s' on line %d", aOrigin, Line);
 			break;
 		}
 		Line++;
 
 		if(pReplacement[0] != '=' || pReplacement[1] != '=' || pReplacement[2] != ' ')
 		{
-			log_error("localization", "malformed replacement '%s' for original '%s' on line %d", pReplacement, Origin.c_str(), Line);
+			log_error("localization", "malformed replacement '%s' for original '%s' on line %d", pReplacement, aOrigin, Line);
 			continue;
 		}
 
-		Replacement = pReplacement + 3;
-		str_unescape_newlines(Replacement.data());
+		if(str_comp(pReplacement, "== ") == 0)
+			continue;
 
-		AddString(Origin.c_str(), Replacement.c_str(), Context.c_str());
+		pReplacement += 3;
+		AddString(aOrigin, pReplacement, aContext);
 	}
 	std::sort(m_vStrings.begin(), m_vStrings.end());
 	return true;
@@ -262,7 +261,16 @@ bool CLocalizationDatabase::Load(const char *pFilename, IStorage *pStorage, ICon
 
 void CLocalizationDatabase::AddString(const char *pOrgStr, const char *pNewStr, const char *pContext)
 {
-	m_vStrings.emplace_back(str_quickhash(pOrgStr), str_quickhash(pContext), m_StringsHeap.StoreString(*pNewStr ? pNewStr : pOrgStr));
+	// bestclient
+	const unsigned Hash = str_quickhash(pOrgStr);
+	const unsigned ContextHash = str_quickhash(pContext);
+	for(const CString &String : m_vStrings)
+	{
+		if(String.m_Hash == Hash && String.m_ContextHash == ContextHash)
+			return;
+	}
+	m_vStrings.emplace_back(Hash, ContextHash, m_StringsHeap.StoreString(*pNewStr ? pNewStr : pOrgStr));
+	// bestclient
 }
 
 const char *CLocalizationDatabase::FindString(unsigned Hash, unsigned ContextHash) const

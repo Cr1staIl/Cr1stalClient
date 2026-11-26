@@ -36,7 +36,10 @@ void CLayerQuads::Render(const CEditorMap *pRenderMap)
 		Graphics()->TextureClear();
 	}
 
-	Editor()->RenderMap()->ForceRenderQuads(m_vQuads.data(), m_vQuads.size(), &pRenderMap->m_EnvelopeEvaluator, 1.0f);
+	Graphics()->BlendNone();
+	Editor()->RenderMap()->ForceRenderQuads(m_vQuads.data(), m_vQuads.size(), LAYERRENDERFLAG_OPAQUE, &pRenderMap->m_EnvelopeEvaluator);
+	Graphics()->BlendNormal();
+	Editor()->RenderMap()->ForceRenderQuads(m_vQuads.data(), m_vQuads.size(), LAYERRENDERFLAG_TRANSPARENT, &pRenderMap->m_EnvelopeEvaluator);
 }
 
 CQuad *CLayerQuads::NewQuad(int x, int y, int Width, int Height)
@@ -120,9 +123,8 @@ void CLayerQuads::BrushPlace(CLayer *pBrush, vec2 WorldPos)
 	if(m_Readonly)
 		return;
 
-	const CLayerQuads *pQuadLayer = static_cast<const CLayerQuads *>(pBrush);
+	CLayerQuads *pQuadLayer = static_cast<CLayerQuads *>(pBrush);
 	std::vector<CQuad> vAddedQuads;
-	vAddedQuads.reserve(pQuadLayer->m_vQuads.size());
 	for(const auto &Quad : pQuadLayer->m_vQuads)
 	{
 		CQuad NewQuad = Quad;
@@ -131,9 +133,10 @@ void CLayerQuads::BrushPlace(CLayer *pBrush, vec2 WorldPos)
 			Point.x += f2fx(WorldPos.x);
 			Point.y += f2fx(WorldPos.y);
 		}
+
+		m_vQuads.push_back(NewQuad);
 		vAddedQuads.push_back(NewQuad);
 	}
-	m_vQuads.insert(m_vQuads.end(), vAddedQuads.begin(), vAddedQuads.end());
 	Map()->m_EditorHistory.RecordAction(std::make_shared<CEditorActionQuadPlace>(Map(), Map()->m_SelectedGroup, Map()->m_vSelectedLayers[0], vAddedQuads));
 	Map()->OnModify();
 }
@@ -188,6 +191,14 @@ void CLayerQuads::BrushFlipY()
 	Map()->OnModify();
 }
 
+static void Rotate(vec2 *pCenter, vec2 *pPoint, float Rotation)
+{
+	float x = pPoint->x - pCenter->x;
+	float y = pPoint->y - pCenter->y;
+	pPoint->x = x * std::cos(Rotation) - y * std::sin(Rotation) + pCenter->x;
+	pPoint->y = x * std::sin(Rotation) + y * std::cos(Rotation) + pCenter->y;
+}
+
 void CLayerQuads::BrushRotate(float Amount)
 {
 	vec2 Center;
@@ -195,11 +206,15 @@ void CLayerQuads::BrushRotate(float Amount)
 	Center.x /= 2;
 	Center.y /= 2;
 
-	const ivec2 CenterFixed = ivec2(f2fx(Center.x), f2fx(Center.y));
-
 	for(auto &Quad : m_vQuads)
 	{
-		RotatePoints(CenterFixed, Quad.m_aPoints, std::size(Quad.m_aPoints), Amount);
+		for(auto &Point : Quad.m_aPoints)
+		{
+			vec2 Pos(fx2f(Point.x), fx2f(Point.y));
+			Rotate(&Center, &Pos, Amount);
+			Point.x = f2fx(Pos.x);
+			Point.y = f2fx(Pos.y);
+		}
 	}
 }
 

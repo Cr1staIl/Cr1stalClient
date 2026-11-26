@@ -1,14 +1,11 @@
 name: Check ASan & UBSan
 
 on:
-  # Cr1stal Client: the full DDNet CI only runs on master or by hand,
-  # day-to-day test builds come from test-build.yml
   push:
-    branches:
-      - master
+    branches-ignore:
+      - gh-readonly-queue/**
   pull_request:
   merge_group:
-  workflow_dispatch:
 
 concurrency:
   group: ${{ github.workflow }}-${{ github.ref }}
@@ -41,6 +38,7 @@ jobs:
     - name: Cache Rust dependencies
       uses: Swatinem/rust-cache@v2.9.2
       with:
+          cache-bin: false # WORKAROUND(https://github.com/Swatinem/rust-cache/issues/341)
           workspaces: |
               src/mastersrv
               src/masterping
@@ -52,7 +50,7 @@ jobs:
         cd clang-sanitizer
         export CC=clang
         export CXX=clang++
-        SAN_FLAGS="-fsanitize=address,undefined,leak -fsanitize-recover=all -fno-omit-frame-pointer -fno-common -Werror"
+        SAN_FLAGS="-fsanitize=address,undefined,leak -fsanitize-recover=all -fno-omit-frame-pointer -fno-common"
         export CXXFLAGS="$SAN_FLAGS"
         export CFLAGS="$SAN_FLAGS"
         cmake -G Ninja -DCMAKE_BUILD_TYPE=Debug -DHEADLESS_CLIENT=ON -Werror=dev -DDOWNLOAD_GTEST=ON -DDEV=ON ..

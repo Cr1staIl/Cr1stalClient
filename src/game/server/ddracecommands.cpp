@@ -6,10 +6,7 @@
 #include <base/time.h>
 
 #include <engine/antibot.h>
-#include <engine/server/authmanager.h>
 #include <engine/shared/config.h>
-
-#include <generated/protocol.h>
 
 #include <game/mapitems.h>
 #include <game/server/entities/character.h>
@@ -17,16 +14,6 @@
 #include <game/server/player.h>
 #include <game/server/save.h>
 #include <game/server/teams.h>
-
-#include <algorithm>
-
-static vec2 ClampPlacement(const CCollision *pCollision, vec2 Pos)
-{
-	// Further out a tee is killed by CEntity::GameLayerClipped anyway
-	constexpr float Margin = 200 * 32.0f;
-	return vec2(std::clamp(Pos.x, -Margin, pCollision->GetWidth() * 32.0f + Margin),
-		std::clamp(Pos.y, -Margin, pCollision->GetHeight() * 32.0f + Margin));
-}
 
 void CGameContext::ConGoLeft(IConsole::IResult *pResult, void *pUserData)
 {
@@ -93,9 +80,7 @@ void CGameContext::MoveCharacter(int ClientId, int X, int Y, bool Raw)
 	if(!pChr)
 		return;
 
-	const float Scale = Raw ? 1.0f : 32.0f; // Scaled in float, 32 * X would overflow an int
-	pChr->Move(vec2(Scale * X, Scale * Y));
-	pChr->SetPosition(ClampPlacement(Collision(), pChr->Core()->m_Pos));
+	pChr->Move(vec2((Raw ? 1 : 32) * X, (Raw ? 1 : 32) * Y));
 	pChr->ResetVelocity();
 	pChr->m_DDRaceState = ERaceState::CHEATED;
 }
@@ -433,27 +418,10 @@ void CGameContext::ModifyWeapons(IConsole::IResult *pResult, void *pUserData,
 
 void CGameContext::Teleport(CCharacter *pChr, vec2 Pos)
 {
-	Pos = ClampPlacement(Collision(), Pos);
 	pChr->SetPosition(Pos);
 	pChr->m_Pos = Pos;
 	pChr->m_PrevPos = Pos;
 	pChr->m_DDRaceState = ERaceState::CHEATED;
-}
-
-void CGameContext::PracticeTeleport(CCharacter *pChr, vec2 Pos)
-{
-	CMapItemLayerTilemap *pGameLayer = m_Layers.GameLayer();
-	constexpr float OuterKillTileBoundaryDistance = 201 * 32.f;
-	const float MapWidth = (pGameLayer->m_Width * 32) + (OuterKillTileBoundaryDistance * 2.f);
-	const float MapHeight = (pGameLayer->m_Height * 32) + (OuterKillTileBoundaryDistance * 2.f);
-	Pos.x = std::clamp(Pos.x, (-OuterKillTileBoundaryDistance) + 1.f, (-OuterKillTileBoundaryDistance) + MapWidth - 1.f);
-	Pos.y = std::clamp(Pos.y, (-OuterKillTileBoundaryDistance) + 1.f, (-OuterKillTileBoundaryDistance) + MapHeight - 1.f);
-
-	Teleport(pChr, Pos);
-	pChr->ResetJumps();
-	pChr->Unfreeze();
-	pChr->ResetVelocity();
-	pChr->GetPlayer()->m_LastTeleTee.Save(pChr);
 }
 
 void CGameContext::ConToTeleporter(IConsole::IResult *pResult, void *pUserData)
@@ -499,27 +467,7 @@ void CGameContext::ConTeleport(IConsole::IResult *pResult, void *pUserData)
 	int TeleTo = pResult->NumArguments() ? pResult->GetVictim(HasSource ? 1 : 0) : pResult->m_ClientId;
 	int AuthLevel = pSelf->Server()->GetAuthedState(pResult->m_ClientId);
 
-	auto MinTeleLevel = CAuthManager::RoleNameToAuthLevel(g_Config.m_SvTeleOthersAuthLevel);
-	if(!MinTeleLevel.has_value())
-	{
-		// if it is not a valid role name like "helper"
-		// we fallback to backcompat numeric values
-		if(str_comp(g_Config.m_SvTeleOthersAuthLevel, "1") == 0)
-		{
-			MinTeleLevel = AUTHED_HELPER;
-		}
-		else if(str_comp(g_Config.m_SvTeleOthersAuthLevel, "2") == 0)
-		{
-			MinTeleLevel = AUTHED_MOD;
-		}
-		else if(str_comp(g_Config.m_SvTeleOthersAuthLevel, "3") == 0)
-		{
-			MinTeleLevel = AUTHED_ADMIN;
-		}
-	}
-	dbg_assert(MinTeleLevel.has_value(), "sv_tele_others_auth_level got unexpected value '%s'", g_Config.m_SvTeleOthersAuthLevel);
-
-	if(Tele != pResult->m_ClientId && AuthLevel < MinTeleLevel.value())
+	if(Tele != pResult->m_ClientId && AuthLevel < g_Config.m_SvTeleOthersAuthLevel)
 	{
 		pSelf->Console()->Print(IConsole::OUTPUT_LEVEL_STANDARD, "tele", "you aren't allowed to tele others");
 		return;
@@ -688,13 +636,13 @@ void CGameContext::ConReloadCensorlist(IConsole::IResult *pResult, void *pUserDa
 void CGameContext::ConDumpAntibot(IConsole::IResult *pResult, void *pUserData)
 {
 	CGameContext *pSelf = (CGameContext *)pUserData;
-	pSelf->Antibot()->ConsoleCommand(pResult->m_ClientId, "dump");
+	pSelf->Antibot()->ConsoleCommand("dump");
 }
 
 void CGameContext::ConAntibot(IConsole::IResult *pResult, void *pUserData)
 {
 	CGameContext *pSelf = (CGameContext *)pUserData;
-	pSelf->Antibot()->ConsoleCommand(pResult->m_ClientId, pResult->GetString(0));
+	pSelf->Antibot()->ConsoleCommand(pResult->GetString(0));
 }
 
 void CGameContext::ConDumpLog(IConsole::IResult *pResult, void *pUserData)

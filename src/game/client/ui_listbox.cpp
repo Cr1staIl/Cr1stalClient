@@ -2,8 +2,6 @@
 /* If you are missing that file, acquire a complete release at teeworlds.com.                */
 #include "ui_listbox.h"
 
-#include "components/cclient_style.h"
-
 #include <base/vmath.h>
 
 #include <engine/config.h>
@@ -27,6 +25,9 @@ void CListBox::Reset()
 	m_ScrollbarMargin = 5.0f;
 	m_HasHeader = false;
 	m_Active = true;
+	// bestclient
+	m_SuppressSelectionHighlight = false;
+	// bestclient
 }
 
 void CListBox::DoHeader(const CUIRect *pRect, const char *pTitle, float HeaderHeight, float Spacing)
@@ -36,7 +37,7 @@ void CListBox::DoHeader(const CUIRect *pRect, const char *pTitle, float HeaderHe
 
 	// background
 	View.HSplitTop(HeaderHeight + Spacing, &Header, nullptr);
-	Header.Draw(ColorRGBA(0.0f, 0.0f, 0.0f, 0.2f), m_BackgroundCorners & IGraphics::CORNER_T, 8.0f);
+	Header.Draw(ColorRGBA(0.0f, 0.0f, 0.0f, 0.15f), m_BackgroundCorners & IGraphics::CORNER_T, 5.0f);
 
 	// draw header
 	View.HSplitTop(HeaderHeight, &Header, &View);
@@ -67,7 +68,7 @@ void CListBox::DoStart(float RowHeight, int NumItems, int ItemsPerRow, int RowsP
 	// background
 	m_BackgroundCorners = BackgroundCorners;
 	if(Background)
-		View.Draw(ColorRGBA(0.0f, 0.0f, 0.0f, 0.2f), m_BackgroundCorners & (m_HasHeader ? IGraphics::CORNER_B : IGraphics::CORNER_ALL), 8.0f);
+		View.Draw(ColorRGBA(0.0f, 0.0f, 0.0f, 0.15f), m_BackgroundCorners & (m_HasHeader ? IGraphics::CORNER_B : IGraphics::CORNER_ALL), 5.0f);
 
 	// setup the variables
 	m_ListBoxView = View;
@@ -81,6 +82,9 @@ void CListBox::DoStart(float RowHeight, int NumItems, int ItemsPerRow, int RowsP
 	m_ListBoxItemsPerRow = ItemsPerRow;
 	m_ListBoxItemActivated = false;
 	m_ListBoxItemSelected = false;
+	// bestclient
+	m_SuppressSelectionHighlight = false;
+	// bestclient
 
 	// handle input
 	if(m_Active && !Input()->ModifierIsPressed() && !Input()->ShiftIsPressed() && !Input()->AltIsPressed())
@@ -168,18 +172,35 @@ CListboxItem CListBox::DoNextItem(const void *pId, bool Selected, float CornerRa
 			}
 		}
 
-		// C-Client: calm blue violet for the selected row
-		Item.m_Rect.Draw(CCStyle::ACCENT.WithAlpha(m_Active ? 0.45f : 0.3f), IGraphics::CORNER_ALL, CornerRadius);
+		// bestclient
+		if(!m_SuppressSelectionHighlight)
+			Item.m_Rect.Draw(ColorRGBA(1.0f, 1.0f, 1.0f, m_Active ? 0.5f : 0.33f), IGraphics::CORNER_ALL, CornerRadius);
+		// bestclient
 	}
-	// C-Client: the hover light fades in and out
-	const float HoverA = Item.m_Visible ? Ui()->StateAnim(pId, Ui()->HotItem() == pId && !m_ScrollRegion.Animating(), 14.0f) : 0.0f;
-	if(HoverA > 0.01f)
+	// bestclient
+	const bool SuppressHighlight = m_SuppressSelectionHighlight;
+	m_SuppressSelectionHighlight = false;
+	// bestclient
+	if(Ui()->HotItem() == pId && !m_ScrollRegion.Animating())
 	{
-		Item.m_Rect.Draw(ColorRGBA(1.0f, 1.0f, 1.0f, 0.08f * HoverA), IGraphics::CORNER_ALL, CornerRadius);
+		// bestclient
+		if(!SuppressHighlight)
+			Item.m_Rect.Draw(ColorRGBA(1.0f, 1.0f, 1.0f, 0.33f), IGraphics::CORNER_ALL, CornerRadius);
+		// bestclient
 	}
 
 	return Item;
 }
+
+// bestclient
+CUIRect CListBox::DoExtraRow(float Height, bool ScrollHere)
+{
+	CUIRect Row;
+	m_ListBoxView.HSplitTop(Height, &Row, &m_ListBoxView);
+	m_ScrollRegion.AddRect(Row, ScrollHere);
+	return Row;
+}
+// bestclient
 
 CListboxItem CListBox::DoSubheader()
 {

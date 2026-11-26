@@ -38,7 +38,6 @@ CBinds::CBinds()
 {
 	mem_zero(m_aapKeyBindings, sizeof(m_aapKeyBindings));
 	m_SpecialBinds.m_pBinds = this;
-	m_HandlingNewBind = false;
 }
 
 CBinds::~CBinds()
@@ -129,16 +128,29 @@ bool CBinds::OnInput(const IInput::CEvent &Event)
 
 	if(Event.m_Flags & IInput::FLAG_PRESS)
 	{
+		// bestclient
+		if(Input()->ShiftIsPressed() && !Input()->ModifierIsPressed() && (Event.m_Key == KEY_S || Event.m_Key == KEY_P))
+		{
+			const bool Chord = Input()->KeyIsPressed(KEY_S) && Input()->KeyIsPressed(KEY_P);
+			if(Chord || g_Config.m_BcProfiler)
+				return false;
+		}
+		// bestclient
 		auto ActiveBind = std::find_if(m_vActiveBinds.begin(), m_vActiveBinds.end(), [&](const CBindSlot &Bind) {
 			return Event.m_Key == Bind.m_Key;
 		});
 		if(ActiveBind == m_vActiveBinds.end())
 		{
-			m_HandlingNewBind = true;
 			const auto &&OnKeyPress = [&](int Mask) {
-				// Have to copy bind because it can unbind itself during ExecuteLineStroked
-				const std::string BindCopy = m_aapKeyBindings[Mask][Event.m_Key];
-				Console()->ExecuteLineStroked(1, BindCopy.c_str(), IConsole::CLIENT_ID_UNSPECIFIED);
+				const char *pBind = m_aapKeyBindings[Mask][Event.m_Key];
+				if(g_Config.m_ClSubTickAiming)
+				{
+					if(str_comp("+fire", pBind) == 0 || str_comp("+hook", pBind) == 0)
+					{
+						m_MouseOnAction = true;
+					}
+				}
+				Console()->ExecuteLineStroked(1, pBind, IConsole::CLIENT_ID_UNSPECIFIED);
 				m_vActiveBinds.emplace_back(Event.m_Key, Mask);
 			};
 
@@ -154,7 +166,6 @@ bool CBinds::OnInput(const IInput::CEvent &Event)
 				OnKeyPress(KeyModifier::NONE);
 				Handled = true;
 			}
-			m_HandlingNewBind = false;
 		}
 		else
 		{
@@ -162,9 +173,7 @@ bool CBinds::OnInput(const IInput::CEvent &Event)
 			// Have to check for nullptr again because the previous execute can unbind itself
 			if(m_aapKeyBindings[ActiveBind->m_ModifierMask][ActiveBind->m_Key])
 			{
-				// Have to copy bind because it can unbind itself during ExecuteLineStroked
-				const std::string BindCopy = m_aapKeyBindings[ActiveBind->m_ModifierMask][ActiveBind->m_Key];
-				Console()->ExecuteLineStroked(1, BindCopy.c_str(), IConsole::CLIENT_ID_UNSPECIFIED);
+				Console()->ExecuteLineStroked(1, m_aapKeyBindings[ActiveBind->m_ModifierMask][ActiveBind->m_Key], IConsole::CLIENT_ID_UNSPECIFIED);
 			}
 			Handled = true;
 		}
@@ -186,9 +195,7 @@ bool CBinds::OnInput(const IInput::CEvent &Event)
 			{
 				return;
 			}
-			// Have to copy bind because it can unbind itself during ExecuteLineStroked
-			const std::string BindCopy = m_aapKeyBindings[Bind.m_ModifierMask][Bind.m_Key];
-			Console()->ExecuteLineStroked(0, BindCopy.c_str(), IConsole::CLIENT_ID_UNSPECIFIED);
+			Console()->ExecuteLineStroked(0, m_aapKeyBindings[Bind.m_ModifierMask][Bind.m_Key], IConsole::CLIENT_ID_UNSPECIFIED);
 		};
 
 		// Release active bind that uses this primary key
@@ -283,6 +290,7 @@ void CBinds::SetDefaults()
 	Bind(KEY_MOUSE_1, "+fire");
 	Bind(KEY_MOUSE_2, "+hook");
 	Bind(KEY_LSHIFT, "+emote");
+	Bind(KEY_Q, "+bindwheel");
 	Bind(KEY_RETURN, "+show_chat; chat all");
 	Bind(KEY_RIGHT, "spectate_next");
 	Bind(KEY_LEFT, "spectate_previous");

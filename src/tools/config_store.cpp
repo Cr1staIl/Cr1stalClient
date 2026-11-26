@@ -3,7 +3,6 @@
 #include <base/mem.h>
 #include <base/str.h>
 
-#include <engine/map.h>
 #include <engine/shared/datafile.h>
 #include <engine/shared/linereader.h>
 #include <engine/storage.h>
@@ -13,14 +12,12 @@
 #include <algorithm>
 #include <vector>
 
-static constexpr const char *const TOOL_NAME = "config_store";
-
 static void Process(IStorage *pStorage, const char *pMapName, const char *pConfigName)
 {
 	CLineReader LineReader;
 	if(!LineReader.OpenFile(pStorage->OpenFile(pConfigName, IOFLAG_READ, IStorage::TYPE_ABSOLUTE)))
 	{
-		log_error(TOOL_NAME, "Failed to import settings from '%s': failed to open config for reading", pConfigName);
+		log_error("config_store", "Failed to import settings from '%s': could not open config for reading", pConfigName);
 		return;
 	}
 
@@ -32,10 +29,10 @@ static void Process(IStorage *pStorage, const char *pMapName, const char *pConfi
 		TotalLength += str_length(pLine) + 1;
 	}
 
-	std::shared_ptr<IMap> pMap = CreateMap();
-	if(!pMap->Load(pStorage, pMapName, IStorage::TYPE_ABSOLUTE))
+	CDataFileReader Reader;
+	if(!Reader.Open(pStorage, pMapName, IStorage::TYPE_ABSOLUTE))
 	{
-		log_error(TOOL_NAME, "Failed to import settings from '%s': failed to open map '%s' for reading", pConfigName, pMapName);
+		log_error("config_store", "Failed to import settings from '%s': failed to open map '%s' for reading", pConfigName, pMapName);
 		return;
 	}
 
@@ -50,13 +47,13 @@ static void Process(IStorage *pStorage, const char *pMapName, const char *pConfi
 
 	CDataFileWriter Writer;
 
-	int SettingsIndex = pMap->NumData();
+	int SettingsIndex = Reader.NumData();
 	bool FoundInfo = false;
-	for(int i = 0; i < pMap->NumItems(); i++)
+	for(int i = 0; i < Reader.NumItems(); i++)
 	{
 		int Type, Id;
-		int *pItem = (int *)pMap->GetItem(i, &Type, &Id);
-		int Size = pMap->GetItemSize(i);
+		int *pItem = (int *)Reader.GetItem(i, &Type, &Id);
+		int Size = Reader.GetItemSize(i);
 		CMapItemInfoSettings MapInfo;
 		if(Type == MAPITEMTYPE_INFO && Id == 0)
 		{
@@ -70,15 +67,15 @@ static void Process(IStorage *pStorage, const char *pMapName, const char *pConfi
 				if(pInfo->m_Settings > -1)
 				{
 					SettingsIndex = pInfo->m_Settings;
-					char *pMapSettings = (char *)pMap->GetData(SettingsIndex);
-					int DataSize = pMap->GetDataSize(SettingsIndex);
+					char *pMapSettings = (char *)Reader.GetData(SettingsIndex);
+					int DataSize = Reader.GetDataSize(SettingsIndex);
 					if(DataSize == TotalLength && mem_comp(pSettings, pMapSettings, DataSize) == 0)
 					{
-						log_info(TOOL_NAME, "Configs coincide, not updating map");
+						log_info("config_store", "Configs coincide, not updating map");
 						free(pSettings);
 						return;
 					}
-					pMap->UnloadData(pInfo->m_Settings);
+					Reader.UnloadData(pInfo->m_Settings);
 				}
 				else
 				{
@@ -111,28 +108,27 @@ static void Process(IStorage *pStorage, const char *pMapName, const char *pConfi
 		Writer.AddItem(MAPITEMTYPE_INFO, 0, sizeof(Info), &Info);
 	}
 
-	for(int i = 0; i < pMap->NumData() || i == SettingsIndex; i++)
+	for(int i = 0; i < Reader.NumData() || i == SettingsIndex; i++)
 	{
 		if(i == SettingsIndex)
 		{
 			Writer.AddData(TotalLength, pSettings);
 			continue;
 		}
-		unsigned char *pData = (unsigned char *)pMap->GetData(i);
-		int Size = pMap->GetDataSize(i);
+		unsigned char *pData = (unsigned char *)Reader.GetData(i);
+		int Size = Reader.GetDataSize(i);
 		Writer.AddData(Size, pData);
-		pMap->UnloadData(i);
+		Reader.UnloadData(i);
 	}
 
 	free(pSettings);
-	pMap->Unload();
-
+	Reader.Close();
 	if(!Writer.Open(pStorage, pMapName))
 	{
-		log_error(TOOL_NAME, "Failed to import settings from '%s': failed to open map '%s' for writing", pConfigName, pMapName);
+		log_error("config_store", "Failed to import settings from '%s': failed to open map '%s' for writing", pConfigName, pMapName);
 		return;
 	}
 	Writer.Finish();
-	log_info(TOOL_NAME, "Imported settings from '%s' into '%s'", pConfigName, pMapName);
+	log_info("config_store", "Imported settings from '%s' into '%s'", pConfigName, pMapName);
 }
 #include "config_common.h"

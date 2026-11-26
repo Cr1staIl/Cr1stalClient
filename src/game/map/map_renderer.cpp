@@ -16,7 +16,7 @@ void CMapRenderer::Clear()
 	m_vpRenderLayers.clear();
 }
 
-void CMapRenderer::Load(ERenderType Type, CLayers *pLayers, IMapImages *pMapImages, const IEnvelopeEval *pEnvelopeEval, std::optional<FCallbackMapRendererInit> CallbackMapRendererInitOptional, bool TileAndQuadBuffering)
+void CMapRenderer::Load(ERenderType Type, CLayers *pLayers, IMapImages *pMapImages, const IEnvelopeEval *pEnvelopeEval, std::optional<FCallbackMapRendererInit> CallbackMapRendererInitOptional)
 {
 	Clear();
 
@@ -36,7 +36,7 @@ void CMapRenderer::Load(ERenderType Type, CLayers *pLayers, IMapImages *pMapImag
 			};
 		}
 
-		pRenderLayerGroup->OnInit(Graphics(), TextRender(), RenderMap(), pEnvelopeManager, pLayers->Map(), pMapImages, CallbackLayerInitOptional, TileAndQuadBuffering);
+		pRenderLayerGroup->OnInit(Graphics(), TextRender(), RenderMap(), pEnvelopeManager, pLayers->Map(), pMapImages, CallbackLayerInitOptional);
 		if(!pRenderLayerGroup->IsValid())
 		{
 			log_error("map_renderer", "error group was null, group number = %d, total groups = %d", GroupId, pLayers->NumGroups());
@@ -140,15 +140,11 @@ void CMapRenderer::Load(ERenderType Type, CLayers *pLayers, IMapImages *pMapImag
 			// just ignore invalid layers from rendering
 			if(pRenderLayer)
 			{
-				pRenderLayer->OnInit(Graphics(), TextRender(), RenderMap(), pEnvelopeManager, pLayers->Map(), pMapImages, CallbackLayerInitOptional, TileAndQuadBuffering);
+				pRenderLayer->OnInit(Graphics(), TextRender(), RenderMap(), pEnvelopeManager, pLayers->Map(), pMapImages, CallbackLayerInitOptional);
 				if(pRenderLayer->IsValid())
 				{
 					pRenderLayer->Init();
 					m_vpRenderLayers.push_back(std::move(pRenderLayer));
-				}
-				else
-				{
-					log_debug("map_renderer", "Group %d Layer %d is invalid and gets ignored", GroupId, LayerId);
 				}
 			}
 		}

@@ -106,7 +106,6 @@ public:
 			"dumps",
 			"demos",
 			"demos/auto",
-			"demos/auto/marked",
 			"demos/auto/race",
 			"demos/auto/server",
 			"demos/replays",

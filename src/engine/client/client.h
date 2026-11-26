@@ -135,6 +135,9 @@ class CClient : public IClient, public CDemoPlayer::IListener
 	bool m_aDidPostConnect[NUM_DUMMIES] = {false, false};
 	bool m_GenerateTimeoutSeed = true;
 
+	// TClient
+	std::array<bool, NUM_DUMMIES> m_aExecuteOnJoinDone = {};
+
 	char m_aCmdConnect[256] = "";
 	char m_aCmdPlayDemo[IO_MAX_PATH_LENGTH] = "";
 	char m_aCmdEditMap[IO_MAX_PATH_LENGTH] = "";
@@ -278,6 +281,11 @@ class CClient : public IClient, public CDemoPlayer::IListener
 	// For DummyName function
 	char m_aAutomaticDummyName[MAX_NAME_LENGTH];
 
+	int64_t m_AccUpdateNs = 0;
+	int64_t m_AccRenderNs = 0;
+	int64_t m_AccSwapNs = 0;
+	int m_ClientPerfFrames = 0;
+
 public:
 	IConfigManager *ConfigManager() { return m_pConfigManager; }
 	CConfig *Config() { return m_pConfig; }
@@ -302,6 +310,7 @@ public:
 	// Send via the currently active client (main/dummy)
 	int SendMsgActive(CMsgPacker *pMsg, int Flags) override;
 
+	void SendBClientInfo(int Conn);
 	void SendInfo(int Conn);
 	void SendEnterGame(int Conn);
 	void SendReady(int Conn);
@@ -483,7 +492,6 @@ public:
 
 	const char *DemoPlayer_Play(const char *pFilename, int StorageType) override;
 	void DemoRecorder_Start(const char *pFilename, bool WithTimestamp, int Recorder) override;
-	void DemoRecorder_Stop(int Recorder);
 	void DemoRecorder_HandleAutoStart() override;
 	void DemoRecorder_UpdateReplayRecorder() override;
 	void DemoRecorder_AddDemoMarker(int Recorder);
@@ -526,13 +534,14 @@ public:
 
 	void DemoSliceBegin() override;
 	void DemoSliceEnd() override;
-	void DemoSlice(const char *pDstPath, CLIENTFUNC_FILTER pfnFilter, void *pUser) override;
+	bool DemoSlice(const char *pDstPath, CLIENTFUNC_FILTER pfnFilter, void *pUser, CLIENTFUNC_SNAPSHOT pfnSnapshot = nullptr, void *pSnapshotUser = nullptr) override;
 	virtual void SaveReplay(int Length, const char *pFilename = "");
 
 	bool EditorHasUnsavedData() const override { return m_pEditor->HasUnsavedData(); }
 
 	IFriends *Foes() override { return &m_Foes; }
 
+	void GetSmoothFreezeTick(int *pSmoothTick, float *pSmoothIntraTick, float MixAmount) override;
 	void GetSmoothTick(int *pSmoothTick, float *pSmoothIntraTick, float MixAmount) override;
 
 	void AddWarning(const SWarning &Warning) override;
@@ -540,7 +549,7 @@ public:
 	std::vector<SWarning> &&QuittingWarnings() { return std::move(m_vQuittingWarnings); }
 
 	CChecksumData *ChecksumData() override { return &m_Checksum.m_Data; }
-	EConnectivity UdpConnectivity(int NetType) override;
+	int UdpConnectivity(int NetType) override;
 
 	bool ViewLink(const char *pLink) override;
 	bool ViewFile(const char *pFilename) override;

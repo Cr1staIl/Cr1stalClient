@@ -15,6 +15,7 @@
 
 #include <game/client/components/background.h>
 #include <game/client/components/mapimages.h>
+#include <game/client/components/tooltips.h>
 #include <game/client/gameclient.h>
 #include <game/client/ui.h>
 #include <game/client/ui_listbox.h>
@@ -68,7 +69,7 @@ void CMenus::RenderSettingsDDNet(CUIRect MainView)
 	{
 		g_Config.m_ClRaceGhost ^= 1;
 	}
-	Ui()->DoToolTip(&g_Config.m_ClRaceGhost, &Button, Localize("When you cross the start line, show a ghost tee replicating the movements of your best time"));
+	GameClient()->m_Tooltips.DoToolTip(&g_Config.m_ClRaceGhost, &Button, Localize("When you cross the start line, show a ghost tee replicating the movements of your best time"));
 
 	if(g_Config.m_ClRaceGhost)
 	{
@@ -127,7 +128,7 @@ void CMenus::RenderSettingsDDNet(CUIRect MainView)
 
 	Ui()->DoScrollbarOption(&g_Config.m_ClShowOthersAlpha, &g_Config.m_ClShowOthersAlpha, &Button, Localize("Opacity"), 0, 100, &CUi::ms_LinearScrollbarScale, 0u, "%");
 
-	Ui()->DoToolTip(&g_Config.m_ClShowOthersAlpha, &Button, Localize("Adjust the opacity of entities belonging to other teams, such as tees and name plates"));
+	GameClient()->m_Tooltips.DoToolTip(&g_Config.m_ClShowOthersAlpha, &Button, Localize("Adjust the opacity of entities belonging to other teams, such as tees and name plates"));
 
 	Left.HSplitTop(20.0f, &Button, &Left);
 	static int s_ShowOwnTeamId = 0;
@@ -141,11 +142,14 @@ void CMenus::RenderSettingsDDNet(CUIRect MainView)
 	{
 		g_Config.m_ClShowQuads ^= 1;
 	}
-	Ui()->DoToolTip(&g_Config.m_ClShowQuads, &Button, Localize("Quads are used for background decoration"));
+	GameClient()->m_Tooltips.DoToolTip(&g_Config.m_ClShowQuads, &Button, Localize("Quads are used for background decoration"));
 
 	Left.HSplitTop(20.0f, &Button, &Left);
 	if(Ui()->DoScrollbarOption(&g_Config.m_ClDefaultZoom, &g_Config.m_ClDefaultZoom, &Button, Localize("Default zoom"), 0, 20))
 		GameClient()->m_Camera.SetZoom(CCamera::ZoomStepsToValue(g_Config.m_ClDefaultZoom - 10), g_Config.m_ClSmoothZoomTime, true);
+
+	Left.HSplitTop(20.0f, &Button, &Left); // bestclient
+	Ui()->DoScrollbarOption(&g_Config.m_ClMouseMaxDistance, &g_Config.m_ClMouseMaxDistance, &Button, Localize("Mouse max distance"), 1, 1000); // bestclient
 
 	Right.HSplitTop(20.0f, &Button, &Right);
 	Ui()->DoScrollbarOption(&g_Config.m_ClPredictionMargin, &g_Config.m_ClPredictionMargin, &Button, Localize("Prediction margin"), 1, 300);
@@ -161,7 +165,7 @@ void CMenus::RenderSettingsDDNet(CUIRect MainView)
 	{
 		g_Config.m_ClAntiPing ^= 1;
 	}
-	Ui()->DoToolTip(&g_Config.m_ClAntiPing, &Button, Localize("Tries to predict other entities to give a feel of low latency"));
+	GameClient()->m_Tooltips.DoToolTip(&g_Config.m_ClAntiPing, &Button, Localize("Tries to predict other entities to give a feel of low latency"));
 
 	if(g_Config.m_ClAntiPing)
 	{
@@ -301,14 +305,13 @@ void CMenus::RenderSettingsDDNet(CUIRect MainView)
 	// Updater
 #if defined(CONF_AUTOUPDATE)
 	{
-		bool NeedUpdate = str_comp(Client()->LatestVersion(), "0");
+		// bestclient
 		IUpdater::EUpdaterState State = Updater()->GetCurrentState();
 
-		// Update Button
 		char aBuf[256];
-		if(NeedUpdate && State <= IUpdater::CLEAN)
+		if(State == IUpdater::VERSION_AVAILABLE)
 		{
-			str_format(aBuf, sizeof(aBuf), Localize("DDNet %s is available:"), Client()->LatestVersion());
+			str_format(aBuf, sizeof(aBuf), Localize("BestClient %s is out!"), Updater()->GetLatestVersionString());
 			UpdaterRect.VSplitLeft(TextRender()->TextWidth(14.0f, aBuf, -1, -1.0f) + 10.0f, &UpdaterRect, &Button);
 			Button.VSplitLeft(100.0f, &Button, nullptr);
 			static CButtonContainer s_ButtonUpdate;
@@ -317,26 +320,32 @@ void CMenus::RenderSettingsDDNet(CUIRect MainView)
 				Updater()->InitiateUpdate();
 			}
 		}
-		else if(State >= IUpdater::GETTING_MANIFEST && State < IUpdater::NEED_RESTART)
+		else if(State == IUpdater::GETTING_MANIFEST)
+			str_copy(aBuf, Localize("Preparing update..."));
+		else if(State == IUpdater::DOWNLOADING)
 			str_copy(aBuf, Localize("Updating…"));
 		else if(State == IUpdater::NEED_RESTART)
 		{
-			str_copy(aBuf, Localize("DDNet Client updated!"));
+			str_copy(aBuf, Localize("BestClient updated!"));
 			m_NeedRestartUpdate = true;
 		}
 		else
 		{
-			str_copy(aBuf, Localize("No updates available"));
+			if(State == IUpdater::FAIL)
+				str_copy(aBuf, Localize("Update failed"));
+			else
+				str_copy(aBuf, Localize("No updates available"));
 			UpdaterRect.VSplitLeft(TextRender()->TextWidth(14.0f, aBuf, -1, -1.0f) + 10.0f, &UpdaterRect, &Button);
 			Button.VSplitLeft(100.0f, &Button, nullptr);
 			static CButtonContainer s_ButtonUpdate;
 			if(DoButton_Menu(&s_ButtonUpdate, Localize("Check now"), 0, &Button))
 			{
-				Client()->RequestDDNetInfo();
+				Updater()->CheckForUpdate();
 			}
 		}
 		Ui()->DoLabel(&UpdaterRect, aBuf, 14.0f, TEXTALIGN_ML);
 		TextRender()->TextColor(1.0f, 1.0f, 1.0f, 1.0f);
+		// bestclient
 	}
 #endif
 }

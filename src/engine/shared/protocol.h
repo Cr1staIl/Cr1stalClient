@@ -166,7 +166,6 @@ enum
 	VERSION_DDNET_MAP_BESTTIME = 19070,
 	VERSION_DDNET_128_TEAMS = 20000,
 	VERSION_DDNET_PICKUP_FREEZE = 20010,
-	VERSION_DDNET_IMPORTANT_ALERT_DUMMY_FIXED = 20030,
 };
 
 /**
@@ -175,7 +174,7 @@ enum
 namespace CountryCode
 {
 	inline constexpr int DEFAULT = -1;
-	inline constexpr int MINIMUM = -1;
+	inline constexpr int MINIMUM = -999;
 	inline constexpr int MAXIMUM = 999;
 };
 

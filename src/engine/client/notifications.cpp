@@ -29,14 +29,12 @@ void CNotifications::Notify(const char *pTitle, const char *pMessage)
 #if defined(CONF_PLATFORM_MACOS)
 	NotificationsNotifyMacOsInternal(pTitle, pMessage);
 #elif defined(NOTIFICATIONS_USE_LIBNOTIFY)
-	gchar *pEscaped = g_markup_escape_text(pMessage, -1);
-	NotifyNotification *pNotif = notify_notification_new(pTitle, pEscaped, "ddnet");
+	NotifyNotification *pNotif = notify_notification_new(pTitle, pMessage, "ddnet");
 	if(pNotif)
 	{
 		notify_notification_show(pNotif, nullptr);
 		g_object_unref(G_OBJECT(pNotif));
 	}
-	g_free(pEscaped);
 #endif
 }
 

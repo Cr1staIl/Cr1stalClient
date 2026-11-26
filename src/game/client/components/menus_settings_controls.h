@@ -8,6 +8,9 @@
 #include <game/client/lineinput.h>
 #include <game/client/ui.h>
 #include <game/client/ui_scrollregion.h>
+// bestclient
+#include <game/client/components/bestclient/keybind_map_ui.h>
+// bestclient
 
 #include <vector>
 
@@ -18,8 +21,9 @@ enum class EBindOptionGroup
 	VOTING,
 	CHAT,
 	DUMMY,
-	PRACTICE,
 	MISCELLANEOUS,
+	BEST_CLIENT, // bestclient
+	BEST_CLIENT_PRACTICE, // bestclient
 	CUSTOM,
 	NUM,
 };
@@ -66,6 +70,11 @@ private:
 	void UpdateBindOptions();
 
 	CScrollRegion m_SettingsScrollRegion;
+	// bestclient
+	bool m_KeybindMap = false;
+	CButtonContainer m_KeybindMapButton;
+	CKeybindMapUi m_KeybindMapUi;
+	// bestclient
 	CButtonContainer m_ResetToDefaultButton;
 	CLineInputBuffered<128> m_FilterInput;
 	int m_CurrentSearchMatch = 0;

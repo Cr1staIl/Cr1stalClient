@@ -25,7 +25,6 @@ public:
 		AUTOMATED,
 	};
 
-	bool m_aMouseOnAction[NUM_DUMMIES];
 	vec2 m_aMousePos[NUM_DUMMIES];
 	vec2 m_aMousePosOnAction[NUM_DUMMIES];
 	vec2 m_aTargetPos[NUM_DUMMIES];
@@ -36,24 +35,15 @@ public:
 
 	int64_t m_LastSendTime;
 	CNetObj_PlayerInput m_aInputData[NUM_DUMMIES];
-	// C-Client: input debounce (left, right, jump, hook)
-	int m_aCcSnaps[NUM_DUMMIES] = {};
-	int m_SheylunTicks = 0; // C-Client: last Sheylun tick amount (changes with hysteresis)
-	int m_aaCcPressSnap[NUM_DUMMIES][4] = {};
-	bool m_aaCcPending[NUM_DUMMIES][4] = {};
 	CNetObj_PlayerInput m_aLastData[NUM_DUMMIES];
 	int m_aInputDirectionLeft[NUM_DUMMIES];
 	int m_aInputDirectionRight[NUM_DUMMIES];
 	int m_aShowHookColl[NUM_DUMMIES];
 
-	// C-Client fast input: newest local input, used to predict ahead of the server tick
+	// TClient
 	CNetObj_PlayerInput m_aFastInput[NUM_DUMMIES];
 	bool m_FastInputHookAction = false;
 	bool m_FastInputFireAction = false;
-	bool CheckNewInput();
-	// how many ticks ahead your own tee is predicted with the current input mode
-	int FastInputTicks();
-	int m_LastAimTick = -1;
 
 	CControls();
 	int Sizeof() const override { return sizeof(*this); }
@@ -68,15 +58,36 @@ public:
 	int SnapInput(int *pData);
 	void ClampMousePos();
 	void ResetInput(int Dummy);
+	bool CheckNewInput();
+
+	// bestclient
+	void InputDebounce(int Dummy, int Input);
+	bool IsInputDebounceAllowed() const;
+	bool IsInputDebounceBlocked() const;
+	struct CInputDebounceState
+	{
+		int m_Direction = 0;
+		int m_Jump = 0;
+		int m_Hook = 0;
+	};
+	CInputDebounceState m_aInputDebounce[NUM_DUMMIES];
+	// bestclient
 
 private:
+	// bestclient
+	enum
+	{
+		INPUT_LEFT,
+		INPUT_RIGHT,
+		INPUT_JUMP,
+		INPUT_HOOK,
+	};
+	void ApplyInputDebounce(int Dummy, CNetObj_PlayerInput &Input) const;
+	// bestclient
+
 	static void ConKeyInputState(IConsole::IResult *pResult, void *pUserData);
 	static void ConKeyInputCounter(IConsole::IResult *pResult, void *pUserData);
 	static void ConKeyInputSet(IConsole::IResult *pResult, void *pUserData);
 	static void ConKeyInputNextPrevWeapon(IConsole::IResult *pResult, void *pUserData);
-	static void ConTpToCursor(IConsole::IResult *pResult, void *pUserData);
-	static void ConTpDummyToCursor(IConsole::IResult *pResult, void *pUserData);
-	vec2 CursorWorldPos() const;
-	void SendPracticeTeleportToCursor(int Conn);
 };
 #endif

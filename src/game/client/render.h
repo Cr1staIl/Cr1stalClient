@@ -209,30 +209,26 @@ enum
 
 class CRenderTools
 {
-public:
-	// C-Client: squash and stretch of the next tee body (jelly tees)
-	mutable vec2 m_JellyScale = vec2(1.0f, 1.0f);
-
-private:
 	class IGraphics *m_pGraphics;
 	class ITextRender *m_pTextRender;
+	class CGameClient *m_pGameClient;
 
 	int m_TeeQuadContainerIndex;
 
 	static void GetRenderTeeBodyScale(float BaseSize, float &BodyScale);
 	static void GetRenderTeeFeetScale(float BaseSize, float &FeetScaleWidth, float &FeetScaleHeight);
 
-	void RenderTee6(const CAnimState *pAnim, const CTeeRenderInfo *pInfo, int Emote, vec2 Dir, vec2 Pos, float Alpha = 1.0f, bool IsLocal = false) const;
-	void RenderTee7(const CAnimState *pAnim, const CTeeRenderInfo *pInfo, int Emote, vec2 Dir, vec2 Pos, float Alpha = 1.0f, bool IsLocal = false) const;
-	const class CSkin *m_pWhiteFeetSkin = nullptr;
+	void RenderTee6(const CAnimState *pAnim, const CTeeRenderInfo *pInfo, int Emote, vec2 Dir, vec2 Pos, float Alpha = 1.0f, bool IsLocal = false, vec2 BodyScale = vec2(1.0f, 1.0f), vec2 FeetScale = vec2(1.0f, 1.0f), float BodyAngle = 0.0f, float FeetAngle = 0.0f) const; // bestclient
+	void RenderTee7(const CAnimState *pAnim, const CTeeRenderInfo *pInfo, int Emote, vec2 Dir, vec2 Pos, float Alpha = 1.0f, bool IsLocal = false, vec2 BodyScale = vec2(1.0f, 1.0f), vec2 FeetScale = vec2(1.0f, 1.0f), float BodyAngle = 0.0f, float FeetAngle = 0.0f) const; // bestclient
 
 public:
 	class IGraphics *Graphics() const { return m_pGraphics; }
 	class ITextRender *TextRender() const { return m_pTextRender; }
+	class CGameClient *GameClient() const { return m_pGameClient; }
 
-	void Init(class IGraphics *pGraphics, class ITextRender *pTextRender);
+	void Init(class IGraphics *pGraphics, class ITextRender *pTextRender, class CGameClient *pGameClient);
 
-	void RenderCursor(vec2 Center, float Size) const;
+	void RenderCursor(vec2 Center, float Size, float Alpha = 1.0f) const;
 	void RenderIcon(int ImageId, int SpriteId, const CUIRect *pRect, const ColorRGBA *pColor = nullptr) const;
 
 	// larger rendering methods
@@ -243,14 +239,7 @@ public:
 	// returns the offset to use, to render the tee with @see RenderTee exactly in the mid
 	static void GetRenderTeeOffsetToRenderedTee(const CAnimState *pAnim, const CTeeRenderInfo *pInfo, vec2 &TeeOffsetToMid);
 	// object render methods
-	// IsLocal: the tee is you (for C-Client tiny tees)
-	void RenderTee(const CAnimState *pAnim, const CTeeRenderInfo *pInfo, int Emote, vec2 Dir, vec2 Pos, float Alpha = 1.0f, bool IsLocal = false) const;
-	// C-Client: skin whose feet are used for cc_white_feet
-	void SetWhiteFeetSkin(const class CSkin *pSkin) { m_pWhiteFeetSkin = pSkin; }
-	// renders an idle tee so that it is visually centered at Center
-	void RenderIdleTeeAtCenter(const CTeeRenderInfo *pInfo, vec2 Center, int Emote = EMOTE_NORMAL, vec2 Dir = vec2(1.0f, 0.0f), float Alpha = 1.0f) const;
-
-	static ColorRGBA GetPingTextColor(int Latency);
+	void RenderTee(const CAnimState *pAnim, const CTeeRenderInfo *pInfo, int Emote, vec2 Dir, vec2 Pos, float Alpha = 1.0f, bool IsLocal = false, vec2 BodyScale = vec2(1.0f, 1.0f), vec2 FeetScale = vec2(1.0f, 1.0f), float BodyAngle = 0.0f, float FeetAngle = 0.0f) const; // bestclient
 };
 
 #endif

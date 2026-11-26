@@ -25,6 +25,7 @@ static constexpr int DEMO_SPEED_INDEX_DEFAULT = 4;
 static_assert(DEMO_SPEEDS[DEMO_SPEED_INDEX_DEFAULT] == 1.0);
 
 typedef bool (*DEMOFUNC_FILTER)(const void *pData, int DataSize, void *pUser);
+typedef void (*DEMOFUNC_SNAPSHOT)(void *pData, int DataSize, bool Sixup, void *pUser);
 
 // TODO: Properly extend demo format using uuids
 // "6be6da4a-cebd-380c-9b5b-1289c842d780"
@@ -100,7 +101,7 @@ public:
 	virtual bool IsPlaying() const = 0;
 	virtual const CInfo *BaseInfo() const = 0;
 	virtual void GetDemoName(char *pBuffer, size_t BufferSize) const = 0;
-	virtual bool GetDemoInfo(class IStorage *pStorage, const char *pFilename, int StorageType, CDemoHeader *pDemoHeader, CTimelineMarkers *pTimelineMarkers, CMapInfo *pMapInfo, IOHANDLE *pFile = nullptr, char *pErrorMessage = nullptr, size_t ErrorMessageSize = 0) const = 0;
+	virtual bool GetDemoInfo(class IStorage *pStorage, class IConsole *pConsole, const char *pFilename, int StorageType, CDemoHeader *pDemoHeader, CTimelineMarkers *pTimelineMarkers, CMapInfo *pMapInfo, IOHANDLE *pFile = nullptr, char *pErrorMessage = nullptr, size_t ErrorMessageSize = 0) const = 0;
 };
 
 class IDemoRecorder : public IInterface
@@ -117,14 +118,13 @@ public:
 	virtual int Stop(IDemoRecorder::EStopMode Mode, const char *pTargetFilename = "") = 0;
 	virtual int Length() const = 0;
 	virtual const char *CurrentFilename() const = 0;
-	virtual bool HasMarkers() const = 0;
 };
 
 class IDemoEditor : public IInterface
 {
 	MACRO_INTERFACE("demoeditor")
 public:
-	virtual bool Slice(const char *pDemo, const char *pDst, int StartTick, int EndTick, DEMOFUNC_FILTER pfnFilter, void *pUser) = 0;
+	virtual bool Slice(const char *pDemo, const char *pDst, int StartTick, int EndTick, DEMOFUNC_FILTER pfnFilter, void *pUser, DEMOFUNC_SNAPSHOT pfnSnapshot = nullptr, void *pSnapshotUser = nullptr) = 0;
 };
 
 #endif

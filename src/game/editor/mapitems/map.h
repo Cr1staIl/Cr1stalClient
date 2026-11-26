@@ -150,7 +150,6 @@ public:
 	std::vector<int> m_vSelectedQuads;
 	int m_SelectedQuadPoints;
 	int m_SelectedQuadEnvelope;
-	int m_SelectedQuadEnvelopePoint;
 	int m_CurrentQuadIndex;
 	int m_SelectedEnvelope;
 	bool m_UpdateEnvPointInfo;

@@ -40,11 +40,62 @@ else()
   message(FATAL_ERROR "Couldn't parse version from src/game/version.h")
 endif()
 
-if(VERSION_PATCH STREQUAL "0")
-  project(DDNet VERSION ${VERSION_MAJOR}.${VERSION_MINOR})
+# <TClient>
+
+set(DATA_VERSION_FILE "${CMAKE_BINARY_DIR}/data/data_version.txt")
+file(MAKE_DIRECTORY "${CMAKE_BINARY_DIR}/data")
+
+file(WRITE "${DATA_VERSION_FILE}" "DDNet ${VERSION_MAJOR}.${VERSION_MINOR}.${VERSION_PATCH}\n")
+
+file(STRINGS src/game/version.h TCLIENT_VERSION_LINE
+  LIMIT_COUNT 1
+  REGEX "^#define TCLIENT_VERSION "
+)
+
+if(TCLIENT_VERSION_LINE MATCHES "([0-9]+)\\.([0-9]+)\\.([0-9]+)")
+  set(TCLIENT_VERSION_MAJOR ${CMAKE_MATCH_1})
+  set(TCLIENT_VERSION_MINOR ${CMAKE_MATCH_2})
+  set(TCLIENT_VERSION_PATCH ${CMAKE_MATCH_3})
+elseif(TCLIENT_VERSION_LINE MATCHES "([0-9]+)\\.([0-9]+)")
+  set(TCLIENT_VERSION_MAJOR ${CMAKE_MATCH_1})
+  set(TCLIENT_VERSION_MINOR ${CMAKE_MATCH_2})
+  set(TCLIENT_VERSION_PATCH "0")
 else()
-  project(DDNet VERSION ${VERSION_MAJOR}.${VERSION_MINOR}.${VERSION_PATCH})
+  message(FATAL_ERROR "Couldn't parse TClient version from src/game/version.h")
 endif()
+
+if(TCLIENT_VERSION_PATCH STREQUAL "0")
+  project(TClient VERSION ${TCLIENT_VERSION_MAJOR}.${TCLIENT_VERSION_MINOR})
+else()
+  project(TClient VERSION ${TCLIENT_VERSION_MAJOR}.${TCLIENT_VERSION_MINOR}.${TCLIENT_VERSION_PATCH})
+endif()
+
+file(APPEND "${DATA_VERSION_FILE}" "TClient ${TCLIENT_VERSION_MAJOR}.${TCLIENT_VERSION_MINOR}.${TCLIENT_VERSION_PATCH}\n")
+
+# </TClient>
+
+# <BestClient>
+
+file(STRINGS src/game/client/components/bestclient/version.h BESTCLIENT_VERSION_LINE
+  LIMIT_COUNT 1
+  REGEX "^#define BESTCLIENT_VERSION "
+)
+
+if(BESTCLIENT_VERSION_LINE MATCHES "([0-9]+)\\.([0-9]+)\\.([0-9]+)")
+  set(BESTCLIENT_VERSION_MAJOR ${CMAKE_MATCH_1})
+  set(BESTCLIENT_VERSION_MINOR ${CMAKE_MATCH_2})
+  set(BESTCLIENT_VERSION_PATCH ${CMAKE_MATCH_3})
+  set(BESTCLIENT_PACKAGE_VERSION "${BESTCLIENT_VERSION_MAJOR}.${BESTCLIENT_VERSION_MINOR}.${BESTCLIENT_VERSION_PATCH}")
+elseif(BESTCLIENT_VERSION_LINE MATCHES "([0-9]+)\\.([0-9]+)")
+  set(BESTCLIENT_VERSION_MAJOR ${CMAKE_MATCH_1})
+  set(BESTCLIENT_VERSION_MINOR ${CMAKE_MATCH_2})
+  set(BESTCLIENT_VERSION_PATCH "0")
+  set(BESTCLIENT_PACKAGE_VERSION "${BESTCLIENT_VERSION_MAJOR}.${BESTCLIENT_VERSION_MINOR}")
+else()
+  message(FATAL_ERROR "Couldn't parse BestClient version from src/game/client/components/bestclient/version.h")
+endif()
+
+# </BestClient>
 
 set(ORIGINAL_CMAKE_MODULE_PATH ${CMAKE_MODULE_PATH})
 set(OWN_CMAKE_MODULE_PATH ${CMAKE_MODULE_PATH} ${PROJECT_SOURCE_DIR}/cmake)
@@ -116,7 +167,7 @@ endif()
 option(WEBSOCKETS "Enable websockets support" OFF)
 option(MYSQL "Enable mysql support" OFF)
 option(TEST_MYSQL "Test mysql support in unit tests (also sets -DMYSQL=ON)" OFF)
-option(AUTOUPDATE "Enable the autoupdater" OFF)
+option(AUTOUPDATE "Enable the autoupdater" ON)
 option(INFORM_UPDATE "Inform about available updates" ON)
 option(VIDEORECORDER "Enable video recording support via FFmpeg" ON)
 option(UPNP "Enable UPnP support" OFF)
@@ -126,8 +177,8 @@ option(CLIENT "Compile client" ON)
 option(SERVER "Compile server" ON)
 option(TOOLS "Compile tools" ON)
 option(DOWNLOAD_GTEST "Download and compile GTest" ${AUTO_DEPENDENCIES_DEFAULT})
-option(STEAM "Build the Steam release version" OFF)
-option(DISCORD "Enable Discord rich presence support" OFF)
+option(STEAM "Build the Steam release version" ON)
+option(DISCORD "Enable Discord rich presence support" ON) # bestclient
 option(DISCORD_DYNAMIC "Enable discovering Discord rich presence libraries at runtime (Linux only)" OFF)
 option(PREFER_BUNDLED_LIBS "Prefer bundled libraries over system libraries" ${AUTO_DEPENDENCIES_DEFAULT})
 option(DEV "Don't generate stuff necessary for packaging, don't strip absolute paths from debug info, enable additional assertions" OFF)
@@ -160,6 +211,11 @@ if(TARGET_OS STREQUAL "mac" AND MACOS_CODESIGN)
     message(WARNING "MACOS_APP_IDENTITY environment variable not defined. Using ad-hoc signature")
     set(MACOS_APP_IDENTITY "-") # ad-hoc signature
   endif()
+endif()
+
+if(TARGET_OS STREQUAL "android")
+  set(DISCORD OFF)
+  set(STEAM OFF)
 endif()
 
 if(TARGET_OS STREQUAL "emscripten")
@@ -207,7 +263,7 @@ if(NOT "${CMAKE_CURRENT_BINARY_DIR}" STREQUAL "${CMAKE_CURRENT_SOURCE_DIR}")
 endif()
 
 set(SERVER_EXECUTABLE DDNet-Server CACHE STRING "Name of the built server executable")
-set(CLIENT_EXECUTABLE DDNet CACHE STRING "Name of the built client executable")
+set(CLIENT_EXECUTABLE DDNet CACHE STRING "Name of the build client executable")
 set(IOS_BUNDLE_IDENTIFIER "org.ddnet.client" CACHE STRING "iOS bundle identifier")
 
 ########################################################################
@@ -339,8 +395,8 @@ if(NOT MSVC AND NOT HAIKU)
     endif()
   endif()
 
-  # Disable exceptions as DDNet does not use them.
-  add_cxx_compiler_flag_if_supported(OUR_FLAGS -fno-exceptions)
+  # TClient needs exceptions for ChaiScript and regex.
+  add_cxx_compiler_flag_if_supported(OUR_FLAGS_SERVER -fno-exceptions)
 
   # Inaccurate floating point numbers cause problems on mingw-w64-gcc when
   # compiling for x86, might cause problems elsewhere. So don't store floats
@@ -363,7 +419,7 @@ if(NOT MSVC AND NOT HAIKU)
 
   # Don't insert timestamps into PEs to keep the build reproducible.
   if(TARGET_OS STREQUAL "windows")
-    add_linker_flag_if_supported(OUR_FLAGS_LINK -Wl,--no-insert-timestamp)
+    add_cxx_compiler_flag_if_supported(OUR_FLAGS_LINK -Wl,--no-insert-timestamp)
   endif()
 
   # Strip absolute build paths from debug info. Prevent adding compiler name and version metadata.
@@ -594,7 +650,83 @@ if(NOT TARGET_OS STREQUAL "emscripten")
   find_package(Curl)
 endif()
 if(CLIENT AND VIDEORECORDER)
-  find_package(FFMPEG)
+  set(FFMPEG_FOUND FALSE)
+  set(FFMPEG_BUNDLED FALSE)
+  set(FFMPEG_COPY_FILES)
+  set(FFMPEG_LIBRARIES "")
+  set(FFMPEG_INCLUDE_DIRS "")
+
+  if(TARGET_OS STREQUAL "windows" AND MINGW)
+    message(STATUS "Disabling VIDEORECORDER for MinGW due to incompatible Windows FFmpeg import libraries")
+    set(VIDEORECORDER OFF CACHE BOOL "Enable video recording support via FFmpeg" FORCE)
+  elseif(TARGET_OS STREQUAL "windows")
+    # Prefer standalone FFmpeg SDK path, keep legacy BestClient path as fallback.
+    set(FFMPEG_CUSTOM_ROOTS
+      "${PROJECT_SOURCE_DIR}/noxy-libs/ffmpeg-msvc"
+      "${PROJECT_SOURCE_DIR}/bestclient/noxy-libs/ffmpeg-msvc")
+    foreach(FFMPEG_CUSTOM_ROOT IN LISTS FFMPEG_CUSTOM_ROOTS)
+      if(EXISTS "${FFMPEG_CUSTOM_ROOT}/include/libavcodec/avcodec.h" AND
+         EXISTS "${FFMPEG_CUSTOM_ROOT}/lib/avformat.lib" AND
+         EXISTS "${FFMPEG_CUSTOM_ROOT}/lib/avcodec.lib" AND
+         EXISTS "${FFMPEG_CUSTOM_ROOT}/lib/avutil.lib" AND
+         EXISTS "${FFMPEG_CUSTOM_ROOT}/lib/swscale.lib" AND
+         EXISTS "${FFMPEG_CUSTOM_ROOT}/lib/swresample.lib")
+        set(FFMPEG_INCLUDE_DIRS "${FFMPEG_CUSTOM_ROOT}/include")
+        set(FFMPEG_LIBRARIES
+          "${FFMPEG_CUSTOM_ROOT}/lib/avformat.lib"
+          "${FFMPEG_CUSTOM_ROOT}/lib/avcodec.lib"
+          "${FFMPEG_CUSTOM_ROOT}/lib/avutil.lib"
+          "${FFMPEG_CUSTOM_ROOT}/lib/swscale.lib"
+          "${FFMPEG_CUSTOM_ROOT}/lib/swresample.lib")
+        set(FFMPEG_FOUND TRUE)
+        message(STATUS "Using custom FFmpeg from ${FFMPEG_CUSTOM_ROOT}")
+
+        if(EXISTS "${FFMPEG_CUSTOM_ROOT}/bin/avcodec-61.dll" AND
+           EXISTS "${FFMPEG_CUSTOM_ROOT}/bin/avformat-61.dll" AND
+           EXISTS "${FFMPEG_CUSTOM_ROOT}/bin/avutil-59.dll" AND
+           EXISTS "${FFMPEG_CUSTOM_ROOT}/bin/swresample-5.dll" AND
+           EXISTS "${FFMPEG_CUSTOM_ROOT}/bin/swscale-8.dll")
+          set(FFMPEG_COPY_FILES
+            "${FFMPEG_CUSTOM_ROOT}/bin/avcodec-61.dll"
+            "${FFMPEG_CUSTOM_ROOT}/bin/avformat-61.dll"
+            "${FFMPEG_CUSTOM_ROOT}/bin/avutil-59.dll"
+            "${FFMPEG_CUSTOM_ROOT}/bin/swresample-5.dll"
+            "${FFMPEG_CUSTOM_ROOT}/bin/swscale-8.dll")
+        endif()
+        break()
+      endif()
+    endforeach()
+  endif()
+
+  if(NOT FFMPEG_FOUND)
+    # Drop stale cache entries so deleted legacy paths cannot stick around.
+    unset(FFMPEG_LIBRARIES CACHE)
+    unset(FFMPEG_INCLUDE_DIRS CACHE)
+    unset(FFMPEG_FOUND CACHE)
+    unset(FFMPEG_BUNDLED CACHE)
+    unset(AVCODEC_LIBRARY CACHE)
+    unset(AVFORMAT_LIBRARY CACHE)
+    unset(AVUTIL_LIBRARY CACHE)
+    unset(SWSCALE_LIBRARY CACHE)
+    unset(SWRESAMPLE_LIBRARY CACHE)
+    unset(AVCODEC_INCLUDEDIR CACHE)
+    unset(AVFORMAT_INCLUDEDIR CACHE)
+    unset(AVUTIL_INCLUDEDIR CACHE)
+    unset(SWSCALE_INCLUDEDIR CACHE)
+    unset(SWRESAMPLE_INCLUDEDIR CACHE)
+
+    find_package(FFMPEG)
+  endif()
+
+  if(NOT FFMPEG_FOUND)
+    message(WARNING "FFmpeg not found, disabling VIDEORECORDER for this configure.")
+    set(VIDEORECORDER OFF CACHE BOOL "Enable video recording support via FFmpeg" FORCE)
+    set(FFMPEG_LIBRARIES "")
+    set(FFMPEG_INCLUDE_DIRS "")
+  endif()
+  if(TARGET_OS STREQUAL "linux" AND FFMPEG_FOUND AND FFMPEG_BUNDLED)
+    message(WARNING "Using bundled Linux FFmpeg without GIF decoding support. Install the FFmpeg development packages and configure with -DPREFER_BUNDLED_LIBS=OFF to enable GIF decoding in a local build.")
+  endif()
 endif()
 find_package(Freetype)
 if(DOWNLOAD_GTEST)
@@ -621,6 +753,13 @@ find_package(Python3)
 find_package(Rust)
 find_package(SDL2)
 find_package(SQLite3)
+if(UNIX AND NOT APPLE AND PKG_CONFIG_FOUND)
+  pkg_check_modules(DBUS QUIET dbus-1)
+  pkg_check_modules(PULSE_SIMPLE QUIET libpulse-simple)
+endif()
+if(TARGET_OS STREQUAL "linux" AND CLIENT AND NOT DBUS_FOUND)
+  message(WARNING "DBus development files not found. Linux now-playing detection and track lyrics will be disabled (install libdbus-1-dev).")
+endif()
 if(DISCORD)
   find_package(DiscordSdk)
 endif()
@@ -800,14 +939,15 @@ endif()
 if(TARGET_OS STREQUAL "windows")
   set(PLATFORM_CLIENT)
   set(PLATFORM_CLIENT_LIBS opengl32.lib winmm.lib imm32.lib)
+  list(APPEND PLATFORM_CLIENT_LIBS mmdevapi.lib) # bestclient
   set(PLATFORM_LIBS)
   list(APPEND PLATFORM_LIBS shlwapi.lib) # PathIsRelativeW
   list(APPEND PLATFORM_LIBS version.lib) # GetFileVersionInfoSizeW
   list(APPEND PLATFORM_LIBS ws2_32.lib) # Windows sockets
   list(APPEND PLATFORM_LIBS advapi32.lib) # Reg* and Crypt* functions
   list(APPEND PLATFORM_LIBS bcrypt.lib userenv.lib) # for Rust (https://github.com/rust-lang/rust/issues/91974)
-  list(APPEND PLATFORM_LIBS synchronization.lib) # for Rust
   list(APPEND PLATFORM_LIBS ole32.lib) # CoInitialize(Ex)
+  list(APPEND PLATFORM_LIBS runtimeobject.lib) # RoGetActivationFactory / WinRT music player
   list(APPEND PLATFORM_LIBS shell32.lib)
   list(APPEND PLATFORM_LIBS ntdll.lib) # https://github.com/ddnet/ddnet/issues/6725
   list(APPEND PLATFORM_LIBS uuid.lib) # FOLDERID_RoamingAppData
@@ -940,20 +1080,12 @@ if(NOT(GTEST_FOUND) AND DOWNLOAD_GTEST)
       # Prevent overriding the parent project's compiler/linker settings on Windows
       set(gtest_force_shared_crt ON CACHE BOOL "" FORCE)
 
-      # googletest uses `include_directories` which CMake 4.5 doesn't like
-      if(CMAKE_VERSION VERSION_GREATER_EQUAL 4.5)
-        cmake_diagnostic(PUSH)
-        cmake_diagnostic(SET CMD_NON_TARGET_DIRECTIVE IGNORE)
-      endif()
       # Add googletest directly to our build. This defines the gtest target.
       add_subdirectory(
         ${PROJECT_BINARY_DIR}/googletest-src
         ${PROJECT_BINARY_DIR}/googletest-build
         EXCLUDE_FROM_ALL
       )
-      if(CMAKE_VERSION VERSION_GREATER_EQUAL 4.5)
-        cmake_diagnostic(POP)
-      endif()
 
       foreach(target gtest gmock)
         # Enable additional assertions. See:
@@ -1354,21 +1486,15 @@ set(EXPECTED_DATA
   audio/wp_switch-03.wv
   autoexec_server.cfg
   background_noise.png
+  BestClient/bc_dev_icon.png
+  BestClient/bc_fake_icon.png
+  BestClient/bc_icon.png
+  BestClient/bc_light_icon.png
+  BestClient/gui_logo.png
+  BestClient/languages/russian.txt
+  BestClient/languages/simplified_chinese.txt
+  BestClient/trollface.png
   blob.png
-  cclient/aura_cross.png
-  cclient/aura_cross_ring.png
-  cclient/aura_gothic.png
-  cclient/aura_holy.png
-  cclient/badge.png
-  cclient/icon.png
-  cclient/save_hammer.png
-  cclient/save_hook_down.png
-  cclient/save_hook_left.png
-  cclient/save_hook_right.png
-  cclient/save_hook_up.png
-  cclient/save_stand_under.png
-  cclient/save_thanks.png
-  cclient/save_wait.png
   censorlist.txt
   communityicons/none.png
   countryflags/AD.png
@@ -1617,6 +1743,35 @@ set(EXPECTED_DATA
   countryflags/VU.png
   countryflags/WF.png
   countryflags/WS.png
+  countryflags/X-AROACE.png
+  countryflags/X-BI.png
+  countryflags/X-BLACK.png
+  countryflags/X-BLUEKITTY.png
+  countryflags/X-BLUESTRIPE.png
+  countryflags/X-BROWNBEAR.png
+  countryflags/X-CAMMO.png
+  countryflags/X-CAMMOSTRIPES.png
+  countryflags/X-COALA.png
+  countryflags/X-ENTITY.png
+  countryflags/X-FINISH.png
+  countryflags/X-GAY.png
+  countryflags/X-LESBIAN.png
+  countryflags/X-LIMEKITTY.png
+  countryflags/X-PINKY.png
+  countryflags/X-PIRATE.png
+  countryflags/X-PROGRESS.png
+  countryflags/X-RAINBOW.png
+  countryflags/X-REDBOPP.png
+  countryflags/X-REDSTRIPE.png
+  countryflags/X-SADDO.png
+  countryflags/X-TOPTRI.png
+  countryflags/X-TOTAR.png
+  countryflags/X-TRANS.png
+  countryflags/X-TROLL.png
+  countryflags/X-TWINBOP.png
+  countryflags/X-TWINTRI.png
+  countryflags/X-WARPAINT.png
+  countryflags/X-WHITE.png
   countryflags/YE.png
   countryflags/ZA.png
   countryflags/ZM.png
@@ -1668,21 +1823,11 @@ set(EXPECTED_DATA
   editor/tune.png
   emoticons.png
   extras.png
-  fonts/Comfortaa.ttf
-  fonts/DejaVuSans-Bold.ttf
   fonts/DejaVuSans.ttf
-  fonts/Exo2.ttf
   fonts/Font_Awesome_6_Free-Solid-900.otf
   fonts/GlowSansJ-Compressed-Book.otf
-  fonts/Jura.ttf
-  fonts/Lobster.ttf
-  fonts/Montserrat.ttf
-  fonts/Play.ttf
-  fonts/PressStart2P.ttf
-  fonts/Rubik.ttf
-  fonts/RussoOne.ttf
+  fonts/NotoEmoji-Regular.ttf
   fonts/SourceHanSans.ttc
-  fonts/Unbounded.ttf
   fonts/index.json
   game.png
   gui_buttons.png
@@ -1886,6 +2031,7 @@ set(EXPECTED_DATA
   skins/ghost.png
   skins/ghostjtj.png
   skins/giraffe.png
+  skins/glow_mermyfox.png
   skins/greensward.png
   skins/greyfox.png
   skins/greyfox_2.png
@@ -1943,6 +2089,7 @@ set(EXPECTED_DATA
   skins/santa_warpaint.png
   skins/teerasta.png
   skins/toptri.png
+  skins/tuzi.png
   skins/twinbop.png
   skins/twintri.png
   skins/veteran.png
@@ -2077,6 +2224,57 @@ set(EXPECTED_DATA
   skins7/x_ninja.json
   skins7/xmas_hat.png
   strong_weak.png
+  tclient/builtinscripts/sayemoticon.chai
+  tclient/fonts/Cabin-Regular.ttf
+  tclient/fonts/FreeSansBold.ttf
+  tclient/fonts/GoogleSans-Regular.ttf
+  tclient/fonts/Inter_24pt-Regular.ttf
+  tclient/fonts/Inter_24pt-SemiBold.ttf
+  tclient/fonts/Montserrat-Regular.ttf
+  tclient/fonts/Nunito-Black.ttf
+  tclient/fonts/Rubik-Regular.ttf
+  tclient/fonts/minecraft_font.ttf
+  tclient/gui_logo.png
+  tclient/languages/arabic.txt
+  tclient/languages/azerbaijani.txt
+  tclient/languages/belarusian.txt
+  tclient/languages/bosnian.txt
+  tclient/languages/brazilian_portuguese.txt
+  tclient/languages/bulgarian.txt
+  tclient/languages/catalan.txt
+  tclient/languages/chuvash.txt
+  tclient/languages/czech.txt
+  tclient/languages/danish.txt
+  tclient/languages/dutch.txt
+  tclient/languages/esperanto.txt
+  tclient/languages/estonian.txt
+  tclient/languages/finnish.txt
+  tclient/languages/french.txt
+  tclient/languages/galician.txt
+  tclient/languages/german.txt
+  tclient/languages/greek.txt
+  tclient/languages/hungarian.txt
+  tclient/languages/index.txt
+  tclient/languages/italian.txt
+  tclient/languages/japanese.txt
+  tclient/languages/korean.txt
+  tclient/languages/kyrgyz.txt
+  tclient/languages/license.txt
+  tclient/languages/norwegian.txt
+  tclient/languages/persian.txt
+  tclient/languages/polish.txt
+  tclient/languages/portuguese.txt
+  tclient/languages/romanian.txt
+  tclient/languages/russian.txt
+  tclient/languages/serbian.txt
+  tclient/languages/serbian_cyrillic.txt
+  tclient/languages/simplified_chinese.txt
+  tclient/languages/slovak.txt
+  tclient/languages/spanish.txt
+  tclient/languages/swedish.txt
+  tclient/languages/traditional_chinese.txt
+  tclient/languages/turkish.txt
+  tclient/languages/ukrainian.txt
   themes/auto.png
   themes/autumn.png
   themes/autumn_day.map
@@ -2099,7 +2297,7 @@ set(EXPECTED_DATA
   # tidy-alphabetical-end
 )
 
-set_glob(DATA GLOB_RECURSE "cfg;frag;json;map;otf;png;rules;ttc;ttf;txt;vert;wv" data ${EXPECTED_DATA})
+set_glob(DATA GLOB_RECURSE "cfg;chai;frag;json;map;otf;png;rules;ttc;ttf;txt;vert;wv" data ${EXPECTED_DATA})
 
 ########################################################################
 # COPY DATA AND SHARED LIBS
@@ -2370,11 +2568,17 @@ set_src(ENGINE_SHARED GLOB_RECURSE src/engine/shared
   # tidy-alphabetical-start
   assertion_logger.cpp
   assertion_logger.h
+  bestclient_indicator_protocol.cpp
+  bestclient_indicator_protocol.h
   compression.cpp
   compression.h
   config.cpp
   config.h
+  config_domains.h
+  config_includes.h
   config_variables.h
+  config_variables_bestclient.h
+  config_variables_tclient.h
   console.cpp
   console.h
   csv.cpp
@@ -2457,6 +2661,28 @@ set_src(ENGINE_SHARED GLOB_RECURSE src/engine/shared
   websockets.h
   # tidy-alphabetical-end
 )
+set_src(ENGINE_EXTERNAL GLOB src/engine/external
+  mumble.cpp
+  mumble.h
+  regex.cpp
+  regex.h
+  spt.cpp
+  spt.h
+  tinyexpr.cpp
+  tinyexpr.h
+)
+
+# ChaiScript for tclient
+file(GLOB_RECURSE ENGINE_EXTERNAL_CHAISCRIPT
+  "${PROJECT_SOURCE_DIR}/src/engine/external/chaiscript/*.hpp"
+)
+list(APPEND ENGINE_EXTERNAL ${ENGINE_EXTERNAL_CHAISCRIPT})
+
+file(GLOB_RECURSE ENGINE_EXTERNAL_READERWRITERQUEUE
+  "${PROJECT_SOURCE_DIR}/src/engine/external/readerwriterqueue/*.h"
+)
+list(APPEND ENGINE_EXTERNAL ${ENGINE_EXTERNAL_READERWRITERQUEUE})
+
 set_src(ENGINE_GFX GLOB src/engine/gfx
   # tidy-alphabetical-start
   image.cpp
@@ -2550,7 +2776,7 @@ set(LIBS
 # Targets
 add_library(engine-gfx EXCLUDE_FROM_ALL OBJECT ${ENGINE_GFX})
 target_include_directories(engine-gfx PRIVATE ${PNG_INCLUDE_DIRS})
-add_library(engine-shared EXCLUDE_FROM_ALL OBJECT ${ENGINE_INTERFACE} ${ENGINE_SHARED} ${ENGINE_UUID_SHARED} ${BASE})
+add_library(engine-shared EXCLUDE_FROM_ALL OBJECT ${ENGINE_EXTERNAL} ${ENGINE_INTERFACE} ${ENGINE_SHARED} ${ENGINE_UUID_SHARED} ${BASE})
 add_library(game-shared EXCLUDE_FROM_ALL OBJECT ${GAME_SHARED} ${GAME_GENERATED_SHARED})
 # game-shared compiles src/generated/data_types.h, so the Xcode generator needs
 # generate_content_types to be a dependency of it, not just of its consumers.
@@ -2662,7 +2888,6 @@ if(CLIENT)
     sqlite.cpp
     steam.cpp
     text.cpp
-    updater.cpp
     updater.h
     video.cpp
     video.h
@@ -2678,41 +2903,211 @@ if(CLIENT)
     component.h
     components/background.cpp
     components/background.h
+    components/bestclient/bestclient.cpp
+    components/bestclient/bestclient.h
+    components/bestclient/config_presets.cpp
+    components/bestclient/config_presets.h
+    components/bestclient/profile_assets.cpp
+    components/bestclient/profile_assets.h
+    components/bestclient/profiler.cpp
+    components/bestclient/profiler.h
+    components/bestclient/admin_panel.cpp
+    components/bestclient/admin_panel.h
+    components/bestclient/aspect_ratio.cpp
+    components/bestclient/aspect_ratio.h
+    components/bestclient/gradient.cpp
+    components/bestclient/gradient.h
+    components/bestclient/jelly_tee.cpp
+    components/bestclient/jelly_tee.h
+    components/bestclient/flying_name_plates.cpp
+    components/bestclient/flying_name_plates.h
+    components/bestclient/3d_particles.cpp
+    components/bestclient/3d_particles.h
+    components/bestclient/fast_actions.cpp
+    components/bestclient/fast_actions.h
+    components/bestclient/optimizer.cpp
+    components/bestclient/optimizer.h
+    components/bestclient/process_priority.cpp
+    components/bestclient/process_priority.h
+    components/bestclient/discord_rpc.cpp
+    components/bestclient/discord_rpc.h
+    components/bestclient/media_decoder.cpp
+    components/bestclient/media_decoder.h
+    components/bestclient/chat_media.cpp
+    components/bestclient/chat_media.h
+    components/bestclient/better_preview.cpp
+    components/bestclient/better_preview.h
+    components/bestclient/scroll_bar.cpp
+    components/bestclient/scroll_bar.h
+    components/bestclient/chat_message_actions.cpp
+    components/bestclient/chat_message_actions.h
+    components/bestclient/chat_scroll.cpp
+    components/bestclient/chat_scroll.h
+    components/bestclient/console_scroll.cpp
+    components/bestclient/console_scroll.h
+    components/bestclient/menu_media_background.cpp
+    components/bestclient/menu_media_background.h
+    components/bestclient/server_map_preview.cpp
+    components/bestclient/server_map_preview.h
+    components/bestclient/menus_assets_editor.cpp
+    components/bestclient/menus_bestclient.cpp
+    components/bestclient/menus_games.cpp
+    components/bestclient/keybind_map.cpp
+    components/bestclient/keybind_map.h
+    components/bestclient/keybind_map_ui.h
+    components/bestclient/motion_blur.h
+    components/bestclient/motion_blur_opengl.h
+    components/bestclient/motion_blur_opengl.inl
+    components/bestclient/motion_blur_vulkan.inl
+    components/bestclient/motion_blur_vulkan_members.inl
+    components/bestclient/motion_blur_vulkan_state.inl
+    components/bestclient/browser_utils.cpp
+    components/bestclient/browser_utils.h
+    components/bestclient/twitch_chat.cpp
+    components/bestclient/twitch_chat.h
+    components/bestclient/translate.cpp
+    components/bestclient/translate.h
+    components/bestclient/chat_qol.cpp
+    components/bestclient/chat_qol.h
+    components/bestclient/camera_extras.cpp
+    components/bestclient/camera_extras.h
+    components/bestclient/camera_demos.cpp
+    components/bestclient/camera_demos.h
+    components/bestclient/demo_tee_editor.cpp
+    components/bestclient/demo_tee_editor.h
+    components/bestclient/hud_extras.cpp
+    components/bestclient/hud_extras.h
+    components/bestclient/corner_indicator.cpp
+    components/bestclient/corner_indicator.h
+    components/bestclient/cursor_trail.cpp
+    components/bestclient/cursor_trail.h
+    components/bestclient/weapon_vfx.cpp
+    components/bestclient/weapon_vfx.h
+    components/bestclient/laser_glow.cpp
+    components/bestclient/rocket_glow.cpp
+    components/bestclient/nuke_vfx.cpp
+    components/bestclient/menus_fx.cpp
+    components/bestclient/fx/components.h
+    components/bestclient/fx/own_tee.h
+    components/bestclient/fx/fgf_glow.cpp
+    components/bestclient/fx/fgf_glow.h
+    components/bestclient/fx/fgf_actions.cpp
+    components/bestclient/fx/fgf_actions.h
+    components/bestclient/fx/fgf_iceward.cpp
+    components/bestclient/fx/fgf_iceward.h
+    components/bestclient/fx/fgf_ki.cpp
+    components/bestclient/fx/fgf_ki.h
+    components/bestclient/fx/fgf_weather.cpp
+    components/bestclient/fx/fgf_weather.h
+    components/bestclient/fx/lightning.cpp
+    components/bestclient/fx/lightning.h
+    components/bestclient/fx/hookgrip.cpp
+    components/bestclient/fx/hookgrip.h
+    components/bestclient/fx/hookrope.cpp
+    components/bestclient/fx/hookrope.h
+    components/bestclient/fx/hookwind.cpp
+    components/bestclient/fx/hookwind.h
+    components/bestclient/fx/hookblackhole.cpp
+    components/bestclient/fx/hookblackhole.h
+    components/bestclient/fx/hookmagic.cpp
+    components/bestclient/fx/hookmagic.h
+    components/bestclient/fx/hookfire.cpp
+    components/bestclient/fx/hookfire.h
+    components/bestclient/fx/hookrainbow.cpp
+    components/bestclient/fx/hookrainbow.h
+    components/bestclient/fx/hooklightning.cpp
+    components/bestclient/fx/hooklightning.h
+    components/bestclient/fx/hooktentacle.cpp
+    components/bestclient/fx/hooktentacle.h
+    components/bestclient/fx/hooktroll.cpp
+    components/bestclient/fx/hooktroll.h
+    components/bestclient/show_points.cpp
+    components/bestclient/show_points.h
+    components/bestclient/clientindicator/browser_cache.cpp
+    components/bestclient/clientindicator/browser_cache.h
+    components/bestclient/clientindicator/client_indicator.cpp
+    components/bestclient/clientindicator/client_indicator.h
+    components/bestclient/clientindicator/client_indicator_sync.h
+    components/bestclient/clientindicator/presence_cache.cpp
+    components/bestclient/clientindicator/presence_cache.h
+    components/bestclient/clientindicator/protocol.h
+    components/bestclient/voice/protocol.h
+    components/bestclient/voice/voice.cpp
+    components/bestclient/voice/voice.h
+    components/bestclient/spec_pause_radio.cpp
+    components/bestclient/spec_pause_radio.h
+    components/bestclient/chat_bubbles.cpp
+    components/bestclient/chat_bubbles.h
+    components/bestclient/physicball.cpp
+    components/bestclient/physicball.h
+    components/bestclient/ui_animations.cpp
+    components/bestclient/ui_animations.h
+    components/bestclient/ui_theme/style.h
+    components/bestclient/ui_theme/settings_nav.cpp
+    components/bestclient/ui_theme/settings_nav.h
+    components/bestclient/settings_search.cpp
+    components/bestclient/settings_search.h
+    components/bestclient/ui_theme/widgets.cpp
+    components/bestclient/ui_theme/widgets.h
+    components/bestclient/gif_bubbles.cpp
+    components/bestclient/gif_bubbles.h
+    components/bestclient/ego_finished_maps.cpp
+    components/bestclient/ego_finished_maps.h
+    components/bestclient/legit_finished_maps.cpp
+    components/bestclient/legit_finished_maps.h
+    components/bestclient/ego_tiles_prediction.cpp
+    components/bestclient/ego_tiles_prediction.h
+    components/bestclient/edgehelper.cpp
+    components/bestclient/edgehelper.h
+    components/bestclient/fast_practice.cpp
+    components/bestclient/fast_practice.h
+    components/bestclient/finish_prediction.cpp
+    components/bestclient/finish_prediction.h
+    components/bestclient/keystrokes.cpp
+    components/bestclient/keystrokes.h
+    components/bestclient/hud_editor.cpp
+    components/bestclient/hud_editor.h
+    components/bestclient/music_player.cpp
+    components/bestclient/music_player.h
+    components/bestclient/music_player_lyrics.cpp
+    components/bestclient/music_player_lyrics.h
+    components/bestclient/quick_binds.cpp
+    components/bestclient/quick_binds.h
+    components/bestclient/rollback_demo.cpp
+    components/bestclient/rollback_demo.h
+    components/bestclient/snap_tap.cpp
+    components/bestclient/snap_tap.h
+    components/bestclient/inputs.cpp # bestclient
+    components/bestclient/inputs.h
+    components/bestclient/cloud_input.cpp
+    components/bestclient/cloud_input.h
+    components/bestclient/automargin.cpp
+    components/bestclient/automargin.h # bestclient
+    components/bestclient/subsystem_runtime.h
+    components/bestclient/updater.cpp
+    components/bestclient/updater.h
+    components/bestclient/changelog.cpp
+    components/bestclient/changelog.h
+    components/bestclient/version.h
+    components/bestclient/visualizer/analyzer.cpp
+    components/bestclient/visualizer/analyzer.h
+    components/bestclient/visualizer/service.cpp
+    components/bestclient/visualizer/service.h
+    components/bestclient/visualizer/smoother.cpp
+    components/bestclient/visualizer/smoother.h
+    components/bestclient/visualizer/source.h
+    components/bestclient/visualizer/source_passive.cpp
+    components/bestclient/visualizer/source_priority.h
+    components/bestclient/visualizer/source_pulse.cpp
+    components/bestclient/visualizer/source_wasapi.cpp
+    components/bestclient/visualizer/types.h
+    bc_ui_animations.h
     components/binds.cpp
     components/binds.h
     components/broadcast.cpp
     components/broadcast.h
     components/camera.cpp
     components/camera.h
-    components/cclient.cpp
-    components/cclient.h
-    components/cclient_bg_draw.cpp
-    components/cclient_bg_draw.h
-    components/cclient_bg_draw_file.cpp
-    components/cclient_bg_draw_file.h
-    components/cclient_effects.cpp
-    components/cclient_effects.h
-    components/cclient_gameplay.cpp
-    components/cclient_gameplay.h
-    components/cclient_media.cpp
-    components/cclient_media.h
-    components/cclient_moving_tiles.cpp
-    components/cclient_moving_tiles.h
-    components/cclient_playtime.cpp
-    components/cclient_playtime.h
-    components/cclient_presence.cpp
-    components/cclient_presence.h
-    components/cclient_priority.cpp
-    components/cclient_spt.cpp
-    components/cclient_spt.h
-    components/cclient_style.cpp
-    components/cclient_style.h
-    components/cclient_tc.cpp
-    components/cclient_tc.h
-    components/cclient_trails.cpp
-    components/cclient_trails.h
-    components/cclient_visuals.cpp
-    components/cclient_visuals.h
     components/censor.cpp
     components/censor.h
     components/chat.cpp
@@ -2743,6 +3138,8 @@ if(CLIENT)
     components/ghost.h
     components/hud.cpp
     components/hud.h
+    components/hud_layout.cpp
+    components/hud_layout.h
     components/important_alert.cpp
     components/important_alert.h
     components/infomessages.cpp
@@ -2764,7 +3161,6 @@ if(CLIENT)
     components/menus.cpp
     components/menus.h
     components/menus_browser.cpp
-    components/menus_cc_stats.cpp
     components/menus_demo.cpp
     components/menus_ingame.cpp
     components/menus_ingame_touch_controls.cpp
@@ -2772,8 +3168,6 @@ if(CLIENT)
     components/menus_settings.cpp
     components/menus_settings_appearance.cpp
     components/menus_settings_assets.cpp
-    components/menus_settings_cc_assets.cpp
-    components/menus_settings_cclient.cpp
     components/menus_settings_controls.cpp
     components/menus_settings_controls.h
     components/menus_settings_credits.cpp
@@ -2789,8 +3183,6 @@ if(CLIENT)
     components/menus_start.h
     components/motd.cpp
     components/motd.h
-    components/multiview.cpp
-    components/multiview.h
     components/nameplates.cpp
     components/nameplates.h
     components/particles.cpp
@@ -2811,16 +3203,63 @@ if(CLIENT)
     components/spectator.h
     components/statboard.cpp
     components/statboard.h
+    components/tclient/bg_draw.cpp
+    components/tclient/bg_draw.h
+    components/tclient/bg_draw_file.cpp
+    components/tclient/bg_draw_file.h
+    components/tclient/bindchat.cpp
+    components/tclient/bindchat.h
+    components/tclient/bindwheel.cpp
+    components/tclient/bindwheel.h
+    components/tclient/colored_parts.h
+    components/tclient/custom_communities.cpp
+    components/tclient/custom_communities.h
+    components/tclient/data_version.h
+    components/tclient/menus_tclient.cpp
+    components/tclient/mod.cpp
+    components/tclient/mod.h
+    components/tclient/moving_tiles.cpp
+    components/tclient/moving_tiles.h
+    components/tclient/mumble.cpp
+    components/tclient/mumble.h
+    components/tclient/outlines.cpp
+    components/tclient/outlines.h
+    components/tclient/pet.cpp
+    components/tclient/pet.h
+    components/tclient/player_indicator.cpp
+    components/tclient/player_indicator.h
+    components/tclient/rainbow.cpp
+    components/tclient/rainbow.h
+    components/tclient/scripting.cpp
+    components/tclient/scripting.h
+    components/tclient/scripting/impl.cpp
+    components/tclient/scripting/impl.h
+    components/tclient/skinprofiles.cpp
+    components/tclient/skinprofiles.h
+    components/tclient/statusbar.cpp
+    components/tclient/statusbar.h
+    components/tclient/tclient.cpp
+    components/tclient/tclient.h
+    components/tclient/trails.cpp
+    components/tclient/trails.h
+    components/tclient/warlist.cpp
+    components/tclient/warlist.h
+    components/tooltips.cpp
+    components/tooltips.h
     components/touch_controls.cpp
     components/touch_controls.h
     components/voting.cpp
     components/voting.h
+    demo_tee_edit.cpp
+    demo_tee_edit.h
+    demo_tee_selection.h
     gameclient.cpp
     gameclient.h
     laser_data.cpp
     laser_data.h
     lineinput.cpp
     lineinput.h
+    multiview.cpp
     pickup_data.cpp
     pickup_data.h
     prediction/entities/character.cpp
@@ -2852,8 +3291,6 @@ if(CLIENT)
     sixup_translate_snapshot.cpp
     skin.cpp
     skin.h
-    tooltips.cpp
-    tooltips.h
     ui.cpp
     ui.h
     ui_listbox.cpp
@@ -3017,6 +3454,13 @@ if(CLIENT)
     endif()
   endif()
 
+  if(DBUS_FOUND)
+    list(APPEND LIBS_CLIENT ${DBUS_LIBRARIES})
+  endif()
+  if(PULSE_SIMPLE_FOUND)
+    list(APPEND LIBS_CLIENT ${PULSE_SIMPLE_LIBRARIES})
+  endif()
+
   if(TARGET_OS STREQUAL "windows")
     set(VERSION_EXECUTABLE "${CLIENT_EXECUTABLE}")
     set(VERSION_COMPANY "${CLIENT_EXECUTABLE} Team")
@@ -3088,8 +3532,8 @@ if(CLIENT)
       PROPERTY OUTPUT_NAME ${CLIENT_EXECUTABLE}
   )
   target_link_libraries(game-client ${LIBS_CLIENT})
-  if(MSVC)
-    target_link_libraries(game-client windowsapp) # Cr1stal Client: now playing music (WinRT)
+  if(WIN32)
+    target_link_libraries(game-client psapi)
   endif()
 
   if(TARGET_OS STREQUAL "ios")
@@ -3114,8 +3558,17 @@ if(CLIENT)
   endif()
 
   if(MSVC)
+    target_compile_options(game-client PRIVATE /bigobj) # TClient, required for ChaiScript
     target_link_options(game-client PRIVATE /ENTRY:mainCRTStartup)
   endif()
+
+  if(WIN32 AND NOT MSVC)
+    target_compile_options(game-client PRIVATE -Wa,-mbig-obj) # TClient, required for ChaiScript
+  endif()
+
+  # Silence warnings from ChaiScript
+  target_include_directories(game-client SYSTEM PRIVATE
+    ${PROJECT_SOURCE_DIR}/src/engine/external/chaiscript)
 
   target_include_directories(game-client SYSTEM PRIVATE
     # tidy-alphabetical-start
@@ -3148,8 +3601,55 @@ if(CLIENT)
     target_compile_definitions(game-client PRIVATE CONF_BACKEND_VULKAN)
   endif()
 
+  if(DBUS_FOUND)
+    target_compile_definitions(game-client PRIVATE BC_MUSICPLAYER_HAS_DBUS=1)
+    target_include_directories(game-client SYSTEM PRIVATE ${DBUS_INCLUDE_DIRS})
+  else()
+    target_compile_definitions(game-client PRIVATE BC_MUSICPLAYER_HAS_DBUS=0)
+  endif()
+  if(PULSE_SIMPLE_FOUND)
+    target_compile_definitions(game-client PRIVATE BC_MUSICPLAYER_HAS_PULSE=1)
+    target_include_directories(game-client SYSTEM PRIVATE ${PULSE_SIMPLE_INCLUDE_DIRS})
+  else()
+    target_compile_definitions(game-client PRIVATE BC_MUSICPLAYER_HAS_PULSE=0)
+  endif()
+
   list(APPEND TARGETS_OWN game-client)
   list(APPEND TARGETS_LINK game-client)
+
+  if(WIN32)
+    set(VERSION_COMPANY "${CLIENT_EXECUTABLE} Team")
+    set(VERSION_PRODUCT_NAME "BestClient")
+    configure_file("other/versioninfo/updater.versioninfo.rc.in" "updater.versioninfo.rc")
+    configure_file("other/manifest/updater.manifest.in" "updater.manifest")
+    if(NOT MINGW)
+      set(UPDATER_MANIFEST "${CMAKE_CURRENT_BINARY_DIR}/updater.manifest")
+    else()
+      configure_file("other/manifest/updater.rc" "updater.rc" COPYONLY)
+      set(UPDATER_MANIFEST "${CMAKE_CURRENT_BINARY_DIR}/updater.rc")
+    endif()
+    add_executable(bestclient-updater WIN32
+      src/tools/bestclient_updater.cpp
+      other/icons/DDNet.rc
+      "${CMAKE_CURRENT_BINARY_DIR}/updater.versioninfo.rc"
+      ${UPDATER_MANIFEST}
+      ${ZLIB_DEP}
+    )
+    target_link_libraries(bestclient-updater shell32 ${ZLIB_LIBRARIES})
+    target_include_directories(bestclient-updater SYSTEM PRIVATE ${ZLIB_INCLUDE_DIRS})
+    set_property(TARGET bestclient-updater PROPERTY OUTPUT_NAME "bestclient-updater")
+    list(APPEND TARGETS_OWN bestclient-updater)
+    list(APPEND TARGETS_LINK bestclient-updater)
+  elseif(TARGET_OS STREQUAL "linux")
+    add_executable(bestclient-updater
+      src/tools/bestclient_updater_linux.cpp
+    )
+    target_link_libraries(bestclient-updater ${SDL2_LIBRARIES})
+    target_include_directories(bestclient-updater PRIVATE ${SDL2_INCLUDE_DIRS})
+    set_property(TARGET bestclient-updater PROPERTY OUTPUT_NAME "bestclient-updater")
+    list(APPEND TARGETS_OWN bestclient-updater)
+    list(APPEND TARGETS_LINK bestclient-updater)
+  endif()
 endif()
 
 
@@ -3316,11 +3816,11 @@ if(SERVER)
       ${SERVER_ICON}
       ${SERVER_VERSIONINFO}
       $<TARGET_OBJECTS:game-server-without-main>
-      # tidy-alphabetical-start
+      # tidy-alphabetical-sort
       $<TARGET_OBJECTS:engine-shared>
       $<TARGET_OBJECTS:game-shared>
       $<TARGET_OBJECTS:rust-bridge-shared>
-      # tidy-alphabetical-end
+      # tidy-alphabetical-sort
     )
   else()
     add_executable(game-server
@@ -3329,11 +3829,11 @@ if(SERVER)
       ${SERVER_ICON}
       ${SERVER_VERSIONINFO}
       $<TARGET_OBJECTS:game-server-without-main>
-      # tidy-alphabetical-start
+      # tidy-alphabetical-sort
       $<TARGET_OBJECTS:engine-shared>
       $<TARGET_OBJECTS:game-shared>
       $<TARGET_OBJECTS:rust-bridge-shared>
-      # tidy-alphabetical-end
+      # tidy-alphabetical-sort
     )
   endif()
   set_property(TARGET game-server
@@ -3376,6 +3876,10 @@ if(TOOLS)
   set(TARGETS_TOOLS)
   set_src(TOOLS_SRC GLOB src/tools
     # tidy-alphabetical-start
+    bestclient_updater.cpp
+    bestclient_updater_linux.cpp
+    bestclient_updater_linux_font.h
+    bestclient_updater_linux_fs.h
     config_common.h
     config_retrieve.cpp
     config_store.cpp
@@ -3404,10 +3908,12 @@ if(TOOLS)
     file(RELATIVE_PATH T "${PROJECT_SOURCE_DIR}/src/tools/" ${ABS_T})
     if(T MATCHES "\\.cpp$")
       string(REGEX REPLACE "\\.cpp$" "" TOOL "${T}")
+      if(TOOL MATCHES "^bestclient_updater(_linux)?$")
+        continue()
+      endif()
       if(TOOL MATCHES "^map_render$" AND NOT EGL_FOUND)
         continue()
       endif()
-      set(TOOL_INCLUDE_DIRS)
       set(TOOL_DEPS ${DEPS})
       set(TOOL_LIBS ${LIBS})
       unset(EXTRA_TOOL_SRC)
@@ -3522,10 +4028,11 @@ if((GTEST_FOUND OR DOWNLOAD_GTEST) AND SERVER)
     chunk_header_test.cpp
     color_test.cpp
     compression_test.cpp
-    console_test.cpp
     csv_test.cpp
     datafile_test.cpp
     dbg_test.cpp
+    demo_tee_edit_test.cpp
+    demo_tee_selection_test.cpp
     editor_test.cpp
     fs_test.cpp
     gameworld_test.cpp
@@ -3583,6 +4090,8 @@ if((GTEST_FOUND OR DOWNLOAD_GTEST) AND SERVER)
     src/engine/client/sqlite.cpp
     src/game/client/components/censor.cpp
     src/game/client/components/censor.h
+    src/game/client/demo_tee_edit.cpp
+    src/game/client/demo_tee_edit.h
     # tidy-alphabetical-end
   )
 
@@ -3607,7 +4116,7 @@ if((GTEST_FOUND OR DOWNLOAD_GTEST) AND SERVER)
 
   add_custom_target(run_cxx_tests
     COMMAND $<TARGET_FILE:${TARGET_TESTRUNNER}> --gtest_brief=1 ${TESTRUNNER_ARGS}
-    COMMENT "Running unit tests"
+    COMMENT Running unit tests
     DEPENDS ${TARGET_TESTRUNNER}
     USES_TERMINAL
   )
@@ -3616,7 +4125,7 @@ if((GTEST_FOUND OR DOWNLOAD_GTEST) AND SERVER)
   )
   add_custom_target(run_cxx_tests_verbose
     COMMAND $<TARGET_FILE:${TARGET_TESTRUNNER}> --no-capture ${TESTRUNNER_ARGS}
-    COMMENT "Running unit tests"
+    COMMENT Running unit tests
     DEPENDS ${TARGET_TESTRUNNER}
     USES_TERMINAL
   )
@@ -3731,7 +4240,7 @@ function(regex_inverted VAR)
   set(${VAR} ${RESULT} PARENT_SCOPE)
 endfunction()
 
-set(CPACK_PACKAGE_NAME ${PROJECT_NAME})
+set(CPACK_PACKAGE_NAME "bestclient") # bestclient
 set(CPACK_GENERATOR TGZ TXZ)
 set(CPACK_ARCHIVE_COMPONENT_INSTALL ON)
 if(TARGET_OS STREQUAL "mac")
@@ -3745,10 +4254,10 @@ else()
 endif()
 set(CPACK_COMPONENTS_ALL portable)
 set(CPACK_SOURCE_GENERATOR ZIP TGZ TBZ2 TXZ)
-set(CPACK_PACKAGE_VERSION_MAJOR ${PROJECT_VERSION_MAJOR})
-set(CPACK_PACKAGE_VERSION_MINOR ${PROJECT_VERSION_MINOR})
-set(CPACK_PACKAGE_VERSION_PATCH ${PROJECT_VERSION_PATCH})
-set(CPACK_PACKAGE_VERSION ${VERSION})
+set(CPACK_PACKAGE_VERSION_MAJOR ${BESTCLIENT_VERSION_MAJOR}) # bestclient
+set(CPACK_PACKAGE_VERSION_MINOR ${BESTCLIENT_VERSION_MINOR})
+set(CPACK_PACKAGE_VERSION_PATCH ${BESTCLIENT_VERSION_PATCH})
+set(CPACK_PACKAGE_VERSION ${BESTCLIENT_PACKAGE_VERSION}) # bestclient
 set(CPACK_SYSTEM_NAME ${CMAKE_SYSTEM_NAME})
 
 if(TARGET_OS AND TARGET_BITS)
@@ -3847,6 +4356,9 @@ set(CPACK_TARGETS)
 if(TARGET game-client)
   list(APPEND CPACK_TARGETS game-client)
 endif()
+if(TARGET bestclient-updater)
+  list(APPEND CPACK_TARGETS bestclient-updater)
+endif()
 if(TARGET game-server)
   list(APPEND CPACK_TARGETS game-server)
 endif()
@@ -3863,6 +4375,7 @@ endif()
 list(APPEND CPACK_DIRS ${COPY_DIRS})
 set(CPACK_FILES
   license.txt
+  steam_appid.txt
   ${COPY_FILES}
 )
 if(NOT TARGET_OS STREQUAL "emscripten")
@@ -4189,7 +4702,7 @@ source_group_tree(src)
 
 if(ANTIBOT)
   # Allow the antibot library to use functions from the server binary.
-  add_linker_flag_if_supported(OUR_FLAGS_LINK -rdynamic)
+  add_cxx_compiler_flag_if_supported(OUR_FLAGS_LINK -rdynamic)
   set_own_rpath(game-server)
 endif()
 
@@ -4286,7 +4799,9 @@ foreach(target ${TARGETS_OWN})
     # See https://learn.microsoft.com/en-us/windows/win32/winprog/using-the-windows-headers
     target_compile_definitions(${target} PRIVATE NOMINMAX) # windows.h shouldn't define min/max macros
     target_compile_definitions(${target} PRIVATE WIN32_LEAN_AND_MEAN) # windows.h shouldn't define the name IStorage
-    target_compile_definitions(${target} PRIVATE NOGDI) # wingdi.h shouldn't define the name ERROR
+    if(NOT "${target}" STREQUAL "bestclient-updater")
+      target_compile_definitions(${target} PRIVATE NOGDI) # wingdi.h shouldn't define the name ERROR
+    endif()
     # 0x0501 (Windows XP) is required for mingw to get getaddrinfo to work
     # 0x0600 (Windows Vista) is required to use RegGetValueW and RegDeleteTreeW
     target_compile_definitions(${target} PRIVATE NTDDI_VERSION=0x06000000) # Minimum OS version (new macro, since Vista)
@@ -4349,24 +4864,24 @@ foreach(target ${TARGETS_OWN})
   if(TEST_MYSQL)
     target_compile_definitions(${target} PRIVATE CONF_TEST_MYSQL)
   endif()
-  if(AUTOUPDATE AND NOT STEAM)
+  if(AUTOUPDATE)
     target_compile_definitions(${target} PRIVATE CONF_AUTOUPDATE)
   endif()
-  if(INFORM_UPDATE AND NOT STEAM)
+  if(INFORM_UPDATE)
     target_compile_definitions(${target} PRIVATE CONF_INFORM_UPDATE)
   endif()
-  if(STEAM)
-    target_compile_definitions(${target} PRIVATE PLATFORM_SUFFIX=-steam)
-  endif()
+  # if(STEAM)
+  #   target_compile_definitions(${target} PRIVATE PLATFORM_SUFFIX=-steam)
+  # endif()
   if(DISCORD)
     target_compile_definitions(${target} PRIVATE CONF_DISCORD)
     if(DISCORD_DYNAMIC)
       target_compile_definitions(${target} PRIVATE CONF_DISCORD_DYNAMIC)
     endif()
   endif()
-  if(VERSION)
-    target_compile_definitions(${target} PRIVATE GAME_RELEASE_VERSION_INTERNAL=${VERSION})
-  endif()
+  # if(VERSION)
+  #   target_compile_definitions(${target} PRIVATE GAME_RELEASE_VERSION_INTERNAL=${VERSION})
+  # endif()
   if(TARGET_OS STREQUAL "android")
     if(ANDROID_PACKAGE_NAME)
       target_compile_definitions(${target} PRIVATE ANDROID_PACKAGE_NAME="${ANDROID_PACKAGE_NAME}")
@@ -4389,3 +4904,21 @@ foreach(target ${TARGETS_DEP})
     target_compile_options(${target} PRIVATE ${OUR_FLAGS_DEP})
   endif()
 endforeach()
+
+foreach(target game-server game-server-without-main)
+  if(TARGET ${target} AND OUR_FLAGS_SERVER)
+    target_compile_options(${target} PRIVATE ${OUR_FLAGS_SERVER})
+  endif()
+endforeach()
+
+if(TARGET_OS STREQUAL "windows" AND STEAM AND NOT CMAKE_BUILD_TYPE STREQUAL Debug)
+  add_custom_command(
+    TARGET game-client POST_BUILD
+    COMMAND ${CMAKE_COMMAND} -E copy_if_different
+      "${CMAKE_SOURCE_DIR}/steam_api.dll"
+      "$<TARGET_FILE_DIR:game-client>"
+    COMMAND ${CMAKE_COMMAND} -E copy_if_different
+      "${CMAKE_SOURCE_DIR}/steam_appid.txt"
+      "$<TARGET_FILE_DIR:game-client>"
+  )
+endif()

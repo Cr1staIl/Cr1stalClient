@@ -23,6 +23,7 @@ class CPlayers : public CComponent
 		int ClientId,
 		float Intra = 0.f,
 		bool RenderGhost = false);
+
 	void RenderHook(
 		const CScreenRect &ScreenRect,
 		const CNetObj_Character *pPrevChar,

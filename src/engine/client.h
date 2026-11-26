@@ -36,6 +36,7 @@ enum
 };
 
 typedef bool (*CLIENTFUNC_FILTER)(const void *pData, int DataSize, void *pUser);
+typedef void (*CLIENTFUNC_SNAPSHOT)(void *pData, int DataSize, bool Sixup, void *pUser);
 struct CChecksumData;
 
 class IClient : public IInterface
@@ -66,19 +67,19 @@ public:
 	 * More precise state for @see STATE_LOADING
 	 * Sets what is actually happening in the client right now
 	 */
-	enum class ELoadingStateDetail
+	enum ELoadingStateDetail
 	{
-		INITIAL,
-		LOADING_MAP,
-		LOADING_DEMO,
-		SENDING_READY,
-		GETTING_READY,
+		LOADING_STATE_DETAIL_INITIAL,
+		LOADING_STATE_DETAIL_LOADING_MAP,
+		LOADING_STATE_DETAIL_LOADING_DEMO,
+		LOADING_STATE_DETAIL_SENDING_READY,
+		LOADING_STATE_DETAIL_GETTING_READY,
 	};
 
-	enum class ELoadingCallbackDetail
+	enum ELoadingCallbackDetail
 	{
-		MAP,
-		DEMO,
+		LOADING_CALLBACK_DETAIL_MAP,
+		LOADING_CALLBACK_DETAIL_DEMO,
 	};
 	typedef std::function<void(ELoadingCallbackDetail Detail)> TLoadingCallback;
 	CTranslationContext m_TranslationContext;
@@ -86,7 +87,7 @@ public:
 protected:
 	// quick access to state of the client
 	EClientState m_State = IClient::STATE_OFFLINE;
-	ELoadingStateDetail m_LoadingStateDetail = ELoadingStateDetail::INITIAL;
+	ELoadingStateDetail m_LoadingStateDetail = LOADING_STATE_DETAIL_INITIAL;
 	int64_t m_StateStartTime;
 
 	// quick access to time variables
@@ -111,9 +112,6 @@ protected:
 	int64_t m_ReconnectTime = 0;
 
 public:
-	// C-Client: your tee is frozen right now (set by the game every frame)
-	bool m_IsLocalFrozen = false;
-
 	class CSnapItem
 	{
 	public:
@@ -131,15 +129,15 @@ public:
 		NUM_CONNS,
 	};
 
-	enum class EConnectivity
+	enum
 	{
-		UNKNOWN,
-		CHECKING,
-		UNREACHABLE,
-		REACHABLE,
+		CONNECTIVITY_UNKNOWN,
+		CONNECTIVITY_CHECKING,
+		CONNECTIVITY_UNREACHABLE,
+		CONNECTIVITY_REACHABLE,
 		// Different global IP address has been detected for UDP and
 		// TCP connections.
-		DIFFERING_UDP_TCP_IP_ADDRESSES,
+		CONNECTIVITY_DIFFERING_UDP_TCP_IP_ADDRESSES,
 	};
 
 	//
@@ -342,7 +340,7 @@ public:
 
 	virtual void DemoSliceBegin() = 0;
 	virtual void DemoSliceEnd() = 0;
-	virtual void DemoSlice(const char *pDstPath, CLIENTFUNC_FILTER pfnFilter, void *pUser) = 0;
+	virtual bool DemoSlice(const char *pDstPath, CLIENTFUNC_FILTER pfnFilter, void *pUser, CLIENTFUNC_SNAPSHOT pfnSnapshot = nullptr, void *pSnapshotUser = nullptr) = 0;
 
 	enum class EInfoState
 	{
@@ -359,12 +357,14 @@ public:
 	virtual IFriends *Foes() = 0;
 
 	virtual void GetSmoothTick(int *pSmoothTick, float *pSmoothIntraTick, float MixAmount) = 0;
+	// TClient
+	virtual void GetSmoothFreezeTick(int *pSmoothTick, float *pSmoothIntraTick, float MixAmount) = 0;
 
 	virtual void AddWarning(const SWarning &Warning) = 0;
 	virtual std::optional<SWarning> CurrentWarning() = 0;
 
 	virtual CChecksumData *ChecksumData() = 0;
-	virtual EConnectivity UdpConnectivity(int NetType) = 0;
+	virtual int UdpConnectivity(int NetType) = 0;
 
 	/**
 	 * Opens a link in the browser.
@@ -396,6 +396,9 @@ public:
 
 	virtual std::optional<int> ShowMessageBox(const IGraphics::CMessageBox &MessageBox) = 0;
 	virtual void GetGpuInfoString(char (&aGpuInfo)[512]) = 0;
+
+	// TClient
+	bool m_IsLocalFrozen = false;
 };
 
 class IGameClient : public IInterface
@@ -403,6 +406,10 @@ class IGameClient : public IInterface
 	MACRO_INTERFACE("gameclient")
 protected:
 public:
+	// TClient
+	virtual bool CheckNewInput() = 0;
+	virtual void SetConnectInfo(const NETADDR *pAddress) = 0;
+
 	virtual void OnConsoleInit() = 0;
 
 	virtual void OnRconType(bool UsernameReq) = 0;
@@ -418,11 +425,11 @@ public:
 	virtual void OnConnected() = 0;
 	virtual void OnMessage(int MsgId, CUnpacker *pUnpacker, int Conn, bool Dummy) = 0;
 	virtual void OnPredict() = 0;
-	virtual bool CheckNewInput() = 0; // C-Client fast input
 	virtual void OnActivateEditor() = 0;
 	virtual void OnWindowResize() = 0;
 
 	virtual int OnSnapInput(int *pData, bool Dummy, bool Force) = 0;
+	virtual void PrepareInputForSend(int *pData, int Size, bool Dummy) = 0; // bestclient
 	virtual void OnDummySwap() = 0;
 	virtual void SendDummyInfo(bool Start) = 0;
 
@@ -438,6 +445,9 @@ public:
 	virtual void Echo(const char *pString) = 0;
 
 	virtual bool CanDisplayWarning() const = 0;
+	// bestclient
+	virtual const char *LocalPlayerSkinName() const = 0;
+	// bestclient
 	virtual void RenderShutdownMessage() = 0;
 
 	virtual IMap *Map() = 0;

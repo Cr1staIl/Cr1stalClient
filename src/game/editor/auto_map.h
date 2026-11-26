@@ -85,8 +85,6 @@ public:
 	bool IsLoaded() const { return m_FileLoaded; }
 
 private:
-	void AutoMap(class CLayerTiles *pLayer, const class CLayerTiles *pReadLayer, const CRun *pRun, size_t RunIndex, bool IsFilterable, int Seed, int SeedOffsetX, int SeedOffsetY) const;
-
 	std::vector<CConfiguration> m_vConfigs;
 	bool m_FileLoaded = false;
 };

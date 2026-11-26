@@ -13,6 +13,9 @@
 #include <game/client/components/binds.h>
 #include <game/client/components/key_binder.h>
 #include <game/client/components/menus.h>
+// bestclient
+#include <game/client/components/bestclient/ui_theme/style.h>
+// bestclient
 #include <game/client/gameclient.h>
 #include <game/client/ui.h>
 #include <game/client/ui_scrollregion.h>
@@ -93,8 +96,6 @@ void CMenusSettingsControls::OnInterfacesInit(CGameClient *pClient)
 		{EBindOptionGroup::DUMMY, Localizable("Toggle dummy"), "toggle cl_dummy 0 1"},
 		{EBindOptionGroup::DUMMY, Localizable("Dummy copy"), "toggle cl_dummy_copy_moves 0 1"},
 		{EBindOptionGroup::DUMMY, Localizable("Hammerfly dummy"), "toggle cl_dummy_hammer 0 1"},
-		{EBindOptionGroup::PRACTICE, Localizable("Teleport to cursor"), "tp_to_cursor"},
-		{EBindOptionGroup::PRACTICE, Localizable("Teleport dummy to cursor"), "tp_dummy_to_cursor"},
 		{EBindOptionGroup::MISCELLANEOUS, Localizable("Emoticon"), "+emote"},
 		{EBindOptionGroup::MISCELLANEOUS, Localizable("Spectator mode"), "+spectate"},
 		{EBindOptionGroup::MISCELLANEOUS, Localizable("Spectate next"), "spectate_next"},
@@ -108,17 +109,21 @@ void CMenusSettingsControls::OnInterfacesInit(CGameClient *pClient)
 		{EBindOptionGroup::MISCELLANEOUS, Localizable("Lock team"), "say /lock"},
 		{EBindOptionGroup::MISCELLANEOUS, Localizable("Show entities"), "toggle cl_overlay_entities 0 100"},
 		{EBindOptionGroup::MISCELLANEOUS, Localizable("Show HUD"), "toggle cl_showhud 0 1"},
-		// C-Client: markers for your team
-		{EBindOptionGroup::MISCELLANEOUS, Localizable("Save wheel (hold)"), "+cc_save_wheel"},
-		{EBindOptionGroup::MISCELLANEOUS, Localizable("Marker where you aim"), "cc_ping"},
-		{EBindOptionGroup::MISCELLANEOUS, Localizable("Hook me up"), "cc_save 0"},
-		{EBindOptionGroup::MISCELLANEOUS, Localizable("Hook me to the right"), "cc_save 1"},
-		{EBindOptionGroup::MISCELLANEOUS, Localizable("Hammer me"), "cc_save 2"},
-		{EBindOptionGroup::MISCELLANEOUS, Localizable("Stand under me"), "cc_save 3"},
-		{EBindOptionGroup::MISCELLANEOUS, Localizable("Pull me down"), "cc_save 4"},
-		{EBindOptionGroup::MISCELLANEOUS, Localizable("Hook me to the left"), "cc_save 5"},
-		{EBindOptionGroup::MISCELLANEOUS, Localizable("Wait, don't touch me"), "cc_save 6"},
-		{EBindOptionGroup::MISCELLANEOUS, Localizable("Thanks!"), "cc_save 7"},
+		{EBindOptionGroup::BEST_CLIENT, Localizable("Admin Panel"), "toggle_admin_panel"}, // bestclient
+		{EBindOptionGroup::BEST_CLIENT, Localizable("Dummy pseudo"), "+toggle cl_dummy_hammer 1 0"}, // bestclient
+		{EBindOptionGroup::BEST_CLIENT, Localizable("Reset on switch"), "toggle cl_dummy_resetonswitch 0 1"}, // bestclient
+		{EBindOptionGroup::BEST_CLIENT, Localizable("Deepfly toggle"), "BC_deepfly_toggle"}, // bestclient
+		{EBindOptionGroup::BEST_CLIENT, Localizable("45 deg bind"), "+BC_45_degrees"}, // bestclient
+		{EBindOptionGroup::BEST_CLIENT, Localizable("Small sens bind"), "BC_small_sens"}, // bestclient
+		{EBindOptionGroup::BEST_CLIENT, Localizable("Left jump"), "+jump; +left"}, // bestclient
+		{EBindOptionGroup::BEST_CLIENT, Localizable("Right jump"), "+jump; +right"}, // bestclient
+		{EBindOptionGroup::BEST_CLIENT, Localizable("Find teleport"), "bc_goto_tele_cursor"}, // bestclient
+		{EBindOptionGroup::BEST_CLIENT, Localizable("Find finish"), "bc_goto_finish_cursor"}, // bestclient
+		{EBindOptionGroup::BEST_CLIENT_PRACTICE, Localizable("say /r"), "say /r"}, // bestclient
+		{EBindOptionGroup::BEST_CLIENT_PRACTICE, Localizable("say /invincible"), "say /invincible"}, // bestclient
+		{EBindOptionGroup::BEST_CLIENT_PRACTICE, Localizable("say /telecursor"), "say /telecursor"}, // bestclient
+		{EBindOptionGroup::BEST_CLIENT_PRACTICE, Localizable("say /weapons"), "say /weapons"}, // bestclient
+		{EBindOptionGroup::BEST_CLIENT_PRACTICE, Localizable("say /unweapons"), "say /unweapons"}, // bestclient
 	};
 	m_NumPredefinedBindOptions = m_vBindOptions.size();
 
@@ -134,10 +139,49 @@ void CMenusSettingsControls::Render(CUIRect MainView)
 
 	CUIRect QuickSearch, SearchMatches, ResetToDefault;
 	MainView.HSplitBottom(BUTTON_HEIGHT, &MainView, &QuickSearch);
-	QuickSearch.VSplitRight(200.0f, &QuickSearch, &ResetToDefault);
+	// bestclient
+	CUIRect KeybindMapButton;
+	const bool ShowSearchMatches = !m_KeybindMap && !m_FilterInput.IsEmpty();
+	float ResetW = 200.0f;
+	float MapW = 120.0f;
+	float MatchW = ShowSearchMatches ? 140.0f : 0.0f;
+	const float Gaps = MARGIN * (ShowSearchMatches ? 3.0f : 2.0f);
+	float SearchW = QuickSearch.w - ResetW - MapW - MatchW - Gaps;
+	const float SearchFloor = QuickSearch.w * 0.46f < 260.0f ? QuickSearch.w * 0.46f : 260.0f;
+	if(SearchW < SearchFloor)
+	{
+		float Debt = SearchFloor - SearchW;
+		const float ResetGive = Debt < ResetW - 140.0f ? Debt : ResetW - 140.0f;
+		if(ResetGive > 0.0f)
+		{
+			ResetW -= ResetGive;
+			Debt -= ResetGive;
+		}
+		const float MatchGive = Debt < MatchW - 96.0f ? Debt : MatchW - 96.0f;
+		if(MatchGive > 0.0f)
+		{
+			MatchW -= MatchGive;
+			Debt -= MatchGive;
+		}
+		const float MapGive = Debt < MapW - 96.0f ? Debt : MapW - 96.0f;
+		if(MapGive > 0.0f)
+			MapW -= MapGive;
+	}
+	QuickSearch.VSplitRight(ResetW, &QuickSearch, &ResetToDefault);
 	QuickSearch.VSplitRight(MARGIN, &QuickSearch, nullptr);
-	QuickSearch.VSplitRight(150.0f, &QuickSearch, &SearchMatches);
+	QuickSearch.VSplitRight(MapW, &QuickSearch, &KeybindMapButton);
 	QuickSearch.VSplitRight(MARGIN, &QuickSearch, nullptr);
+	if(ShowSearchMatches)
+	{
+		QuickSearch.VSplitRight(MatchW, &QuickSearch, &SearchMatches);
+		QuickSearch.VSplitRight(MARGIN, &QuickSearch, nullptr);
+	}
+	else
+		SearchMatches = {};
+	const char *pKeybindMapLabel = m_KeybindMap ? BcLocalize("Bind list") : BcLocalize("Keybind map");
+	if(GameClient()->m_Menus.DoButton_Menu(&m_KeybindMapButton, pKeybindMapLabel, m_KeybindMap ? 1 : 0, &KeybindMapButton))
+		m_KeybindMap ^= true;
+	// bestclient
 	MainView.HSplitBottom(MARGIN, &MainView, nullptr);
 
 	// Quick search
@@ -147,7 +191,7 @@ void CMenusSettingsControls::Render(CUIRect MainView)
 		UpdateSearchMatches();
 		m_SearchMatchReveal = true;
 	}
-	else if(!m_vSearchMatches.empty() && (Ui()->ConsumeHotkey(CUi::EHotkey::HOTKEY_ENTER) || Ui()->ConsumeHotkey(CUi::EHotkey::HOTKEY_TAB)))
+	else if(!m_KeybindMap && !m_vSearchMatches.empty() && (Ui()->ConsumeHotkey(CUi::EHotkey::HOTKEY_ENTER) || Ui()->ConsumeHotkey(CUi::EHotkey::HOTKEY_TAB))) // bestclient
 	{
 		UpdateSearchMatches();
 		m_CurrentSearchMatch += Input()->ShiftIsPressed() ? -1 : 1;
@@ -162,7 +206,7 @@ void CMenusSettingsControls::Render(CUIRect MainView)
 		m_SearchMatchReveal = true;
 	}
 
-	if(!m_FilterInput.IsEmpty())
+	if(!m_KeybindMap && !m_FilterInput.IsEmpty()) // bestclient
 	{
 		if(!m_vSearchMatches.empty())
 		{
@@ -183,6 +227,20 @@ void CMenusSettingsControls::Render(CUIRect MainView)
 			Localize("Reset"), Localize("Cancel"), &CMenus::ResetSettingsControls);
 	}
 
+	// bestclient
+	if(m_KeybindMap)
+	{
+		m_KeybindMapUi.m_vActions.clear();
+		m_KeybindMapUi.m_vActions.reserve(m_vBindOptions.size());
+		for(const CBindOption &Option : m_vBindOptions)
+		{
+			const char *pLabel = Option.m_pLabel == nullptr ? Option.m_Command.c_str() : Localize(Option.m_pLabel);
+			m_KeybindMapUi.m_vActions.push_back({pLabel, Option.m_Command.c_str()});
+		}
+		RenderBestClientKeybindMap(GameClient(), Ui(), MainView, m_KeybindMapUi, m_KeybindMapUi.m_vActions.data(), (int)m_KeybindMapUi.m_vActions.size(), m_FilterInput.GetString());
+		return;
+	}
+	// bestclient
 	CScrollRegionParams ScrollParams;
 	ScrollParams.m_ScrollUnit = 6.0f * BUTTON_HEIGHT;
 	ScrollParams.m_ForceShowScrollbar = true;
@@ -203,8 +261,9 @@ void CMenusSettingsControls::Render(CUIRect MainView)
 	RenderSettingsBindsBlock(EBindOptionGroup::VOTING, &RightColumn, Localize("Voting"));
 	RenderSettingsBindsBlock(EBindOptionGroup::CHAT, &RightColumn, Localize("Chat"));
 	RenderSettingsBindsBlock(EBindOptionGroup::DUMMY, &RightColumn, Localize("Dummy"));
-	RenderSettingsBindsBlock(EBindOptionGroup::PRACTICE, &RightColumn, Localize("Practice"));
 	RenderSettingsBindsBlock(EBindOptionGroup::MISCELLANEOUS, &RightColumn, Localize("Miscellaneous"));
+	RenderSettingsBindsBlock(EBindOptionGroup::BEST_CLIENT, &RightColumn, Localize("BestClient")); // bestclient
+	RenderSettingsBindsBlock(EBindOptionGroup::BEST_CLIENT_PRACTICE, &RightColumn, Localize("BestClient Practice")); // bestclient
 	if(std::any_of(m_vBindOptions.begin(), m_vBindOptions.end(), [](const CBindOption &Option) { return Option.m_Group == EBindOptionGroup::CUSTOM; }))
 	{
 		RenderSettingsBindsBlock(EBindOptionGroup::CUSTOM, &RightColumn, Localize("Custom"));
@@ -395,7 +454,9 @@ void CMenusSettingsControls::RenderSettingsBlock(float Height, CUIRect *pParentR
 	pParentRect->HSplitTop(MARGIN, nullptr, pParentRect);
 	if(m_SettingsScrollRegion.AddRect(SettingsBlock) || m_SearchMatchReveal)
 	{
-		SettingsBlock.Draw(ColorRGBA(1.0f, 1.0f, 1.0f, pExpandButton == nullptr || Ui()->HotItem() != pExpandButton ? 0.25f : 0.3f), IGraphics::CORNER_ALL, 10.0f);
+		// bestclient
+		BestClientUiTheme::DrawUiBlock(&SettingsBlock, IGraphics::CORNER_ALL, 10.0f);
+		// bestclient
 		SettingsBlock.Margin(MARGIN, &SettingsBlock);
 
 		if(pTitle != nullptr)
@@ -516,14 +577,12 @@ void CMenusSettingsControls::RenderSettingsBinds(EBindOptionGroup Group, CUIRect
 		{
 			LabelProps.SetColor(ColorRGBA(0.4f, 0.4f, 0.9f, 1.0f));
 		}
-		LabelProps.m_pTooltipId = BindOption.m_Group == EBindOptionGroup::CUSTOM ? &BindOption.m_TooltipButtonId : nullptr;
 		const CLabelResult LabelResult = Ui()->DoLabel(&Label, BindOption.m_Group == EBindOptionGroup::CUSTOM ? BindOption.m_Command.c_str() : Localize(BindOption.m_pLabel),
 			FONT_SIZE, TEXTALIGN_ML, LabelProps);
 		if(BindOption.m_Group != EBindOptionGroup::CUSTOM || LabelResult.m_Truncated)
 		{
 			Ui()->DoButtonLogic(&BindOption.m_TooltipButtonId, 0, &Label, BUTTONFLAG_NONE);
-			if(BindOption.m_Group != EBindOptionGroup::CUSTOM)
-				Ui()->DoToolTip(&BindOption.m_TooltipButtonId, &Label, BindOption.m_Command.c_str(), -1.0f);
+			GameClient()->m_Tooltips.DoToolTip(&BindOption.m_TooltipButtonId, &Label, BindOption.m_Command.c_str());
 		}
 
 		for(CBindSlotUiElement &CurrentBind : BindOption.m_vCurrentBinds)

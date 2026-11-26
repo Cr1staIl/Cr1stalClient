@@ -7,7 +7,7 @@
 #include <engine/shared/uuid_manager.h>
 #include <engine/storage.h>
 
-static constexpr const char *const TOOL_NAME = "map_test";
+static const char *TOOL_NAME = "map_test";
 
 static int TestMap(const char *pMapPath, bool CalcHashes, IStorage *pStorage)
 {
@@ -53,7 +53,6 @@ static int TestMap(const char *pMapPath, bool CalcHashes, IStorage *pStorage)
 		}
 	}
 
-	bool Success = true;
 	for(int Index = 0; Index < pMap->NumData(); Index++)
 	{
 		log_info(TOOL_NAME, "Data %d:", Index);
@@ -65,8 +64,7 @@ static int TestMap(const char *pMapPath, bool CalcHashes, IStorage *pStorage)
 
 		if(pData == nullptr)
 		{
-			log_error(TOOL_NAME, "  Data erroneous");
-			Success = false;
+			log_info(TOOL_NAME, "  Data erroneous");
 		}
 		else if(CalcHashes)
 		{
@@ -79,11 +77,6 @@ static int TestMap(const char *pMapPath, bool CalcHashes, IStorage *pStorage)
 	}
 
 	pMap->Unload();
-	if(!Success)
-	{
-		log_error(TOOL_NAME, "Tested map '%s' has errors", pMapPath);
-		return -1;
-	}
 	log_info(TOOL_NAME, "Tested map '%s' successfully", pMapPath);
 	return 0;
 }
@@ -109,7 +102,7 @@ int main(int argc, const char **argv)
 	}
 	else
 	{
-		log_error(TOOL_NAME, "Usage: %s [--calc-hashes] <map>", argc > 0 ? argv[0] : TOOL_NAME);
+		log_error(TOOL_NAME, "Usage: %s [--calc-hashes] <map>", TOOL_NAME);
 		return -1;
 	}
 

@@ -68,7 +68,7 @@ public:
 		bool OnInput(const IInput::CEvent &Event) override;
 	};
 
-	bool m_HandlingNewBind;
+	bool m_MouseOnAction;
 
 	CBindsSpecial m_SpecialBinds;
 

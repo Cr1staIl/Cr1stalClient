@@ -175,7 +175,7 @@ void CGraphicsBackend_Threaded::ProcessError(const SGfxErrorContainer &Error)
 			m_FatalError.append("\n");
 		}
 		if(ErrStr.m_RequiresTranslation)
-			m_FatalError.append(m_TranslateFunc(ErrStr.m_Err.c_str(), "Graphics error"));
+			m_FatalError.append(m_TranslateFunc(ErrStr.m_Err.c_str(), ""));
 		else
 			m_FatalError.append(ErrStr.m_Err);
 	}

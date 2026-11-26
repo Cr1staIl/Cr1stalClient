@@ -9,8 +9,6 @@
 #include <engine/gfx/image_loader.h>
 #include <engine/gfx/image_manipulation.h>
 
-static constexpr const char *const TOOL_NAME = "dilate";
-
 static bool DilateFile(const char *pFilename, bool DryRun)
 {
 	CImageInfo Image;
@@ -20,7 +18,7 @@ static bool DilateFile(const char *pFilename, bool DryRun)
 
 	if(Image.m_Format != CImageInfo::FORMAT_RGBA)
 	{
-		log_error(TOOL_NAME, "Only RGBA PNG images are supported");
+		log_error("dilate", "ERROR: only RGBA PNG images are supported");
 		Image.Free();
 		return false;
 	}
@@ -32,7 +30,7 @@ static bool DilateFile(const char *pFilename, bool DryRun)
 		const bool EqualImages = Image.DataEquals(OldImage);
 		Image.Free();
 		OldImage.Free();
-		log_info(TOOL_NAME, "'%s' is %sdilated", pFilename, EqualImages ? "" : "NOT ");
+		log_info("dilate", "'%s' is %sdilated", pFilename, EqualImages ? "" : "NOT ");
 		return EqualImages;
 	}
 	else
@@ -51,14 +49,14 @@ int main(int argc, const char **argv)
 
 	if(argc == 1)
 	{
-		log_error(TOOL_NAME, "Usage: %s [--dry-run] <image1.png> [<image2.png> ...]", argc > 0 ? argv[0] : TOOL_NAME);
+		log_error("dilate", "Usage: %s [--dry-run] <image1.png> [<image2.png> ...]", argv[0]);
 		return -1;
 	}
 
 	const bool DryRun = str_comp(argv[1], "--dry-run") == 0;
 	if(DryRun && argc < 3)
 	{
-		log_error(TOOL_NAME, "Usage: %s [--dry-run] <image1.png> [<image2.png> ...]", argc > 0 ? argv[0] : TOOL_NAME);
+		log_error("dilate", "Usage: %s [--dry-run] <image1.png> [<image2.png> ...]", argv[0]);
 		return -1;
 	}
 

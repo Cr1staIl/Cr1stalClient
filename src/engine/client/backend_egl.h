@@ -59,6 +59,7 @@ class CCommandProcessor_EGL_GL : public CGraphicsBackend_Threaded::ICommandProce
 	CCommandProcessorFragment_EGL m_EGL;
 	CCommandProcessorFragment_General m_General;
 
+	EBackendType m_BackendType;
 	SGfxErrorContainer m_Error;
 	SGfxWarningContainer m_Warning;
 
@@ -91,6 +92,7 @@ class CGraphicsBackend_EGL : public CGraphicsBackend_Threaded
 	TGLBackendReadPresentedImageData m_ReadPresentedImageDataFunc;
 
 	SBackendCapabilities m_Capabilities;
+	EBackendType m_BackendType{BACKEND_TYPE_OPENGL};
 
 	char m_aVendorString[256]{};
 	char m_aVersionString[256]{};

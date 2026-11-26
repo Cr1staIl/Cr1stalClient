@@ -3,7 +3,12 @@
 
 #include "menus.h"
 
-#include "cclient_style.h"
+// bestclient
+#include <game/client/components/bestclient/menu_media_background.h>
+#include <game/client/components/bestclient/settings_search.h>
+#include <game/client/components/bestclient/ui_theme/style.h>
+#include <game/client/components/bestclient/ui_theme/widgets.h>
+// bestclient
 
 #include <base/color.h>
 #include <base/dbg.h>
@@ -32,7 +37,6 @@
 
 #include <game/client/animstate.h>
 #include <game/client/components/binds.h>
-#include <game/client/components/cclient.h>
 #include <game/client/components/console.h>
 #include <game/client/components/key_binder.h>
 #include <game/client/components/menu_background.h>
@@ -44,7 +48,6 @@
 #include <algorithm>
 #include <chrono>
 #include <cmath>
-#include <map>
 #include <vector>
 
 using namespace std::chrono_literals;
@@ -71,6 +74,8 @@ CMenus::CMenus()
 
 	m_NeedRestartGraphics = false;
 	m_NeedRestartSound = false;
+	m_NeedRestartUpdate = false; // bestclient
+	m_NeedRestartDiscord = false; // bestclient
 	m_NeedSendinfo = false;
 	m_NeedSendDummyinfo = false;
 	m_MenuActive = true;
@@ -132,9 +137,13 @@ int CMenus::DoButton_Menu(CButtonContainer *pButtonContainer, const char *pText,
 
 	if(Checked)
 		Color = ColorRGBA(0.6f, 0.6f, 0.6f, 0.5f);
-	Color.a *= Ui()->ButtonColorMul(pButtonContainer);
+	else // TClient, why was this not here? ig they never use "checked" anywhere important
+		Color.a *= Ui()->ButtonColorMul(pButtonContainer);
 
-	pRect->Draw(Color, Corners, Rounding);
+	// bestclient
+	const bool ButtonAccent = Checked || Ui()->CheckActiveItem(pButtonContainer) || Ui()->HotItem() == pButtonContainer;
+	BestClientUiTheme::DrawUiButton(pRect, Color, ButtonAccent, Corners, Rounding);
+	// bestclient
 
 	if(pImageName)
 	{
@@ -164,7 +173,48 @@ int CMenus::DoButton_Menu(CButtonContainer *pButtonContainer, const char *pText,
 	return Ui()->DoButtonLogic(pButtonContainer, Checked, pRect, Flags);
 }
 
-int CMenus::DoButton_MenuTab(CButtonContainer *pButtonContainer, const char *pText, int Checked, const CUIRect *pRect, int Corners, SUIAnimator *pAnimator, const ColorRGBA *pDefaultColor, const ColorRGBA *pActiveColor, const ColorRGBA *pHoverColor, float EdgeRounding, const CCommunityIcon *pCommunityIcon)
+// bestclient
+int CMenus::DoButton_MenuEx(CButtonContainer *pButtonContainer, const char *pText, int Checked, const CUIRect *pRect, const unsigned Flags, const char *pImageName, int Corners, float Rounding, float FontFactor, ColorRGBA Color, bool AlwaysColoredImage)
+{
+	CUIRect Text = *pRect;
+
+	if(Checked)
+		Color = ColorRGBA(0.6f, 0.6f, 0.6f, 0.5f);
+	else
+		Color.a *= Ui()->ButtonColorMul(pButtonContainer);
+
+	// bestclient
+	const bool ButtonAccent = Checked || Ui()->CheckActiveItem(pButtonContainer) || Ui()->HotItem() == pButtonContainer;
+	BestClientUiTheme::DrawUiButton(pRect, Color, ButtonAccent, Corners, Rounding);
+	// bestclient
+
+	if(pImageName)
+	{
+		CUIRect Image;
+		pRect->VSplitRight(pRect->h * 4.0f, &Text, &Image);
+
+		const CMenuImage *pImage = FindMenuImage(pImageName);
+		if(pImage)
+		{
+			Graphics()->TextureSet((AlwaysColoredImage || Ui()->HotItem() == pButtonContainer) ? pImage->m_OrgTexture : pImage->m_GreyTexture);
+			Graphics()->WrapClamp();
+			Graphics()->QuadsBegin();
+			Graphics()->SetColor(1.0f, 1.0f, 1.0f, 1.0f);
+			IGraphics::CQuadItem QuadItem(Image.x, Image.y, Image.w, Image.h);
+			Graphics()->QuadsDrawTL(&QuadItem, 1);
+			Graphics()->QuadsEnd();
+			Graphics()->WrapNormal();
+		}
+	}
+
+	Text.HMargin(pRect->h >= 20.0f ? 2.0f : 1.0f, &Text);
+	Text.HMargin((Text.h * FontFactor) / 2.0f, &Text);
+	Ui()->DoLabel(&Text, pText, Text.h * CUi::ms_FontmodHeight, TEXTALIGN_MC);
+
+	return Ui()->DoButtonLogic(pButtonContainer, Checked, pRect, Flags);
+}
+
+int CMenus::DoButton_MenuTab(CButtonContainer *pButtonContainer, const char *pText, int Checked, const CUIRect *pRect, int Corners, SUIAnimator *pAnimator, const ColorRGBA *pDefaultColor, const ColorRGBA *pActiveColor, const ColorRGBA *pHoverColor, float EdgeRounding, const CCommunityIcon *pCommunityIcon, bool AnimateChecked, int HoverCorners, float HoverRounding, float AlphaMul)
 {
 	const bool MouseInside = Ui()->HotItem() == pButtonContainer;
 	CUIRect Rect = *pRect;
@@ -179,7 +229,7 @@ int CMenus::DoButton_MenuTab(CButtonContainer *pButtonContainer, const char *pTe
 			pAnimator->m_Time = Time;
 		}
 
-		pAnimator->m_Active = Checked || MouseInside;
+		pAnimator->m_Active = MouseInside || (AnimateChecked && Checked);
 
 		if(pAnimator->m_Active)
 			pAnimator->m_Value = std::clamp<float>(pAnimator->m_Value + (Time - pAnimator->m_Time).count() / (double)std::chrono::nanoseconds(100ms).count(), 0, 1);
@@ -194,13 +244,25 @@ int CMenus::DoButton_MenuTab(CButtonContainer *pButtonContainer, const char *pTe
 		pAnimator->m_Time = Time;
 	}
 
+	const bool HoverShapeActive = MouseInside || (pAnimator != nullptr && pAnimator->m_Value > 0.0f);
+	const int DrawCorners = Corners | (HoverShapeActive ? HoverCorners : IGraphics::CORNER_NONE);
+	const float DrawRounding = HoverShapeActive && HoverRounding >= 0.0f ? HoverRounding : EdgeRounding;
+
+	// bestclient
+	const float ShownAlpha = AlphaMul * m_MenuTabAlpha;
+	auto FadeTab = [&](ColorRGBA Color) {
+		Color.a *= ShownAlpha;
+		return Color;
+	};
 	if(Checked)
 	{
 		ColorRGBA ColorMenuTab = ms_ColorTabbarActive;
 		if(pActiveColor)
 			ColorMenuTab = *pActiveColor;
 
-		Rect.Draw(ColorMenuTab, Corners, EdgeRounding);
+		// bestclient
+		BestClientUiTheme::DrawUiNavTab(&Rect, FadeTab(ColorMenuTab), true, DrawCorners, DrawRounding);
+		// bestclient
 	}
 	else
 	{
@@ -210,7 +272,9 @@ int CMenus::DoButton_MenuTab(CButtonContainer *pButtonContainer, const char *pTe
 			if(pHoverColor)
 				HoverColorMenuTab = *pHoverColor;
 
-			Rect.Draw(HoverColorMenuTab, Corners, EdgeRounding);
+			// bestclient
+			BestClientUiTheme::DrawUiNavTab(&Rect, FadeTab(HoverColorMenuTab), true, DrawCorners, DrawRounding);
+			// bestclient
 		}
 		else
 		{
@@ -218,9 +282,12 @@ int CMenus::DoButton_MenuTab(CButtonContainer *pButtonContainer, const char *pTe
 			if(pDefaultColor)
 				ColorMenuTab = *pDefaultColor;
 
-			Rect.Draw(ColorMenuTab, Corners, EdgeRounding);
+			// bestclient
+			BestClientUiTheme::DrawUiNavTab(&Rect, FadeTab(ColorMenuTab), false, DrawCorners, DrawRounding);
+			// bestclient
 		}
 	}
+	// bestclient
 
 	if(pAnimator != nullptr)
 	{
@@ -241,17 +308,28 @@ int CMenus::DoButton_MenuTab(CButtonContainer *pButtonContainer, const char *pTe
 	{
 		CUIRect CommunityIcon;
 		Rect.Margin(2.0f, &CommunityIcon);
-		m_CommunityIcons.Render(pCommunityIcon, CommunityIcon, true);
+		m_CommunityIcons.Render(pCommunityIcon, CommunityIcon, ShownAlpha >= 1.0f); // bestclient
 	}
 	else
 	{
 		CUIRect Label;
 		Rect.HMargin(2.0f, &Label);
+		// bestclient
+		if(ShownAlpha < 1.0f)
+			TextRender()->TextColor(ColorRGBA(1.0f, 1.0f, 1.0f, ShownAlpha));
 		Ui()->DoLabel(&Label, pText, Label.h * CUi::ms_FontmodHeight, TEXTALIGN_MC);
+		if(ShownAlpha < 1.0f)
+			TextRender()->TextColor(TextRender()->DefaultTextColor());
+		// bestclient
 	}
 
+	// bestclient
+	if(ShownAlpha < 1.0f)
+		return 0;
+	// bestclient
 	return Ui()->DoButtonLogic(pButtonContainer, Checked, pRect, BUTTONFLAG_LEFT);
 }
+// bestclient
 
 int CMenus::DoButton_GridHeader(const void *pId, const char *pText, int Checked, const CUIRect *pRect, int Align)
 {
@@ -286,54 +364,44 @@ int CMenus::DoButton_Favorite(const void *pButtonId, const void *pParentId, bool
 
 int CMenus::DoButton_CheckBox_Common(const void *pId, const char *pText, const char *pBoxText, const CUIRect *pRect, const unsigned Flags)
 {
-	const bool Checkable = *pBoxText == 'X';
-
-	// C-Client: on/off boxes become iPhone style switches, gray off and green on
-	if(Checkable || *pBoxText == '\0')
-	{
-		CUIRect Switch, Label;
-		const float SwitchH = pRect->h - 4.0f;
-		const float SwitchW = SwitchH * 1.8f;
-		pRect->VSplitLeft(SwitchW + 4.0f, &Switch, &Label);
-		Switch.VSplitLeft(2.0f, nullptr, &Switch);
-		Switch.VSplitLeft(SwitchW, &Switch, nullptr);
-		Switch.HMargin((Switch.h - SwitchH) / 2.0f, &Switch);
-		Label.VSplitLeft(5.0f, nullptr, &Label);
-
-		static std::map<const void *, float> s_Anim;
-		auto It = s_Anim.find(pId);
-		if(It == s_Anim.end())
-			It = s_Anim.emplace(pId, Checkable ? 1.0f : 0.0f).first;
-		const float Target = Checkable ? 1.0f : 0.0f;
-		It->second += (Target - It->second) * std::min(1.0f, Client()->RenderFrameTime() * 9.0f);
-		if(absolute(It->second - Target) < 0.002f)
-			It->second = Target;
-		const float A = It->second;
-
-		const ColorRGBA Off(0.23f, 0.21f, 0.28f, 1.0f);
-		const ColorRGBA On(0.204f, 0.78f, 0.349f, 1.0f);
-		const float Hot = 0.06f * Ui()->HoverAnim(pId);
-		Switch.Draw(ColorRGBA(Off.r + (On.r - Off.r) * A + Hot, Off.g + (On.g - Off.g) * A + Hot, Off.b + (On.b - Off.b) * A + Hot, 1.0f), IGraphics::CORNER_ALL, Switch.h / 2.0f);
-		const float KnobSize = Switch.h - 3.0f;
-		CUIRect Knob;
-		Knob.x = Switch.x + 1.5f + (Switch.w - KnobSize - 3.0f) * A;
-		Knob.y = Switch.y + 1.5f;
-		Knob.w = Knob.h = KnobSize;
-		Knob.Draw(ColorRGBA(1.0f, 1.0f, 1.0f, 1.0f), IGraphics::CORNER_ALL, KnobSize / 2.0f);
-
-		Ui()->DoLabel(&Label, pText, SwitchH * CUi::ms_FontmodHeight, TEXTALIGN_ML);
-		return Ui()->DoButtonLogic(pId, 0, pRect, Flags);
-	}
-
 	CUIRect Box, Label;
 	pRect->VSplitLeft(pRect->h, &Box, &Label);
 	Label.VSplitLeft(5.0f, nullptr, &Label);
 
 	Box.Margin(2.0f, &Box);
-	Box.Draw(ColorRGBA(1, 1, 1, 0.25f * Ui()->ButtonColorMul(pId)), IGraphics::CORNER_ALL, 3.0f);
+	const float ColorMul = Ui()->ButtonColorMul(pId);
+	// bestclient
+	BestClientUiTheme::DrawUiCheckbox(&Box, ColorRGBA(1.0f, 1.0f, 1.0f, 0.25f * ColorMul), false, IGraphics::CORNER_ALL, 3.0f);
+	// bestclient
 
-	Ui()->DoLabel(&Box, pBoxText, Box.h * CUi::ms_FontmodHeight, TEXTALIGN_MC);
+	const bool Checkable = *pBoxText == 'X';
+	if(Checkable)
+	{
+		// bestclient
+		if(BestClientUiTheme::IsNewCheckbox())
+		{
+			BestClientUiTheme::DrawCheckBoxChecked(&Box, ColorMul);
+		}
+		else
+		{
+			TextRender()->SetRenderFlags(ETextRenderFlags::TEXT_RENDER_FLAG_ONLY_ADVANCE_WIDTH | ETextRenderFlags::TEXT_RENDER_FLAG_NO_X_BEARING | ETextRenderFlags::TEXT_RENDER_FLAG_NO_Y_BEARING | ETextRenderFlags::TEXT_RENDER_FLAG_NO_OVERSIZE | ETextRenderFlags::TEXT_RENDER_FLAG_NO_PIXEL_ALIGNMENT);
+			TextRender()->SetFontPreset(EFontPreset::ICON_FONT);
+			Ui()->DoLabel(&Box, FontIcon::XMARK, Box.h * CUi::ms_FontmodHeight, TEXTALIGN_MC);
+			TextRender()->SetFontPreset(EFontPreset::DEFAULT_FONT);
+		}
+		// bestclient
+	}
+	else
+	{
+		Ui()->DoLabel(&Box, pBoxText, Box.h * CUi::ms_FontmodHeight, TEXTALIGN_MC);
+	}
+
+	TextRender()->SetRenderFlags(0);
 	Ui()->DoLabel(&Label, pText, Box.h * CUi::ms_FontmodHeight, TEXTALIGN_ML);
+
+	// bestclient
+	BestClientSettingsSearch::DrawItemHighlight(pId, pRect);
+	// bestclient
 
 	return Ui()->DoButtonLogic(pId, 0, pRect, Flags);
 }
@@ -378,8 +446,14 @@ ColorHSLA CMenus::DoLine_ColorPicker(CButtonContainer *pResetId, const float Lin
 	pMainRect->HSplitTop(LineSize, &Section, pMainRect);
 	pMainRect->HSplitTop(BottomMargin, nullptr, pMainRect);
 
-	Section.VSplitRight(60.0f, &Section, &ResetButton);
-	Section.VSplitRight(8.0f, &Section, nullptr);
+	// bestclient
+	const bool ShowLineReset = !BestClientUiTheme::IsNewColorPicker();
+	if(ShowLineReset)
+	{
+		Section.VSplitRight(60.0f, &Section, &ResetButton);
+		Section.VSplitRight(8.0f, &Section, nullptr);
+	}
+	// bestclient
 	Section.VSplitRight(Section.h, &Section, &ColorPickerButton);
 	Section.VSplitRight(8.0f, &Label, nullptr);
 
@@ -398,22 +472,33 @@ ColorHSLA CMenus::DoLine_ColorPicker(CButtonContainer *pResetId, const float Lin
 		Ui()->DoLabel(&Label, pText, LabelSize, TEXTALIGN_ML);
 	}
 
-	const ColorHSLA PickedColor = DoButton_ColorPicker(&ColorPickerButton, pColorValue, Alpha);
+	const ColorHSLA PickedColor = DoButton_ColorPicker(&ColorPickerButton, pColorValue, Alpha, DefaultColor, true);
 
-	ResetButton.HMargin(2.0f, &ResetButton);
-	if(DoButton_Menu(pResetId, Localize("Reset"), 0, &ResetButton, BUTTONFLAG_LEFT, nullptr, IGraphics::CORNER_ALL, 4.0f, 0.1f, ColorRGBA(1.0f, 1.0f, 1.0f, 0.25f)))
+	// bestclient
+	BestClientSettingsSearch::DrawItemHighlight(pColorValue, &Section);
+	// bestclient
+
+	// bestclient
+	if(ShowLineReset)
 	{
-		*pColorValue = color_cast<ColorHSLA>(DefaultColor).Pack(Alpha);
+		ResetButton.HMargin(2.0f, &ResetButton);
+		if(DoButton_Menu(pResetId, Localize("Reset"), 0, &ResetButton, BUTTONFLAG_LEFT, nullptr, IGraphics::CORNER_ALL, 4.0f, 0.1f, BestClientUiTheme::UiButton(0.25f)))
+		{
+			*pColorValue = color_cast<ColorHSLA>(DefaultColor).Pack(Alpha);
+		}
 	}
+	// bestclient
 
 	return PickedColor;
 }
 
-ColorHSLA CMenus::DoButton_ColorPicker(const CUIRect *pRect, unsigned int *pHslaColor, bool Alpha)
+ColorHSLA CMenus::DoButton_ColorPicker(const CUIRect *pRect, unsigned int *pHslaColor, bool Alpha, ColorRGBA DefaultColor, bool HasDefault)
 {
 	ColorHSLA HslaColor = ColorHSLA(*pHslaColor, Alpha);
 
-	ColorRGBA Outline = ColorRGBA(1.0f, 1.0f, 1.0f, 0.25f);
+	// bestclient
+	ColorRGBA Outline = BestClientUiTheme::UiButton(0.25f);
+	// bestclient
 	Outline.a *= Ui()->ButtonColorMul(pHslaColor);
 
 	CUIRect Rect;
@@ -429,6 +514,10 @@ ColorHSLA CMenus::DoButton_ColorPicker(const CUIRect *pRect, unsigned int *pHsla
 		m_ColorPickerPopupContext.m_HsvaColor = color_cast<ColorHSVA>(HslaColor);
 		m_ColorPickerPopupContext.m_RgbaColor = color_cast<ColorRGBA>(m_ColorPickerPopupContext.m_HsvaColor);
 		m_ColorPickerPopupContext.m_Alpha = Alpha;
+		// bestclient
+		m_ColorPickerPopupContext.m_DefaultColor = DefaultColor;
+		m_ColorPickerPopupContext.m_HasDefault = HasDefault;
+		// bestclient
 		Ui()->ShowPopupColorPicker(Ui()->MouseX(), Ui()->MouseY(), &m_ColorPickerPopupContext);
 	}
 	else if(Ui()->IsPopupOpen(&m_ColorPickerPopupContext) && m_ColorPickerPopupContext.m_pHslaColor == pHslaColor)
@@ -466,6 +555,10 @@ int CMenus::DoButton_CheckBox_Number(const void *pId, const char *pText, int Che
 
 void CMenus::RenderMenubar(CUIRect Box, IClient::EClientState ClientState)
 {
+	// bestclient
+	const bool ExploreLock = m_AssetsEditorState.m_Open && m_AssetsEditorState.m_ExploreSide >= 0;
+	m_MenuTabAlpha = ExploreLock ? 0.35f : 1.0f;
+	// bestclient
 	CUIRect Button;
 
 	int NewPage = -1;
@@ -493,7 +586,9 @@ void CMenus::RenderMenubar(CUIRect Box, IClient::EClientState ClientState)
 	ColorRGBA QuitColor(1, 0, 0, 0.5f);
 	if(DoButton_MenuTab(&s_QuitButton, FontIcon::POWER_OFF, 0, &Button, IGraphics::CORNER_T, &m_aAnimatorsSmallPage[SMALL_TAB_QUIT], nullptr, nullptr, &QuitColor, 10.0f))
 	{
-		if(g_Config.m_CcConfirmQuit || GameClient()->Editor()->HasUnsavedData() || (GameClient()->CurrentRaceTime() / 60 >= g_Config.m_ClConfirmQuitTime && g_Config.m_ClConfirmQuitTime >= 0) || m_MenusIngameTouchControls.UnsavedChanges() || GameClient()->m_TouchControls.HasEditingChanges())
+		// bestclient
+		if(g_Config.m_BcConfirmQuit || GameClient()->Editor()->HasUnsavedData() || (GameClient()->CurrentRaceTime() / 60 >= g_Config.m_ClConfirmQuitTime && g_Config.m_ClConfirmQuitTime >= 0) || m_MenusIngameTouchControls.UnsavedChanges() || GameClient()->m_TouchControls.HasEditingChanges())
+		// bestclient
 		{
 			m_Popup = POPUP_QUIT;
 		}
@@ -502,7 +597,7 @@ void CMenus::RenderMenubar(CUIRect Box, IClient::EClientState ClientState)
 			Client()->Quit();
 		}
 	}
-	Ui()->DoToolTip(&s_QuitButton, &Button, Localize("Quit"));
+	GameClient()->m_Tooltips.DoToolTip(&s_QuitButton, &Button, Localize("Quit"));
 
 	Box.VSplitRight(10.0f, &Box, nullptr);
 	Box.VSplitRight(33.0f, &Box, &Button);
@@ -511,7 +606,7 @@ void CMenus::RenderMenubar(CUIRect Box, IClient::EClientState ClientState)
 	{
 		NewPage = PAGE_SETTINGS;
 	}
-	Ui()->DoToolTip(&s_SettingsButton, &Button, Localize("Settings"));
+	GameClient()->m_Tooltips.DoToolTip(&s_SettingsButton, &Button, Localize("Settings"));
 
 	Box.VSplitRight(10.0f, &Box, nullptr);
 	Box.VSplitRight(33.0f, &Box, &Button);
@@ -520,7 +615,7 @@ void CMenus::RenderMenubar(CUIRect Box, IClient::EClientState ClientState)
 	{
 		g_Config.m_ClEditor = 1;
 	}
-	Ui()->DoToolTip(&s_EditorButton, &Button, Localize("Editor"));
+	GameClient()->m_Tooltips.DoToolTip(&s_EditorButton, &Button, Localize("Editor"));
 
 	if(ClientState == IClient::STATE_OFFLINE)
 	{
@@ -531,7 +626,19 @@ void CMenus::RenderMenubar(CUIRect Box, IClient::EClientState ClientState)
 		{
 			NewPage = PAGE_DEMOS;
 		}
-		Ui()->DoToolTip(&s_DemoButton, &Button, Localize("Demos"));
+		GameClient()->m_Tooltips.DoToolTip(&s_DemoButton, &Button, Localize("Demos"));
+
+		// bestclient
+		Box.VSplitRight(10.0f, &Box, nullptr);
+		Box.VSplitRight(33.0f, &Box, &Button);
+		static CButtonContainer s_ChangelogButton;
+		if(DoButton_MenuTab(&s_ChangelogButton, FontIcon::NEWSPAPER, ActivePage == PAGE_CHANGELOG, &Button, IGraphics::CORNER_T, &m_aAnimatorsSmallPage[SMALL_TAB_CHANGELOG]))
+		{
+			NewPage = PAGE_CHANGELOG;
+		}
+		GameClient()->m_Tooltips.DoToolTip(&s_ChangelogButton, &Button, BcLocalize("Changelog"));
+		// bestclient
+
 		Box.VSplitRight(10.0f, &Box, nullptr);
 
 		Box.VSplitLeft(33.0f, &Button, &Box);
@@ -539,12 +646,10 @@ void CMenus::RenderMenubar(CUIRect Box, IClient::EClientState ClientState)
 		bool GotNewsOrUpdate = false;
 
 #if defined(CONF_AUTOUPDATE)
-		int State = Updater()->GetCurrentState();
-		bool NeedUpdate = str_comp(Client()->LatestVersion(), "0");
-		if(State == IUpdater::CLEAN && NeedUpdate)
-		{
+		// bestclient
+		if(Updater()->GetCurrentState() == IUpdater::VERSION_AVAILABLE)
 			GotNewsOrUpdate = true;
-		}
+		// bestclient
 #endif
 
 		GotNewsOrUpdate |= (bool)g_Config.m_UiUnreadNews;
@@ -567,37 +672,42 @@ void CMenus::RenderMenubar(CUIRect Box, IClient::EClientState ClientState)
 		{
 			m_ShowStart = true;
 		}
-		Ui()->DoToolTip(&s_StartButton, &Button, Localize("Main menu"));
+		GameClient()->m_Tooltips.DoToolTip(&s_StartButton, &Button, Localize("Main menu"));
 
+		// bestclient
 		const float BrowserButtonWidth = 75.0f;
+		const float BrowserTabRounding = 10.0f;
+		const float BrowserTabHoverRounding = 5.0f;
 		Box.VSplitLeft(10.0f, nullptr, &Box);
 		Box.VSplitLeft(BrowserButtonWidth, &Button, &Box);
 		static CButtonContainer s_InternetButton;
-		if(DoButton_MenuTab(&s_InternetButton, FontIcon::EARTH_AMERICAS, ActivePage == PAGE_INTERNET, &Button, IGraphics::CORNER_T, &m_aAnimatorsBigPage[BIG_TAB_INTERNET]))
+		if(DoButton_MenuTab(&s_InternetButton, FontIcon::EARTH_AMERICAS, ActivePage == PAGE_INTERNET, &Button, IGraphics::CORNER_TL, &m_aAnimatorsBigPage[BIG_TAB_INTERNET], nullptr, nullptr, nullptr, BrowserTabRounding, nullptr, false, IGraphics::CORNER_T, BrowserTabHoverRounding))
 		{
 			NewPage = PAGE_INTERNET;
 		}
-		Ui()->DoToolTip(&s_InternetButton, &Button, Localize("Internet"));
+		GameClient()->m_Tooltips.DoToolTip(&s_InternetButton, &Button, Localize("Internet"));
 
 		Box.VSplitLeft(BrowserButtonWidth, &Button, &Box);
 		static CButtonContainer s_LanButton;
-		if(DoButton_MenuTab(&s_LanButton, FontIcon::NETWORK_WIRED, ActivePage == PAGE_LAN, &Button, IGraphics::CORNER_T, &m_aAnimatorsBigPage[BIG_TAB_LAN]))
+		if(DoButton_MenuTab(&s_LanButton, FontIcon::NETWORK_WIRED, ActivePage == PAGE_LAN, &Button, IGraphics::CORNER_NONE, &m_aAnimatorsBigPage[BIG_TAB_LAN], nullptr, nullptr, nullptr, BrowserTabRounding, nullptr, false, IGraphics::CORNER_T, BrowserTabHoverRounding))
 		{
 			NewPage = PAGE_LAN;
 		}
-		Ui()->DoToolTip(&s_LanButton, &Button, Localize("LAN"));
+		GameClient()->m_Tooltips.DoToolTip(&s_LanButton, &Button, Localize("LAN"));
 
 		Box.VSplitLeft(BrowserButtonWidth, &Button, &Box);
 		static CButtonContainer s_FavoritesButton;
-		if(DoButton_MenuTab(&s_FavoritesButton, FontIcon::STAR, ActivePage == PAGE_FAVORITES, &Button, IGraphics::CORNER_T, &m_aAnimatorsBigPage[BIG_TAB_FAVORITES]))
+		const bool HasFavoriteCommunityTab = !ServerBrowser()->FavoriteCommunities().empty() && Box.w >= BrowserButtonWidth;
+		const int FavoritesCorners = HasFavoriteCommunityTab ? IGraphics::CORNER_NONE : IGraphics::CORNER_TR;
+		if(DoButton_MenuTab(&s_FavoritesButton, FontIcon::STAR, ActivePage == PAGE_FAVORITES, &Button, FavoritesCorners, &m_aAnimatorsBigPage[BIG_TAB_FAVORITES], nullptr, nullptr, nullptr, BrowserTabRounding, nullptr, false, IGraphics::CORNER_T, BrowserTabHoverRounding))
 		{
 			NewPage = PAGE_FAVORITES;
 		}
-		Ui()->DoToolTip(&s_FavoritesButton, &Button, Localize("Favorites"));
+		GameClient()->m_Tooltips.DoToolTip(&s_FavoritesButton, &Button, Localize("Favorites"));
 
-		const std::vector<const CCommunity *> vpFavoriteCommunities = ServerBrowser()->FavoriteCommunities();
-		const int MaxPage = PAGE_FAVORITES + vpFavoriteCommunities.size();
+		const int MaxPage = PAGE_FAVORITES + ServerBrowser()->FavoriteCommunities().size();
 		if(
+			!ExploreLock && // bestclient
 			!Ui()->IsPopupOpen() &&
 			CLineInput::GetActiveInput() == nullptr &&
 			(g_Config.m_UiPage >= PAGE_INTERNET && g_Config.m_UiPage <= MaxPage) &&
@@ -622,22 +732,27 @@ void CMenus::RenderMenubar(CUIRect Box, IClient::EClientState ClientState)
 		static_assert(std::size(s_aFavoriteCommunityButtons) == (size_t)PAGE_FAVORITE_COMMUNITY_5 - PAGE_FAVORITE_COMMUNITY_1 + 1);
 		static_assert(std::size(s_aFavoriteCommunityButtons) == (size_t)BIT_TAB_FAVORITE_COMMUNITY_5 - BIT_TAB_FAVORITE_COMMUNITY_1 + 1);
 		static_assert(std::size(s_aFavoriteCommunityButtons) == (size_t)IServerBrowser::TYPE_FAVORITE_COMMUNITY_5 - IServerBrowser::TYPE_FAVORITE_COMMUNITY_1 + 1);
-		for(const CCommunity *pCommunity : vpFavoriteCommunities)
+		for(const CCommunity *pCommunity : ServerBrowser()->FavoriteCommunities())
 		{
 			if(Box.w < BrowserButtonWidth)
 				break;
 			Box.VSplitLeft(BrowserButtonWidth, &Button, &Box);
 			const int Page = PAGE_FAVORITE_COMMUNITY_1 + FavoriteCommunityIndex;
-			if(DoButton_MenuTab(&s_aFavoriteCommunityButtons[FavoriteCommunityIndex], FontIcon::ELLIPSIS, ActivePage == Page, &Button, IGraphics::CORNER_T, &m_aAnimatorsBigPage[BIT_TAB_FAVORITE_COMMUNITY_1 + FavoriteCommunityIndex], nullptr, nullptr, nullptr, 10.0f, m_CommunityIcons.Find(pCommunity->Id())))
+			const bool IsLastVisibleCommunity = FavoriteCommunityIndex + 1 >= ServerBrowser()->FavoriteCommunities().size() ||
+							   FavoriteCommunityIndex + 1 >= std::size(s_aFavoriteCommunityButtons) ||
+							   Box.w < BrowserButtonWidth;
+			const int CommunityCorners = IsLastVisibleCommunity ? IGraphics::CORNER_TR : IGraphics::CORNER_NONE;
+			if(DoButton_MenuTab(&s_aFavoriteCommunityButtons[FavoriteCommunityIndex], FontIcon::ELLIPSIS, ActivePage == Page, &Button, CommunityCorners, &m_aAnimatorsBigPage[BIT_TAB_FAVORITE_COMMUNITY_1 + FavoriteCommunityIndex], nullptr, nullptr, nullptr, BrowserTabRounding, m_CommunityIcons.Find(pCommunity->Id()), false, IGraphics::CORNER_T, BrowserTabHoverRounding))
 			{
 				NewPage = Page;
 			}
-			Ui()->DoToolTip(&s_aFavoriteCommunityButtons[FavoriteCommunityIndex], &Button, pCommunity->Name());
+			GameClient()->m_Tooltips.DoToolTip(&s_aFavoriteCommunityButtons[FavoriteCommunityIndex], &Button, pCommunity->Name());
 
 			++FavoriteCommunityIndex;
 			if(FavoriteCommunityIndex >= std::size(s_aFavoriteCommunityButtons))
 				break;
 		}
+		// bestclient
 
 		TextRender()->SetRenderFlags(0);
 		TextRender()->SetFontPreset(EFontPreset::DEFAULT_FONT);
@@ -697,15 +812,38 @@ void CMenus::RenderMenubar(CUIRect Box, IClient::EClientState ClientState)
 			{
 				NewPage = PAGE_DEMOS;
 			}
-			Ui()->DoToolTip(&s_DemoButton, &Button, Localize("Demos"));
+			GameClient()->m_Tooltips.DoToolTip(&s_DemoButton, &Button, Localize("Demos"));
 			Box.VSplitRight(10.0f, &Box, nullptr);
 
 			TextRender()->SetRenderFlags(0);
 			TextRender()->SetFontPreset(EFontPreset::DEFAULT_FONT);
 		}
+
+		// bestclient
+		if(Box.w >= 10.0f + 33.0f + 10.0f)
+		{
+			TextRender()->SetFontPreset(EFontPreset::ICON_FONT);
+			TextRender()->SetRenderFlags(ETextRenderFlags::TEXT_RENDER_FLAG_ONLY_ADVANCE_WIDTH | ETextRenderFlags::TEXT_RENDER_FLAG_NO_X_BEARING | ETextRenderFlags::TEXT_RENDER_FLAG_NO_Y_BEARING | ETextRenderFlags::TEXT_RENDER_FLAG_NO_PIXEL_ALIGNMENT | ETextRenderFlags::TEXT_RENDER_FLAG_NO_OVERSIZE);
+
+			Box.VSplitRight(10.0f, &Box, nullptr);
+			Box.VSplitRight(33.0f, &Box, &Button);
+			static CButtonContainer s_ChangelogButton;
+			if(DoButton_MenuTab(&s_ChangelogButton, FontIcon::NEWSPAPER, ActivePage == PAGE_CHANGELOG, &Button, IGraphics::CORNER_T, &m_aAnimatorsSmallPage[SMALL_TAB_CHANGELOG]))
+			{
+				NewPage = PAGE_CHANGELOG;
+			}
+			GameClient()->m_Tooltips.DoToolTip(&s_ChangelogButton, &Button, BcLocalize("Changelog"));
+
+			TextRender()->SetRenderFlags(0);
+			TextRender()->SetFontPreset(EFontPreset::DEFAULT_FONT);
+		}
+		// bestclient
 	}
 
-	if(NewPage != -1)
+	// bestclient
+	m_MenuTabAlpha = 1.0f;
+	if(NewPage != -1 && !ExploreLock)
+	// bestclient
 	{
 		if(ClientState == IClient::STATE_OFFLINE)
 			SetMenuPage(NewPage);
@@ -742,7 +880,10 @@ void CMenus::RenderLoadingDirect(const char *pCaption, const char *pContent, std
 		// the menu background is not loaded yet.
 		return;
 	}
-	RenderMenuBackgroundOrNeon();
+	if(!GameClient()->m_MenuBackground.Render())
+	{
+		RenderBackground();
+	}
 
 	m_LoadingState.m_LastRender = Now;
 
@@ -830,6 +971,9 @@ void CMenus::OnInterfacesInit(CGameClient *pClient)
 	m_MenusSettingsControls.OnInterfacesInit(pClient);
 	m_MenusStart.OnInterfacesInit(pClient);
 	m_CommunityIcons.OnInterfacesInit(pClient);
+	// bestclient
+	m_ServerMapPreview.OnInterfacesInit(pClient);
+	// bestclient
 }
 
 void CMenus::OnInit()
@@ -839,6 +983,12 @@ void CMenus::OnInit()
 		m_Popup = POPUP_LANGUAGE;
 		m_CreateDefaultFavoriteCommunities = true;
 	}
+	// bestclient
+	else if(g_Config.m_BcShowStylePicker)
+	{
+		m_Popup = POPUP_STYLE_PICKER;
+	}
+	// bestclient
 
 	if(g_Config.m_UiPage >= PAGE_FAVORITE_COMMUNITY_1 && g_Config.m_UiPage <= PAGE_FAVORITE_COMMUNITY_5 &&
 		(size_t)(g_Config.m_UiPage - PAGE_FAVORITE_COMMUNITY_1) >= ServerBrowser()->FavoriteCommunities().size())
@@ -880,11 +1030,19 @@ void CMenus::OnInit()
 	Console()->Chain("cl_asset_particles", ConchainAssetParticles, this);
 	Console()->Chain("cl_asset_hud", ConchainAssetHud, this);
 	Console()->Chain("cl_asset_extras", ConchainAssetExtras, this);
+	Console()->Chain("snd_pack", ConchainSndPack, this);
+
+	Console()->Register("add_favorite_asset", "s[tab] s[asset_name]", CFGFLAG_CLIENT, ConAddFavoriteAsset, this, "Add an asset item as a favorite");
+	Console()->Register("remove_favorite_asset", "s[tab] s[asset_name]", CFGFLAG_CLIENT, ConRemoveFavoriteAsset, this, "Remove an asset item from the favorites");
+	ConfigManager()->RegisterCallback(CMenus::ConfigSaveCallback, this, ConfigDomain::TCLIENT);
 
 	Console()->Chain("demo_play", ConchainDemoPlay, this);
 	Console()->Chain("demo_speed", ConchainDemoSpeed, this);
 
 	m_TextureBlob = Graphics()->LoadTexture("blob.png", IStorage::TYPE_ALL);
+	// bestclient
+	m_BcLogoTexture = Graphics()->LoadTexture("BestClient/gui_logo.png", IStorage::TYPE_ALL);
+	// bestclient
 
 	// setup load amount
 	m_LoadingState.m_Current = 0;
@@ -994,6 +1152,11 @@ void CMenus::Render()
 {
 	Ui()->MapScreen();
 	Ui()->SetMouseSlow(false);
+	// bestclient
+	const bool ServerBrowserPage = m_MenuPage >= PAGE_INTERNET && m_MenuPage <= PAGE_FAVORITE_COMMUNITY_5;
+	if(!ServerBrowserPage || g_Config.m_BcServerMapPreview == 0)
+		m_ServerMapPreview.Clear();
+	// bestclient
 
 	static int s_Frame = 0;
 	if(s_Frame == 0)
@@ -1051,7 +1214,17 @@ void CMenus::Render()
 	}
 	else
 	{
-		RenderMenuBackgroundOrNeon();
+		// bestclient
+		const float MediaScreenHeight = 300.0f;
+		const float MediaScreenWidth = MediaScreenHeight * Graphics()->ScreenAspect();
+		CMenuMediaBackground &MediaBackground = GameClient()->m_BestClient.MenuMediaBackground();
+		MediaBackground.SyncFromConfig(g_Config.m_BcMenuMediaBackground, g_Config.m_BcMenuMediaBackgroundPath);
+		MediaBackground.Update();
+		if(!MediaBackground.Render(MediaScreenWidth, MediaScreenHeight) && !GameClient()->m_MenuBackground.Render())
+		{
+			RenderBackground();
+		}
+		// bestclient
 		ms_ColorTabbarInactive = ms_ColorTabbarInactiveOutgame;
 		ms_ColorTabbarActive = ms_ColorTabbarActiveOutgame;
 		ms_ColorTabbarHover = ms_ColorTabbarHoverOutgame;
@@ -1108,16 +1281,24 @@ void CMenus::Render()
 			{
 				RenderSettings(MainView);
 			}
-			else if(m_MenuPage == PAGE_CC_STATS)
+			// bestclient
+			else if(m_MenuPage == PAGE_CHANGELOG)
 			{
-				RenderCcStats(MainView);
+				RenderChangelog(MainView);
 			}
+			// bestclient
 			else
 			{
 				dbg_assert_failed("Invalid m_MenuPage: %d", m_MenuPage);
 			}
 
-			RenderMenubar(TabBar, ClientState);
+			// bestclient
+			const bool AssetsEditorConfirmOpen = m_AssetsEditorState.m_Open &&
+				m_AssetsEditorState.m_ExploreSide < 0 && m_AssetsEditorState.m_ShowExitConfirm &&
+				g_Config.m_UiSettingsPage == SETTINGS_ASSETS;
+			if(!AssetsEditorConfirmOpen)
+			// bestclient
+				RenderMenubar(TabBar, ClientState);
 		}
 		break;
 
@@ -1164,18 +1345,33 @@ void CMenus::Render()
 			{
 				RenderSettings(MainView);
 			}
+			// bestclient
+			else if(m_GamePage == PAGE_CHANGELOG)
+			{
+				RenderChangelog(MainView);
+			}
+			// bestclient
 			else
 			{
 				dbg_assert_failed("Invalid m_GamePage: %d", m_GamePage);
 			}
 
-			RenderMenubar(TabBar, ClientState);
+			// bestclient
+			const bool AssetsEditorConfirmOpen = m_AssetsEditorState.m_Open &&
+				m_AssetsEditorState.m_ExploreSide < 0 && m_AssetsEditorState.m_ShowExitConfirm &&
+				g_Config.m_UiSettingsPage == SETTINGS_ASSETS;
+			if(!AssetsEditorConfirmOpen)
+			// bestclient
+				RenderMenubar(TabBar, ClientState);
 		}
 		break;
 
 	case IClient::STATE_DEMOPLAYBACK:
 		if(m_Popup != POPUP_NONE)
 		{
+			// bestclient
+			Ui()->ClosePopupMenu(&m_DemoCameraEffectsPopupId);
+			// bestclient
 			RenderPopupFullscreen(Screen);
 		}
 		else
@@ -1301,12 +1497,28 @@ void CMenus::RenderPopupFullscreen(CUIRect Screen)
 		pTitle = Localize("Save skin");
 		pExtraText = Localize("Are you sure you want to save your skin? If a skin with this name already exists, it will be replaced.");
 	}
+	// bestclient
+	else if(m_Popup == POPUP_STYLE_PICKER)
+	{
+		pTitle = Localize("Choose UI style");
+		TopAlign = true;
+	}
+	// bestclient
 
 	CUIRect Box, Part;
 	Box = Screen;
-	if(m_Popup != POPUP_FIRST_LAUNCH)
+	if(m_Popup != POPUP_FIRST_LAUNCH && m_Popup != POPUP_STYLE_PICKER) // bestclient
 	{
 		Box.Margin(150.0f, &Box);
+	}
+	else if(m_Popup == POPUP_STYLE_PICKER) // bestclient
+	{
+		const float PopupW = std::min(Screen.w - 120.0f, 900.0f);
+		const float PopupH = 320.0f;
+		Box.x = Screen.x + (Screen.w - PopupW) * 0.5f;
+		Box.y = Screen.y + (Screen.h - PopupH) * 0.5f;
+		Box.w = PopupW;
+		Box.h = PopupH;
 	}
 
 	// Background
@@ -1315,9 +1527,9 @@ void CMenus::RenderPopupFullscreen(CUIRect Screen)
 	// Title
 	{
 		CUIRect Title;
-		Box.HSplitTop(20.0f, nullptr, &Box);
+		Box.HSplitTop(m_Popup == POPUP_STYLE_PICKER ? 12.0f : 20.0f, nullptr, &Box); // bestclient
 		Box.HSplitTop(24.0f, &Title, &Box);
-		Box.HSplitTop(20.0f, nullptr, &Box);
+		Box.HSplitTop(m_Popup == POPUP_STYLE_PICKER ? 10.0f : 20.0f, nullptr, &Box); // bestclient
 		Title.VMargin(20.0f, &Title);
 
 		const float TitleFontSize = 24.0f;
@@ -1328,7 +1540,7 @@ void CMenus::RenderPopupFullscreen(CUIRect Screen)
 	}
 
 	// Extra text (optional)
-	if(m_Popup != POPUP_JOIN_TUTORIAL)
+	if(m_Popup != POPUP_JOIN_TUTORIAL && m_Popup != POPUP_STYLE_PICKER) // bestclient
 	{
 		CUIRect ExtraText;
 		Box.HSplitTop(24.0f, &ExtraText, &Box);
@@ -1490,7 +1702,7 @@ void CMenus::RenderPopupFullscreen(CUIRect Screen)
 				Name.VSplitLeft(2.5f * Name.h, &Icon, &Name);
 				m_CommunityIcons.Render(pIcon, Icon, true);
 				Ui()->DoButtonLogic(&s_CommunityTooltipButtonId, 0, &Icon, BUTTONFLAG_NONE);
-				Ui()->DoToolTip(&s_CommunityTooltipButtonId, &Icon, pCommunity->Name());
+				GameClient()->m_Tooltips.DoToolTip(&s_CommunityTooltipButtonId, &Icon, pCommunity->Name());
 			}
 
 			Ui()->DoLabel(&Label, Localize("Name"), 18.0f, TEXTALIGN_ML);
@@ -1598,6 +1810,9 @@ void CMenus::RenderPopupFullscreen(CUIRect Screen)
 		if(DoButton_Menu(&s_ButtonAbort, Localize("Abort"), 0, &Abort) || Ui()->ConsumeHotkey(CUi::HOTKEY_ESCAPE))
 		{
 			m_DemoRenderInput.Clear();
+			// bestclient
+			GameClient()->m_DemoTeeEditor.ClearCutRender();
+			// bestclient
 			m_Popup = POPUP_NONE;
 		}
 
@@ -1753,7 +1968,12 @@ void CMenus::RenderPopupFullscreen(CUIRect Screen)
 		if(DoButton_Menu(&s_JoinTutorialButton, Localize("Join Tutorial Server"), 0, &Join) || Ui()->ConsumeHotkey(CUi::HOTKEY_ENTER))
 		{
 			Client()->RequestDDNetInfo();
-			m_Popup = g_Config.m_BrIndicateFinished ? POPUP_POINTS : POPUP_NONE;
+			// bestclient
+			if(g_Config.m_BrIndicateFinished)
+				m_Popup = POPUP_POINTS;
+			else
+				FinishWelcomeToStylePicker();
+			// bestclient
 			JoinTutorial();
 		}
 
@@ -1762,7 +1982,12 @@ void CMenus::RenderPopupFullscreen(CUIRect Screen)
 		{
 			Client()->RequestDDNetInfo();
 			m_JoinTutorial.m_Queued = false;
-			m_Popup = g_Config.m_BrIndicateFinished ? POPUP_POINTS : POPUP_NONE;
+			// bestclient
+			if(g_Config.m_BrIndicateFinished)
+				m_Popup = POPUP_POINTS;
+			else
+				FinishWelcomeToStylePicker();
+			// bestclient
 		}
 
 		Box.HSplitBottom(20.f, &Box, &Part);
@@ -1973,7 +2198,7 @@ void CMenus::RenderPopupFullscreen(CUIRect Screen)
 			Ui()->ConsumeHotkey(CUi::HOTKEY_ENTER))
 		{
 			GameClient()->m_LocalServer.CancelConnect();
-			m_Popup = POPUP_NONE;
+			FinishWelcomeToStylePicker(); // bestclient
 		}
 	}
 	else if(m_Popup == POPUP_POINTS)
@@ -1997,7 +2222,7 @@ void CMenus::RenderPopupFullscreen(CUIRect Screen)
 			if(DoButton_Menu(&s_ButtonYes, Localize("Yes"), 0, &Yes) ||
 				Ui()->ConsumeHotkey(CUi::HOTKEY_ENTER))
 			{
-				m_Popup = POPUP_NONE;
+				FinishWelcomeToStylePicker(); // bestclient
 			}
 		}
 		else
@@ -2008,7 +2233,7 @@ void CMenus::RenderPopupFullscreen(CUIRect Screen)
 				Ui()->ConsumeHotkey(CUi::HOTKEY_ENTER) ||
 				Client()->InfoState() == IClient::EInfoState::SUCCESS)
 			{
-				m_Popup = POPUP_NONE;
+				FinishWelcomeToStylePicker(); // bestclient
 			}
 			if(Client()->InfoState() == IClient::EInfoState::ERROR)
 			{
@@ -2077,6 +2302,12 @@ void CMenus::RenderPopupFullscreen(CUIRect Screen)
 		Ui()->DoLabel(&Label, Localize("Name"), 18.0f, TEXTALIGN_ML);
 		Ui()->DoClearableEditBox(&m_SkinNameInput, &TextBox, 12.0f);
 	}
+	// bestclient
+	else if(m_Popup == POPUP_STYLE_PICKER)
+	{
+		RenderPopupStylePicker(Box);
+	}
+	// bestclient
 	else
 	{
 		Box.HSplitBottom(20.f, &Box, &Part);
@@ -2120,18 +2351,18 @@ void CMenus::RenderPopupConnecting(CUIRect Screen)
 		const char *pConnectivityLabel = "";
 		switch(Client()->UdpConnectivity(Client()->ConnectNetTypes()))
 		{
-		case IClient::EConnectivity::UNKNOWN:
+		case IClient::CONNECTIVITY_UNKNOWN:
 			break;
-		case IClient::EConnectivity::CHECKING:
+		case IClient::CONNECTIVITY_CHECKING:
 			pConnectivityLabel = Localize("Trying to determine UDP connectivity…");
 			break;
-		case IClient::EConnectivity::UNREACHABLE:
+		case IClient::CONNECTIVITY_UNREACHABLE:
 			pConnectivityLabel = Localize("UDP seems to be filtered.");
 			break;
-		case IClient::EConnectivity::DIFFERING_UDP_TCP_IP_ADDRESSES:
+		case IClient::CONNECTIVITY_DIFFERING_UDP_TCP_IP_ADDRESSES:
 			pConnectivityLabel = Localize("UDP and TCP IP addresses seem to be different. Try disabling VPN, proxy or network accelerators.");
 			break;
-		case IClient::EConnectivity::REACHABLE:
+		case IClient::CONNECTIVITY_REACHABLE:
 			pConnectivityLabel = Localize("No answer from server yet.");
 			break;
 		}
@@ -2208,19 +2439,19 @@ void CMenus::RenderPopupLoading(CUIRect Screen)
 		str_copy(aTitle, Localize("Connected"));
 		switch(Client()->LoadingStateDetail())
 		{
-		case IClient::ELoadingStateDetail::INITIAL:
+		case IClient::LOADING_STATE_DETAIL_INITIAL:
 			str_copy(aLabel1, Localize("Getting game info"));
 			break;
-		case IClient::ELoadingStateDetail::LOADING_MAP:
+		case IClient::LOADING_STATE_DETAIL_LOADING_MAP:
 			str_copy(aLabel1, Localize("Loading map file from storage"));
 			break;
-		case IClient::ELoadingStateDetail::LOADING_DEMO:
+		case IClient::LOADING_STATE_DETAIL_LOADING_DEMO:
 			str_copy(aLabel1, Localize("Loading demo file from storage"));
 			break;
-		case IClient::ELoadingStateDetail::SENDING_READY:
+		case IClient::LOADING_STATE_DETAIL_SENDING_READY:
 			str_copy(aLabel1, Localize("Requesting to join the game"));
 			break;
-		case IClient::ELoadingStateDetail::GETTING_READY:
+		case IClient::LOADING_STATE_DETAIL_GETTING_READY:
 			str_copy(aLabel1, Localize("Sending initial client info"));
 			break;
 		default:
@@ -2285,6 +2516,10 @@ void CMenus::PopupConfirmDemoReplaceVideo()
 	char aVideoName[IO_MAX_PATH_LENGTH];
 	str_copy(aVideoName, m_DemoRenderInput.GetString());
 	const char *pError = Client()->DemoPlayer_Render(aBuf, m_DemolistStorageType, aVideoName, m_Speed, m_StartPaused);
+	// bestclient
+	if(!pError)
+		GameClient()->m_DemoTeeEditor.RestoreCutRender(aBuf);
+	// bestclient
 	m_Speed = DEMO_SPEED_INDEX_DEFAULT;
 	m_StartPaused = false;
 	m_LastPauseChange = -1.0f;
@@ -2333,12 +2568,17 @@ void CMenus::SetActive(bool Active)
 void CMenus::OnShutdown()
 {
 	m_CommunityIcons.Shutdown();
+	// bestclient
+	m_ServerMapPreview.Clear();
+	// bestclient
 }
 
 bool CMenus::OnCursorMove(float x, float y, IInput::ECursorType CursorType)
 {
-	if(!m_MenuActive)
+	// bestclient
+	if(!m_MenuActive && !Ui()->IsPopupOpen() && !GameClient()->m_AspectRatio.ConfirmWantsInput())
 		return false;
+	// bestclient
 
 	Ui()->ConvertMouseMove(&x, &y, CursorType);
 	Ui()->OnCursorMove(x, y);
@@ -2349,7 +2589,9 @@ bool CMenus::OnCursorMove(float x, float y, IInput::ECursorType CursorType)
 bool CMenus::OnInput(const IInput::CEvent &Event)
 {
 	// Escape key is always handled to activate/deactivate menu
-	if((Event.m_Flags & IInput::FLAG_PRESS && Event.m_Key == KEY_ESCAPE) || IsActive())
+	// bestclient
+	if((Event.m_Flags & IInput::FLAG_PRESS && Event.m_Key == KEY_ESCAPE) || IsActive() || GameClient()->m_AspectRatio.ConfirmWantsInput())
+	// bestclient
 	{
 		Ui()->OnInput(Event);
 		return true;
@@ -2361,6 +2603,15 @@ void CMenus::OnStateChange(int NewState, int OldState)
 {
 	// reset active item
 	Ui()->SetActiveItem(nullptr);
+	// bestclient
+	if(NewState != IClient::STATE_DEMOPLAYBACK)
+		Ui()->ClosePopupMenu(&m_DemoCameraEffectsPopupId);
+	if(NewState != IClient::STATE_DEMOPLAYBACK || OldState != IClient::STATE_DEMOPLAYBACK)
+	{
+		GameClient()->m_DemoTeeEditor.Close(GameClient());
+		GameClient()->m_DemoTeeEditor.Reset();
+	}
+	// bestclient
 
 	if(OldState == IClient::STATE_ONLINE || OldState == IClient::STATE_OFFLINE)
 		TextRender()->DeleteTextContainer(m_MotdTextContainerIndex);
@@ -2403,7 +2654,6 @@ void CMenus::OnStateChange(int NewState, int OldState)
 void CMenus::OnWindowResize()
 {
 	TextRender()->DeleteTextContainer(m_MotdTextContainerIndex);
-	m_MenusStart.ResetTitle();
 }
 
 void CMenus::OnRender()
@@ -2418,41 +2668,74 @@ void CMenus::OnRender()
 		PopupMessage(Localize("Disconnected"), Localize("The server is running a non-standard tuning on a pure game type."), Localize("Ok"));
 	}
 
+	// bestclient
+	CAspectRatio &AspectRatio = GameClient()->m_AspectRatio;
+	AspectRatio.UpdateConfirm();
+	const bool ShowAspectConfirmOverlay = AspectRatio.ShowConfirmOverlay();
+	// bestclient
+
 	if(!IsActive())
 	{
 		if(Ui()->ConsumeHotkey(CUi::HOTKEY_ESCAPE))
 		{
 			SetActive(true);
 		}
-		else if(Client()->State() != IClient::STATE_DEMOPLAYBACK)
+		// bestclient
+		else if(Client()->State() != IClient::STATE_DEMOPLAYBACK && !ShowAspectConfirmOverlay)
 		{
 			Ui()->ClearHotkeys();
+			m_ServerMapPreview.Clear();
 			return;
 		}
+		else if(Client()->State() != IClient::STATE_DEMOPLAYBACK)
+			m_ServerMapPreview.Clear();
+		// bestclient
 	}
 
 	Ui()->StartCheck();
 	UpdateColors();
 
-	Ui()->Update();
+	// bestclient
+	AspectRatio.ApplyMenuUiAspect(IsActive());
 
-	if(IsActive())
-		Ui()->DoBackButton();
-
-	Render();
-
-	if(IsActive())
 	{
-		Ui()->RenderBackButton();
-		RenderTools()->RenderCursor(Ui()->MousePos(), 24.0f);
+		const BestClientUiTheme::CMenuThemeScope MenuThemeScope(IsActive() || Client()->State() == IClient::STATE_DEMOPLAYBACK);
+
+		Ui()->Update();
+
+		if(ShowAspectConfirmOverlay && IsActive())
+			Ui()->SetActiveItem(nullptr);
+
+		if(IsActive())
+			Ui()->DoBackButton();
+
+		if(IsActive() || Client()->State() == IClient::STATE_DEMOPLAYBACK)
+			Render();
+
+		if(ShowAspectConfirmOverlay && IsActive())
+		{
+			Ui()->SetActiveItem(nullptr);
+			Ui()->SetHotItem(nullptr);
+		}
+
+		if(IsActive())
+		{
+			Ui()->RenderBackButton();
+		}
 	}
+	// bestclient
 
 	// render debug information
 	if(g_Config.m_Debug)
 		Ui()->DebugRender(2.0f, Ui()->Screen()->h - 12.0f);
 
-	if(Ui()->ConsumeHotkey(CUi::HOTKEY_ESCAPE))
+	if(IsActive() && Ui()->ConsumeHotkey(CUi::HOTKEY_ESCAPE))
 		SetActive(false);
+
+	// bestclient
+	AspectRatio.RenderConfirmOverlay(IsActive());
+	AspectRatio.RestoreMenuUiAspect();
+	// bestclient
 
 	Ui()->FinishCheck();
 	Ui()->ClearHotkeys();
@@ -2462,174 +2745,26 @@ void CMenus::UpdateColors()
 {
 	ms_GuiColor = color_cast<ColorRGBA>(ColorHSLA(g_Config.m_UiColor, true));
 
-	// C-Client: dark tabs, the active one has the same color as the page panel below it
-	ms_ColorTabbarInactiveOutgame = ColorRGBA(0.06f, 0.055f, 0.065f, 0.5f);
-	ms_ColorTabbarActiveOutgame = ColorRGBA(0.06f, 0.055f, 0.065f, 0.88f);
-	ms_ColorTabbarHoverOutgame = ColorRGBA(1.0f, 1.0f, 1.0f, 0.12f);
+	ms_ColorTabbarInactiveOutgame = ColorRGBA(0.0f, 0.0f, 0.0f, 0.25f);
+	ms_ColorTabbarActiveOutgame = ColorRGBA(0.0f, 0.0f, 0.0f, 0.5f);
+	ms_ColorTabbarHoverOutgame = ColorRGBA(1.0f, 1.0f, 1.0f, 0.25f);
 
-	// C-Client: the same dark look in game, a bit less see-through because the map is behind
-	ms_ColorTabbarInactiveIngame = ColorRGBA(0.06f, 0.055f, 0.065f, 0.65f);
-	ms_ColorTabbarActiveIngame = ColorRGBA(0.06f, 0.055f, 0.065f, 0.92f);
-	ms_ColorTabbarHoverIngame = ColorRGBA(1.0f, 1.0f, 1.0f, 0.12f);
-}
+	const float ColorIngameScaleI = 0.5f;
+	const float ColorIngameScaleA = 0.2f;
 
-bool CMenus::RenderMenuBackgroundOrNeon()
-{
-	if(RenderCcMenuBackgroundImage())
-		return true;
-	if(g_Config.m_CrNeonBackground)
-	{
-		RenderNeonBackground();
-		return true;
-	}
-	if(!GameClient()->m_MenuBackground.Render())
-	{
-		RenderBackground();
-	}
-	return true;
-}
+	ms_ColorTabbarInactiveIngame = ColorRGBA(
+		ms_GuiColor.r * ColorIngameScaleI,
+		ms_GuiColor.g * ColorIngameScaleI,
+		ms_GuiColor.b * ColorIngameScaleI,
+		ms_GuiColor.a * 0.8f);
 
-// Cheap deterministic pseudo random number in [0, 1] so the particles need no state.
-static float NeonHash(int Index, int Salt)
-{
-	unsigned Hash = (unsigned)Index * 374761393u + (unsigned)Salt * 668265263u;
-	Hash = (Hash ^ (Hash >> 13)) * 1274126177u;
-	Hash ^= Hash >> 16;
-	return (Hash & 0xffffff) / (float)0xffffff;
-}
+	ms_ColorTabbarActiveIngame = ColorRGBA(
+		ms_GuiColor.r * ColorIngameScaleA,
+		ms_GuiColor.g * ColorIngameScaleA,
+		ms_GuiColor.b * ColorIngameScaleA,
+		ms_GuiColor.a);
 
-void CMenus::RenderNeonBackground()
-{
-	const float ScreenHeight = 300.0f;
-	const float ScreenWidth = ScreenHeight * Graphics()->ScreenAspect();
-	Graphics()->MapScreenToSize(ScreenWidth, ScreenHeight);
-	const float Time = Client()->GlobalTime();
-
-	// almost black
-	Graphics()->TextureClear();
-	Graphics()->QuadsBegin();
-	Graphics()->SetColor(0.03f, 0.027f, 0.031f, 1.0f);
-	const IGraphics::CQuadItem Bg(0, 0, ScreenWidth, ScreenHeight);
-	Graphics()->QuadsDrawTL(&Bg, 1);
-	Graphics()->QuadsEnd();
-
-	// red neon rising from the bottom and fading out at the middle of the screen.
-	// One light layer made of a grid of quads with colors at the corners, so it is
-	// smooth and costs almost nothing (the old version drew ~80 full screen circles).
-	Graphics()->BlendAdditive();
-	Graphics()->QuadsBegin();
-	{
-		constexpr int Columns = 16;
-		constexpr int Rows = 14;
-		const float Top = ScreenHeight * 0.45f;
-		const float CellW = ScreenWidth / Columns;
-		const float CellH = (ScreenHeight - Top) / Rows;
-		auto Light = [&](float X, float Y) {
-			const float Rise = std::clamp((Y - Top) / (ScreenHeight - Top), 0.0f, 1.0f);
-			const float Ease = Rise * Rise * (3.0f - 2.0f * Rise); // smoothstep: no visible edge at the middle
-			// slow waves along the bottom so the light breathes a little
-			const float Wave = 0.82f + 0.12f * std::sin(X * 0.021f + Time * 0.45f) + 0.08f * std::sin(X * 0.0075f - Time * 0.28f);
-			const float A = std::clamp(Ease * Ease * Wave, 0.0f, 1.0f);
-			return CCStyle::ACCENT_DEEP.WithAlpha(0.62f * A);
-		};
-		for(int y = 0; y < Rows; y++)
-		{
-			for(int x = 0; x < Columns; x++)
-			{
-				const float X0 = x * CellW, X1 = X0 + CellW;
-				const float Y0 = Top + y * CellH, Y1 = Y0 + CellH;
-				Graphics()->SetColor4(Light(X0, Y0), Light(X1, Y0), Light(X0, Y1), Light(X1, Y1));
-				const IGraphics::CQuadItem Cell(X0, Y0, CellW, CellH);
-				Graphics()->QuadsDrawTL(&Cell, 1);
-			}
-		}
-		// thin brighter glow right at the bottom edge
-		const ColorRGBA Edge = CCStyle::Mix(CCStyle::ACCENT_DEEP, ColorRGBA(1.0f, 1.0f, 1.0f, 1.0f), 0.2f).WithAlpha(0.0f);
-		Graphics()->SetColor4(Edge, Edge, Edge.WithAlpha(0.22f), Edge.WithAlpha(0.22f));
-		const IGraphics::CQuadItem BottomGlow(0, ScreenHeight - 18.0f, ScreenWidth, 18.0f);
-		Graphics()->QuadsDrawTL(&BottomGlow, 1);
-	}
-	Graphics()->QuadsEnd();
-
-	// a little dust floating up out of the light
-	Graphics()->QuadsBegin();
-	for(int i = 0; i < 24; i++)
-	{
-		const float Speed = 2.0f + 3.0f * NeonHash(i, 21);
-		const float Py = ScreenHeight + 5.0f - std::fmod(NeonHash(i, 22) * (ScreenHeight * 0.75f) + Time * Speed, ScreenHeight * 0.75f);
-		const float Px = NeonHash(i, 23) * ScreenWidth + 6.0f * std::sin(Time * 0.3f + i);
-		const float Fade = std::clamp((Py - ScreenHeight * 0.3f) / (ScreenHeight * 0.4f), 0.0f, 1.0f);
-		Graphics()->SetColor(CCStyle::Mix(CCStyle::ACCENT_TEXT, ColorRGBA(1.0f, 1.0f, 1.0f, 1.0f), 0.35f).WithAlpha(0.35f * Fade));
-		Graphics()->DrawCircle(Px, Py, 0.35f + 0.3f * NeonHash(i, 25), 6);
-	}
-	Graphics()->QuadsEnd();
-	Graphics()->BlendNormal();
-
-	RenderMenuSymbols(ScreenWidth, ScreenHeight);
-	Ui()->MapScreen();
-}
-
-// C-Client: the signs of the client (crosses and small diamonds) slowly float up and fade out
-void CMenus::RenderMenuSymbols(float ScreenWidth, float ScreenHeight)
-{
-	if(!g_Config.m_CcMenuSymbols)
-		return;
-	const float Time = Client()->GlobalTime();
-	const ColorRGBA Base = CCStyle::Mix(CCStyle::ACCENT_TEXT, ColorRGBA(1.0f, 1.0f, 1.0f, 1.0f), 0.25f);
-	constexpr int Num = 22;
-	for(int i = 0; i < Num; i++)
-	{
-		const float Speed = 3.0f + 5.0f * NeonHash(i, 31);
-		const float Range = ScreenHeight * 1.1f;
-		const float Py = ScreenHeight + 12.0f - std::fmod(NeonHash(i, 32) * Range + Time * Speed, Range);
-		const float Px = NeonHash(i, 33) * ScreenWidth + 10.0f * std::sin(Time * (0.25f + 0.2f * NeonHash(i, 34)) + i * 1.7f);
-		// fully there in the lower half, gone towards the top
-		const float Fade = std::clamp((Py - ScreenHeight * 0.15f) / (ScreenHeight * 0.45f), 0.0f, 1.0f) * std::clamp((ScreenHeight + 12.0f - Py) / 20.0f, 0.0f, 1.0f);
-		const float Pulse = 0.75f + 0.25f * std::sin(Time * 2.0f + i * 2.3f);
-		const float Size = 4.0f + 5.0f * NeonHash(i, 35);
-		const float Alpha = 0.45f * Fade * Pulse;
-		if(Alpha <= 0.01f)
-			continue;
-		const float Spin = std::sin(Time * 0.5f + i) * 0.35f;
-		if(i % 3 != 0)
-		{
-			// the cross of the name, with a soft glow
-			const char *pCross = "\xE2\x99\xB1";
-			const float W = TextRender()->TextWidth(Size, pCross);
-			TextRender()->TextOutlineColor(0.0f, 0.0f, 0.0f, 0.0f);
-			TextRender()->TextColor(Base.WithAlpha(Alpha * 0.25f));
-			for(int g = 0; g < 4; g++)
-			{
-				const vec2 Off = direction(g * pi / 2.0f + Spin) * 0.6f;
-				TextRender()->Text(Px - W / 2.0f + Off.x, Py - Size / 2.0f + Off.y, Size, pCross, -1.0f);
-			}
-			TextRender()->TextColor(Base.WithAlpha(Alpha));
-			TextRender()->Text(Px - W / 2.0f, Py - Size / 2.0f, Size, pCross, -1.0f);
-			TextRender()->TextColor(TextRender()->DefaultTextColor());
-			TextRender()->TextOutlineColor(TextRender()->DefaultTextOutlineColor());
-		}
-		else
-		{
-			// a small turning diamond outline
-			const float R = Size * 0.45f;
-			const vec2 C(Px, Py);
-			const vec2 aCorners[4] = {C + direction(Spin - pi / 2.0f) * R, C + direction(Spin) * R * 0.75f, C + direction(Spin + pi / 2.0f) * R, C + direction(Spin + pi) * R * 0.75f};
-			Graphics()->TextureClear();
-			Graphics()->BlendAdditive();
-			Graphics()->QuadsBegin();
-			Graphics()->SetColor(Base.WithAlpha(Alpha));
-			for(int e = 0; e < 4; e++)
-			{
-				const vec2 A = aCorners[e], B = aCorners[(e + 1) % 4];
-				const vec2 Dir = normalize(B - A);
-				const vec2 Out = vec2(Dir.y, -Dir.x) * 0.3f;
-				const IGraphics::CFreeformItem Edge(A - Out, A + Out, B - Out, B + Out);
-				Graphics()->QuadsDrawFreeform(&Edge, 1);
-			}
-			Graphics()->QuadsEnd();
-			Graphics()->BlendNormal();
-		}
-	}
+	ms_ColorTabbarHoverIngame = ColorRGBA(1.0f, 1.0f, 1.0f, 0.75f);
 }
 
 void CMenus::RenderBackground()

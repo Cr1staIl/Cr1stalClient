@@ -89,6 +89,9 @@ CInfoMessages::CInfoMsg CInfoMessages::CreateInfoMsg(EType Type)
 	CInfoMsg InfoMsg;
 	InfoMsg.m_Type = Type;
 	InfoMsg.m_Tick = Client()->GameTick(g_Config.m_ClDummy);
+	// bestclient
+	InfoMsg.m_AppearTime = time_get();
+	// bestclient
 
 	for(int i = 0; i < MAX_KILLMSG_TEAM_MEMBERS; i++)
 	{
@@ -343,7 +346,10 @@ void CInfoMessages::RenderKillMsg(const CInfoMsg &InfoMsg, float x, float y)
 	// render victim tees
 	for(int j = (InfoMsg.m_TeamSize - 1); j >= 0; j--)
 	{
-		RenderTools()->RenderIdleTeeAtCenter(&InfoMsg.m_apVictimManagedTeeRenderInfos[j]->TeeRenderInfo(), vec2(x, y + ROW_HEIGHT / 2.0f), EMOTE_PAIN, vec2(-1, 0));
+		vec2 OffsetToMid;
+		CRenderTools::GetRenderTeeOffsetToRenderedTee(CAnimState::GetIdle(), &InfoMsg.m_apVictimManagedTeeRenderInfos[j]->TeeRenderInfo(), OffsetToMid);
+		const vec2 TeeRenderPos = vec2(x, y + ROW_HEIGHT / 2.0f + OffsetToMid.y);
+		RenderTools()->RenderTee(CAnimState::GetIdle(), &InfoMsg.m_apVictimManagedTeeRenderInfos[j]->TeeRenderInfo(), EMOTE_PAIN, vec2(-1, 0), TeeRenderPos);
 		x -= 44.0f;
 	}
 
@@ -380,7 +386,10 @@ void CInfoMessages::RenderKillMsg(const CInfoMsg &InfoMsg, float x, float y)
 		x -= 24.0f;
 		if(InfoMsg.m_pKillerManagedTeeRenderInfo != nullptr)
 		{
-			RenderTools()->RenderIdleTeeAtCenter(&InfoMsg.m_pKillerManagedTeeRenderInfo->TeeRenderInfo(), vec2(x, y + ROW_HEIGHT / 2.0f), EMOTE_ANGRY, vec2(1, 0));
+			vec2 OffsetToMid;
+			CRenderTools::GetRenderTeeOffsetToRenderedTee(CAnimState::GetIdle(), &InfoMsg.m_pKillerManagedTeeRenderInfo->TeeRenderInfo(), OffsetToMid);
+			const vec2 TeeRenderPos = vec2(x, y + ROW_HEIGHT / 2.0f + OffsetToMid.y);
+			RenderTools()->RenderTee(CAnimState::GetIdle(), &InfoMsg.m_pKillerManagedTeeRenderInfo->TeeRenderInfo(), EMOTE_ANGRY, vec2(1, 0), TeeRenderPos);
 		}
 		x -= 32.0f;
 
@@ -428,8 +437,11 @@ void CInfoMessages::RenderFinishMsg(const CInfoMsg &InfoMsg, float x, float y)
 
 	// render victim tee
 	x -= 24.0f;
+	vec2 OffsetToMid;
+	CRenderTools::GetRenderTeeOffsetToRenderedTee(CAnimState::GetIdle(), &InfoMsg.m_apVictimManagedTeeRenderInfos[0]->TeeRenderInfo(), OffsetToMid);
+	const vec2 TeeRenderPos = vec2(x, y + ROW_HEIGHT / 2.0f + OffsetToMid.y);
 	const int Emote = InfoMsg.m_RecordPersonal ? EMOTE_HAPPY : EMOTE_NORMAL;
-	RenderTools()->RenderIdleTeeAtCenter(&InfoMsg.m_apVictimManagedTeeRenderInfos[0]->TeeRenderInfo(), vec2(x, y + ROW_HEIGHT / 2.0f), Emote, vec2(-1, 0));
+	RenderTools()->RenderTee(CAnimState::GetIdle(), &InfoMsg.m_apVictimManagedTeeRenderInfos[0]->TeeRenderInfo(), Emote, vec2(-1, 0), TeeRenderPos);
 }
 
 void CInfoMessages::OnRender()
@@ -451,6 +463,9 @@ void CInfoMessages::OnRender()
 	const float StartX = Width - 10.0f;
 	const float StartY = 30.0f + (Showfps ? 100.0f : 0.0f) + (g_Config.m_ClShowpred && Client()->State() != IClient::STATE_DEMOPLAYBACK ? 100.0f : 0.0f);
 
+	// bestclient
+	const int64_t Now = time_get();
+	// bestclient
 	float y = StartY;
 	for(int i = 1; i <= MAX_INFOMSGS; i++)
 	{
@@ -465,25 +480,27 @@ void CInfoMessages::OnRender()
 			continue;
 		}
 
-		CreateTextContainersIfNotCreated(InfoMsg);
+		// bestclient
+		if(g_Config.m_ClFocusMode && g_Config.m_ClFocusModeHideUI)
+			continue;
+		// bestclient
 
-		// C-Client: new kill and finish messages slide in from the right
-		float X = StartX;
-		if(g_Config.m_CcAnimKillfeed)
-		{
-			const float Age = (Client()->GameTick(g_Config.m_ClDummy) - InfoMsg.m_Tick + Client()->IntraGameTick(g_Config.m_ClDummy)) / (float)Client()->GameTickSpeed();
-			const float Appear = std::clamp(Age / 0.3f, 0.0f, 1.0f);
-			X += (1.0f - (1.0f - (1.0f - Appear) * (1.0f - Appear) * (1.0f - Appear))) * 120.0f;
-		}
+		CreateTextContainersIfNotCreated(InfoMsg);
 
 		if(InfoMsg.m_Type == EType::TYPE_KILL && g_Config.m_ClShowKillMessages)
 		{
-			RenderKillMsg(InfoMsg, X, y);
+			// bestclient
+			const float KillMsgSlideOffsetX = GameClient()->m_BcUiAnimations.KillfeedSlideOffsetX(
+				TextRender(), InfoMsg.m_AppearTime, Now,
+				InfoMsg.m_VictimTextContainerIndex, InfoMsg.m_KillerTextContainerIndex,
+				InfoMsg.m_TeamSize, InfoMsg.m_aVictimIds[0], InfoMsg.m_KillerId);
+			RenderKillMsg(InfoMsg, StartX + KillMsgSlideOffsetX, y);
+			// bestclient
 			y += ROW_HEIGHT;
 		}
 		else if(InfoMsg.m_Type == EType::TYPE_FINISH && g_Config.m_ClShowFinishMessages)
 		{
-			RenderFinishMsg(InfoMsg, X, y);
+			RenderFinishMsg(InfoMsg, StartX, y);
 			y += ROW_HEIGHT;
 		}
 	}

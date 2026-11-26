@@ -1,3 +1,4 @@
+#include <base/dbg.h>
 #include <base/fs.h>
 #include <base/logger.h>
 #include <base/os.h>
@@ -18,20 +19,20 @@ inline void ProcessItem(const char *pItemName, IStorage *pStorage)
 	size_t Len = (size_t)str_length(pItemName) + 1; // including '\0'
 	if(Len > sizeof(aConfig))
 	{
-		log_error(TOOL_NAME, "can't process overlong filename '%s'", pItemName);
+		dbg_msg("config_common", "can't process overlong filename '%s'", pItemName);
 		return;
 	}
 
 	if(!str_endswith(pItemName, ".map"))
 	{
-		log_error(TOOL_NAME, "can't process non-map file '%s'", pItemName);
+		dbg_msg("config_common", "can't process non-map file '%s'", pItemName);
 		return;
 	}
 
 	str_copy(aConfig, pItemName);
 	aConfig[Len - sizeof(".map")] = 0;
 	str_append(aConfig, ".cfg");
-	log_info(TOOL_NAME, "processing '%s'", pItemName);
+	dbg_msg("config_common", "processing '%s'", pItemName);
 	Process(pStorage, pItemName, aConfig);
 }
 
@@ -56,14 +57,14 @@ int main(int argc, const char **argv) // NOLINT(misc-definitions-in-headers)
 	std::unique_ptr<IStorage> pStorage = CreateLocalStorage();
 	if(!pStorage)
 	{
-		log_error(TOOL_NAME, "Error creating local storage");
+		log_error("config_common", "Error creating local storage");
 		return -1;
 	}
 
 	if(argc == 1)
 	{
-		log_error(TOOL_NAME, "Usage: %s FILE1 [ FILE2... ]", argc > 0 ? argv[0] : TOOL_NAME);
-		log_error(TOOL_NAME, "Usage: %s DIRECTORY", argc > 0 ? argv[0] : TOOL_NAME);
+		dbg_msg("usage", "%s FILE1 [ FILE2... ]", argv[0]);
+		dbg_msg("usage", "%s DIRECTORY", argv[0]);
 		return -1;
 	}
 	else if(argc == 2 && fs_is_dir(argv[1]))

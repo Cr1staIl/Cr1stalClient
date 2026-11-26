@@ -15,6 +15,7 @@
 #include <game/client/components/console.h>
 #include <game/client/components/skins7.h>
 #include <game/client/components/sounds.h>
+#include <game/client/components/tooltips.h>
 #include <game/client/gameclient.h>
 #include <game/client/ui.h>
 #include <game/client/ui_listbox.h>
@@ -25,7 +26,7 @@
 
 void CMenus::RenderSettingsTee7(CUIRect MainView)
 {
-	CUIRect SkinPreview, NormalSkinPreview, RedTeamSkinPreview, BlueTeamSkinPreview, Buttons, QuickSearch, DirectoryButton, RefreshButton, SaveDeleteButton, TabBars, TabBar, LeftTab, RightTab;
+	CUIRect SkinPreview, NormalSkinPreview, RedTeamSkinPreview, BlueTeamSkinPreview, Buttons, QuickSearch, DirectoryButton, RefreshButton, SaveDeleteButton, TabBars, TabBar, LeftTab, RightTab, InfoRow; // bestclient
 	MainView.HSplitBottom(20.0f, &MainView, &Buttons);
 	MainView.HSplitBottom(5.0f, &MainView, nullptr);
 	Buttons.VSplitRight(25.0f, &Buttons, &RefreshButton);
@@ -34,7 +35,7 @@ void CMenus::RenderSettingsTee7(CUIRect MainView)
 	Buttons.VSplitLeft(220.0f, &QuickSearch, &Buttons);
 	Buttons.VSplitLeft(10.0f, nullptr, &Buttons);
 	Buttons.VSplitLeft(120.0f, &SaveDeleteButton, &Buttons);
-	MainView.HSplitTop(50.0f, &TabBars, &MainView);
+	MainView.HSplitTop(78.0f, &TabBars, &MainView); // bestclient
 	MainView.HSplitTop(10.0f, nullptr, &MainView);
 	TabBars.VSplitMid(&TabBars, &SkinPreview, 20.0f);
 
@@ -65,6 +66,59 @@ void CMenus::RenderSettingsTee7(CUIRect MainView)
 
 	TabBars.HSplitTop(20.0f, &TabBar, &TabBars);
 	TabBar.VSplitMid(&LeftTab, &RightTab);
+
+	TabBars.HSplitTop(8.0f, nullptr, &TabBars); // bestclient
+	TabBars.HSplitTop(20.0f, &InfoRow, &TabBars);
+
+	int *pCountry;
+	static CLineInput s_NameInput;
+	static CLineInput s_ClanInput;
+	if(!m_Dummy)
+	{
+		pCountry = &g_Config.m_PlayerCountry;
+		s_NameInput.SetBuffer(g_Config.m_PlayerName, sizeof(g_Config.m_PlayerName));
+		s_NameInput.SetEmptyText(Client()->PlayerName());
+		s_ClanInput.SetBuffer(g_Config.m_PlayerClan, sizeof(g_Config.m_PlayerClan));
+	}
+	else
+	{
+		pCountry = &g_Config.m_ClDummyCountry;
+		s_NameInput.SetBuffer(g_Config.m_ClDummyName, sizeof(g_Config.m_ClDummyName));
+		s_NameInput.SetEmptyText(Client()->DummyName());
+		s_ClanInput.SetBuffer(g_Config.m_ClDummyClan, sizeof(g_Config.m_ClDummyClan));
+	}
+
+	CUIRect NameSide, ClanSide, NameLabel, NameInput, ClanLabel, ClanInput, FlagButton;
+	InfoRow.VSplitMid(&NameSide, &ClanSide, 10.0f);
+	NameSide.VSplitLeft(45.0f, &NameLabel, &NameInput);
+	ClanSide.VSplitLeft(40.0f, &ClanLabel, &ClanInput);
+	ClanInput.VSplitRight(34.0f, &ClanInput, &FlagButton);
+	ClanInput.VSplitRight(6.0f, &ClanInput, nullptr);
+
+	Ui()->DoLabel(&NameLabel, Localize("Name"), 14.0f, TEXTALIGN_ML);
+	Ui()->DoLabel(&ClanLabel, Localize("Clan"), 14.0f, TEXTALIGN_ML);
+	if(Ui()->DoEditBox(&s_NameInput, &NameInput, 14.0f))
+		SetNeedSendInfo();
+	if(Ui()->DoEditBox(&s_ClanInput, &ClanInput, 14.0f))
+		SetNeedSendInfo();
+
+	static CButtonContainer s_FlagButton;
+	if(DoButton_Menu(&s_FlagButton, "", 0, &FlagButton))
+	{
+		static SPopupMenuId s_PopupCountryId;
+		static SPopupSettingsCountrySelectionContext s_PopupCountryContext;
+		s_PopupCountryContext.m_pMenus = this;
+		s_PopupCountryContext.m_pCountry = pCountry;
+		s_PopupCountryContext.m_Selection = *pCountry;
+		s_PopupCountryContext.m_New = true;
+		Ui()->DoPopupMenu(&s_PopupCountryId, FlagButton.x, FlagButton.y + FlagButton.h, 490.0f, 210.0f, &s_PopupCountryContext, PopupSettingsCountrySelection);
+	}
+	GameClient()->m_Tooltips.DoToolTip(&s_FlagButton, &FlagButton, Localize("Choose country flag"));
+	CUIRect FlagIcon = FlagButton;
+	const float OldFlagWidth = FlagIcon.w;
+	FlagIcon.w = FlagIcon.h * 2.0f;
+	FlagIcon.x += (OldFlagWidth - FlagIcon.w) / 2.0f;
+	GameClient()->m_CountryFlags.Render(*pCountry, ColorRGBA(1.0f, 1.0f, 1.0f, Ui()->HotItem() == &s_FlagButton ? 1.0f : 0.85f), FlagIcon.x, FlagIcon.y, FlagIcon.w, FlagIcon.h); // bestclient
 
 	static CButtonContainer s_BasicTabButton;
 	if(DoButton_MenuTab(&s_BasicTabButton, Localize("Basic"), !m_CustomSkinMenu, &LeftTab, IGraphics::CORNER_L, nullptr, nullptr, nullptr, nullptr, 4.0f))
@@ -201,7 +255,7 @@ void CMenus::RenderSettingsTee7(CUIRect MainView)
 		Storage()->CreateFolder("skins7", IStorage::TYPE_SAVE);
 		Client()->ViewFile(aBuf);
 	}
-	Ui()->DoToolTip(&s_DirectoryButton, &DirectoryButton, Localize("Open the directory to add custom skins"));
+	GameClient()->m_Tooltips.DoToolTip(&s_DirectoryButton, &DirectoryButton, Localize("Open the directory to add custom skins"));
 
 	TextRender()->SetFontPreset(EFontPreset::ICON_FONT);
 	TextRender()->SetRenderFlags(ETextRenderFlags::TEXT_RENDER_FLAG_ONLY_ADVANCE_WIDTH | ETextRenderFlags::TEXT_RENDER_FLAG_NO_X_BEARING | ETextRenderFlags::TEXT_RENDER_FLAG_NO_Y_BEARING | ETextRenderFlags::TEXT_RENDER_FLAG_NO_PIXEL_ALIGNMENT | ETextRenderFlags::TEXT_RENDER_FLAG_NO_OVERSIZE);
@@ -293,7 +347,7 @@ void CMenus::RenderSettingsTeeCustom7(CUIRect MainView)
 	}
 	TextRender()->SetRenderFlags(0);
 	TextRender()->SetFontPreset(EFontPreset::DEFAULT_FONT);
-	Ui()->DoToolTip(&s_RandomSkinButton, &RandomSkinButton, Localize("Create a random skin"));
+	GameClient()->m_Tooltips.DoToolTip(&s_RandomSkinButton, &RandomSkinButton, Localize("Create a random skin"));
 }
 
 void CMenus::RenderSkinSelection7(CUIRect MainView)
@@ -350,7 +404,9 @@ void CMenus::RenderSkinSelection7(CUIRect MainView)
 		{
 			// interactive tee: tee is happy to be selected
 			int TeeEmote = (Item.m_Selected && s_LastSelectionTime + 0.75f > Client()->GlobalTime()) ? EMOTE_HAPPY : EMOTE_NORMAL;
-			RenderTools()->RenderIdleTeeAtCenter(&Info, TeePreview.Center(), TeeEmote);
+			vec2 OffsetToMid;
+			CRenderTools::GetRenderTeeOffsetToRenderedTee(CAnimState::GetIdle(), &Info, OffsetToMid);
+			RenderTools()->RenderTee(CAnimState::GetIdle(), &Info, TeeEmote, vec2(1.0f, 0.0f), TeePreview.Center() + OffsetToMid);
 		}
 
 		SLabelProperties Props;
@@ -433,16 +489,19 @@ void CMenus::RenderSkinPartSelection7(CUIRect MainView)
 		}
 		Info.m_Size = 50.0f;
 
+		vec2 OffsetToMid;
+		CRenderTools::GetRenderTeeOffsetToRenderedTee(CAnimState::GetIdle(), &Info, OffsetToMid);
+		const vec2 TeePos = Item.m_Rect.Center() + OffsetToMid;
 		if(m_TeePartSelected == protocol7::SKINPART_HANDS)
 		{
-			// RenderTools()->RenderTeeHand(&Info, Item.m_Rect.Center(), vec2(1.0f, 0.0f), -pi*0.5f, vec2(18, 0));
+			// RenderTools()->RenderTeeHand(&Info, TeePos, vec2(1.0f, 0.0f), -pi*0.5f, vec2(18, 0));
 		}
 		int TeePartEmote = EMOTE_NORMAL;
 		if(m_TeePartSelected == protocol7::SKINPART_EYES)
 		{
 			TeePartEmote = (int)(Client()->GlobalTime() * 0.5f) % NUM_EMOTES;
 		}
-		RenderTools()->RenderIdleTeeAtCenter(&Info, Item.m_Rect.Center(), TeePartEmote);
+		RenderTools()->RenderTee(CAnimState::GetIdle(), &Info, TeePartEmote, vec2(1.0f, 0.0f), TeePos);
 
 		Ui()->DoLabel(&Label, pPart->m_aName, 12.0f, TEXTALIGN_MC);
 	}

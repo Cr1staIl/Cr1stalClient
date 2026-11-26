@@ -34,12 +34,11 @@ void CMapGrid::Render()
 	CScreenRect ScreenRect = Graphics()->GetScreen();
 
 	const int LineDistance = GridLineDistance();
-	const int GridFactor = Factor();
 
 	const int XOffset = GroupRect.m_TopLeft.x / LineDistance;
 	const int YOffset = GroupRect.m_TopLeft.y / LineDistance;
-	const int XGridOffset = XOffset % GridFactor;
-	const int YGridOffset = YOffset % GridFactor;
+	const int XGridOffset = XOffset % Factor();
+	const int YGridOffset = YOffset % Factor();
 
 	const int NumColumns = (int)std::ceil(ScreenRect.Width() / LineDistance) + 1;
 	const int NumRows = (int)std::ceil(ScreenRect.Height() / LineDistance) + 1;
@@ -47,13 +46,13 @@ void CMapGrid::Render()
 	Graphics()->TextureClear();
 
 	IGraphics::CLineItemBatch LineItemBatch;
-	if(GridFactor > 1)
+	if(Factor() > 1)
 	{
 		Graphics()->LinesBatchBegin(&LineItemBatch);
 		Graphics()->SetColor(1.0f, 1.0f, 1.0f, 0.15f);
 		for(int y = 0; y < NumRows; y++)
 		{
-			if((y + YGridOffset) % GridFactor == 0)
+			if((y + YGridOffset) % Factor() == 0)
 			{
 				continue;
 			}
@@ -63,7 +62,7 @@ void CMapGrid::Render()
 		}
 		for(int x = 0; x < NumColumns; x++)
 		{
-			if((x + XGridOffset) % GridFactor == 0)
+			if((x + XGridOffset) % Factor() == 0)
 			{
 				continue;
 			}
@@ -78,7 +77,7 @@ void CMapGrid::Render()
 	Graphics()->SetColor(1.0f, 0.3f, 0.3f, 0.3f);
 	for(int y = 0; y < NumRows; y++)
 	{
-		if((y + YGridOffset) % GridFactor != 0)
+		if((y + YGridOffset) % Factor() != 0)
 		{
 			continue;
 		}
@@ -88,7 +87,7 @@ void CMapGrid::Render()
 	}
 	for(int x = 0; x < NumColumns; x++)
 	{
-		if((x + XGridOffset) % GridFactor != 0)
+		if((x + XGridOffset) % Factor() != 0)
 		{
 			continue;
 		}

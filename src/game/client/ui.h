@@ -4,23 +4,19 @@
 #define GAME_CLIENT_UI_H
 
 #include "lineinput.h"
-#include "tooltips.h"
 #include "ui_rect.h"
 
 #include <engine/input.h>
 #include <engine/textrender.h>
 
 #include <chrono>
-#include <memory>
 #include <string>
-#include <unordered_map>
 #include <vector>
 
 class CScrollRegion;
 class IClient;
 class IGraphics;
 class IKernel;
-class CTooltip;
 
 enum class EEditState
 {
@@ -186,6 +182,10 @@ public:
 
 		ColorRGBA m_QuadColor;
 
+		// bestclient
+		int m_GradientPhaseBucket = -1;
+		// bestclient
+
 		void Reset();
 		void Draw(const CUIRect *pRect, ColorRGBA Color, int Corners, float Rounding);
 	};
@@ -220,7 +220,6 @@ struct SLabelProperties
 	bool m_EnableWidthCheck = true;
 	float m_MinimumFontSize = 5.0f;
 	std::vector<STextColorSplit> m_vColorSplits;
-	void *m_pTooltipId = nullptr;
 
 	void SetColor(const ColorRGBA &Color);
 };
@@ -303,6 +302,7 @@ struct SPopupMenuProperties
 	int m_Corners = IGraphics::CORNER_ALL;
 	ColorRGBA m_BorderColor = ColorRGBA(0.5f, 0.5f, 0.5f, 0.75f);
 	ColorRGBA m_BackgroundColor = ColorRGBA(0.0f, 0.0f, 0.0f, 0.75f);
+	bool m_Draggable = false; // bestclient
 };
 
 /**
@@ -322,7 +322,9 @@ class CCachedText
 	int m_CursorFlags = 0;
 	STextBoundingBox m_BoundingBox = {0.0f, 0.0f, 0.0f, 0.0f};
 	float m_MaxCharacterHeight = 0.0f;
-	float m_AlignedFontSize = 0.0f;
+	// bestclient
+	bool m_Colored = false;
+	// bestclient
 
 public:
 	CCachedText() = default;
@@ -331,24 +333,18 @@ public:
 	CCachedText &operator=(const CCachedText &) = delete;
 
 	void Update(ITextRender *pTextRender, const char *pText, float FontSize, float LineWidth = -1.0f, int CursorFlags = TEXTFLAG_RENDER);
+	// bestclient
+	void UpdateColored(ITextRender *pTextRender, const char *pText, float FontSize, const std::vector<STextColorSplit> &vColorSplits, float LineWidth = -1.0f, int CursorFlags = TEXTFLAG_RENDER);
+	// bestclient
 	void Render(ITextRender *pTextRender, vec2 Pos, ColorRGBA Color) const;
 	void Reset(ITextRender *pTextRender);
 
 	float Width() const { return m_BoundingBox.m_W; }
 	float MaxCharacterHeight() const { return m_MaxCharacterHeight; }
-	float AlignedFontSize() const { return m_AlignedFontSize; }
 };
 
 class CUi
 {
-	struct SHoverAnim
-	{
-		float m_Value = 0.0f;
-		int64_t m_LastUpdate = 0;
-	};
-	std::unordered_map<const void *, SHoverAnim> m_HoverAnims;
-	int64_t m_AnimNow = 0;
-
 public:
 	/**
 	 * These enum values are returned by popup menu functions to specify the behavior.
@@ -382,6 +378,11 @@ public:
 	 * @return Value from the @link EPopupMenuFunctionResult @endlink enum.
 	 */
 	typedef EPopupMenuFunctionResult (*FPopupMenuFunction)(void *pContext, CUIRect View, bool Active);
+
+	/**
+	 * Callback that is called when one or more popups are closed.
+	 */
+	typedef std::function<void()> FPopupMenuClosedCallback;
 
 	/**
 	 * Represents the aggregated state of current touch events to control a user interface.
@@ -444,7 +445,6 @@ private:
 	vec2 m_UpdatedMouseDelta = vec2(0.0f, 0.0f); // in window screen space
 	vec2 m_MousePos = vec2(0.0f, 0.0f); // in gui space
 	vec2 m_MouseDelta = vec2(0.0f, 0.0f); // in gui space
-	float m_ScreenScale = 1.0f; // C-Client: temporary scale of one part (scoreboard, wheel)
 	unsigned m_UpdatedMouseButtons = 0;
 	unsigned m_MouseButtons = 0;
 	unsigned m_LastMouseButtons = 0;
@@ -471,6 +471,15 @@ private:
 	std::function<void()> m_OnBackButtonPressedFunction;
 
 	CUIRect m_Screen;
+	// bestclient
+	int m_LastUiScale = -1;
+	int m_LastScreenWidth = 0;
+	int m_LastScreenHeight = 0;
+	float m_LastScreenAspect = 0.0f;
+	bool m_UseGraphicsScreenAspect = true;
+
+	float EffectiveScreenAspect() const;
+	// bestclient
 
 	std::vector<CUIRect> m_vClips;
 	void UpdateClipping();
@@ -479,14 +488,17 @@ private:
 	{
 		static constexpr float POPUP_BORDER = 1.0f;
 		static constexpr float POPUP_MARGIN = 4.0f;
+		static constexpr float POPUP_DRAG_HANDLE_HEIGHT = 10.0f; // bestclient
 
 		const SPopupMenuId *m_pId;
 		SPopupMenuProperties m_Props;
 		CUIRect m_Rect;
 		void *m_pContext;
 		FPopupMenuFunction m_pfnFunc;
+		bool m_Dragging = false; // bestclient
 	};
 	std::vector<SPopupMenu> m_vPopupMenus;
+	FPopupMenuClosedCallback m_pfnPopupMenuClosedCallback = nullptr;
 
 	static CUi::EPopupMenuFunctionResult PopupMessage(void *pContext, CUIRect View, bool Active);
 	static CUi::EPopupMenuFunctionResult PopupConfirm(void *pContext, CUIRect View, bool Active);
@@ -500,7 +512,6 @@ private:
 
 	std::vector<CUIElement *> m_vpOwnUIElements; // ui elements maintained by CUi class
 	std::vector<CUIElement *> m_vpUIElements;
-	std::unique_ptr<CTooltips> m_pTooltips;
 
 public:
 	static const CLinearScrollbarScale ms_LinearScrollbarScale;
@@ -553,30 +564,17 @@ public:
 	void DebugRender(float X, float Y);
 
 	vec2 MousePos() const { return m_MousePos; }
+	// bestclient
+	void SetMousePos(vec2 Pos) { m_MousePos = Pos; }
+	// bestclient
 	float MouseX() const { return m_MousePos.x; }
 	float MouseY() const { return m_MousePos.y; }
 	vec2 MouseDelta() const { return m_MouseDelta; }
-	// C-Client: draw the next things bigger or smaller (Scale < 1 is smaller), the mouse stays right
-	void SetScreenScale(float Scale)
-	{
-		const float Factor = m_ScreenScale / Scale;
-		m_MousePos *= Factor;
-		m_MouseDelta *= Factor;
-		m_ScreenScale = Scale;
-	}
-	class CScreenScaleGuard
-	{
-		CUi *m_pUi;
-
-	public:
-		CScreenScaleGuard(CUi *pUi, float Scale) :
-			m_pUi(pUi) { m_pUi->SetScreenScale(Scale); }
-		~CScreenScaleGuard() { m_pUi->SetScreenScale(1.0f); }
-	};
 	float MouseDeltaX() const { return m_MouseDelta.x; }
 	float MouseDeltaY() const { return m_MouseDelta.y; }
 	vec2 UpdatedMousePos() const { return m_UpdatedMousePos; }
 	vec2 UpdatedMouseDelta() const { return m_UpdatedMouseDelta; }
+	int LastMouseButton(int Index) const { return (m_LastMouseButtons >> Index) & 1; } // TClient
 	int MouseButton(int Index) const { return (m_MouseButtons >> Index) & 1; }
 	int MouseButtonClicked(int Index) const { return MouseButton(Index) && !((m_LastMouseButtons >> Index) & 1); }
 	bool CheckMouseLock()
@@ -641,17 +639,13 @@ public:
 	constexpr float ButtonColorMulHot() const { return 1.5f; }
 	constexpr float ButtonColorMulDefault() const { return 1.0f; }
 	float ButtonColorMul(const void *pId);
-	/**
-	 * C-Client: smooth hover value of an element, 0 = not hovered, 1 = hovered.
-	 * Fades in and out over about a fifth of a second.
-	 */
-	float HoverAnim(const void *pId, float Speed = 12.0f);
-	// same, for a state that is not the hover state (a selected tab, an open popup)
-	float StateAnim(const void *pId, bool On, float Speed = 12.0f);
 
 	const CUIRect *Screen();
 	void MapScreen();
 	float PixelSize();
+	// bestclient
+	void SetUseGraphicsScreenAspect(bool UseGraphicsScreenAspect) { m_UseGraphicsScreenAspect = UseGraphicsScreenAspect; }
+	// bestclient
 
 	void ClipEnable(const CUIRect *pRect);
 	void ClipDisable();
@@ -660,6 +654,9 @@ public:
 
 	int DoButtonLogic(const void *pId, int Checked, const CUIRect *pRect, unsigned Flags);
 	int DoDraggableButtonLogic(const void *pId, int Checked, const CUIRect *pRect, bool *pClicked, bool *pAbrupted);
+	// bestclient
+	static constexpr float ms_DoubleClickTime = 0.5f;
+	// bestclient
 	bool DoDoubleClickLogic(const void *pId);
 	EEditState DoPickerLogic(const void *pId, const CUIRect *pRect, float *pX, float *pY);
 	void DoSmoothScrollLogic(float *pScrollOffset, float *pScrollOffsetChange, float ViewPortSize, float TotalSize, bool SmoothClamp = false, float ScrollSpeed = 10.0f) const;
@@ -744,7 +741,9 @@ public:
 		SCROLLBAR_OPTION_DELAYUPDATE = 1 << 3,
 	};
 	float DoScrollbarV(const void *pId, const CUIRect *pRect, float Current);
-	float DoScrollbarH(const void *pId, const CUIRect *pRect, float Current, const ColorRGBA *pColorInner = nullptr);
+	// bestclient
+	float DoScrollbarH(const void *pId, const CUIRect *pRect, float Current, const ColorRGBA *pColorInner = nullptr, const char *pValueText = nullptr);
+	// bestclient
 	bool DoScrollbarOption(const void *pId, int *pOption, const CUIRect *pRect, const char *pStr, int Min, int Max, const IScrollbarScale *pScale = &ms_LinearScrollbarScale, unsigned Flags = 0u, const char *pSuffix = "");
 
 	// progress bar
@@ -767,10 +766,16 @@ public:
 	void DoPopupMenu(const SPopupMenuId *pId, float X, float Y, float Width, float Height, void *pContext, FPopupMenuFunction pfnFunc, const SPopupMenuProperties &Props = {});
 	void RenderPopupMenus();
 	void ClosePopupMenu(const SPopupMenuId *pId, bool IncludeDescendants = false);
+	// bestclient
+	void SetPopupMenuHeight(const SPopupMenuId *pId, float Height);
+	bool GetPopupPosition(const SPopupMenuId *pId, float &X, float &Y) const;
+	void SetPopupPosition(const SPopupMenuId *pId, float X, float Y);
+	// bestclient
 	void ClosePopupMenus();
 	bool IsPopupOpen() const;
 	bool IsPopupOpen(const SPopupMenuId *pId) const;
 	bool IsPopupHovered() const;
+	void SetPopupMenuClosedCallback(FPopupMenuClosedCallback pfnCallback);
 
 	struct SMessagePopupContext : public SPopupMenuId
 	{
@@ -831,6 +836,11 @@ public:
 		float m_Width;
 		float m_AlignmentHeight;
 		bool m_TransparentButtons;
+		// bestclient
+		bool m_OpenUpward = false;
+		// bestclient
+
+		bool m_SpecialFontRenderMode = false; // TClient
 
 		SSelectionPopupContext();
 		void Reset();
@@ -854,6 +864,14 @@ public:
 		ColorHSVA m_HsvaColor;
 		ColorRGBA m_RgbaColor;
 		ColorHSLA m_HslaColor;
+		// bestclient
+		ColorRGBA m_DefaultColor = ColorRGBA(1.0f, 1.0f, 1.0f, 1.0f);
+		bool m_HasDefault = false;
+		const char m_AlphaPickerId = 0;
+		CButtonContainer m_CopyButton;
+		CButtonContainer m_ResetButton;
+		CLineInputBuffered<16> m_HexInput;
+		// bestclient
 		// UI element IDs
 		const char m_HuePickerId = 0;
 		const char m_ColorPickerId = 0;
@@ -872,23 +890,9 @@ public:
 		bool m_Init = false;
 	};
 	int DoDropDown(CUIRect *pRect, int CurSelection, const char **pStrs, int Num, SDropDownState &State);
-
-	// tooltips
-	/**
-	 * Adds the tooltip to a cache and renders it when active.
-	 *
-	 * On the first call to this function, the data passed is cached, afterwards the calls are used to detect if the tooltip should be activated.
-	 * If multiple tooltips cover the same rect or the rects intersect, then the tooltip that is added later has priority.
-	 *
-	 * @param pId The ID of the tooltip. Usually a reference to some g_Config value.
-	 * @param pNearRect Place the tooltip near this rect.
-	 * @param pText The text to display in the tooltip.
-	 * @param WidthHint The maximum width of the tooltip, or -1.0f for unlimited.
-	 */
-	void DoToolTip(const void *pId, const CUIRect *pNearRect, const char *pText, float WidthHint = -1.0f) const;
-	void DoToolTip(const CTooltip &Tooltip) const;
-	void OnRenderTooltip() const { m_pTooltips->OnRender(); }
-	void OnReset() const { m_pTooltips->OnReset(); }
+	// bestclient
+	int DoDropDown(CUIRect *pRect, int CurSelection, const char **pStrs, int Num, SDropDownState &State, bool OpenUpward);
+	// bestclient
 };
 
 #endif

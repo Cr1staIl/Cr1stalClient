@@ -87,11 +87,6 @@ void SIntConfigVariable::Serialize(char *pOut, size_t Size) const
 	Serialize(pOut, Size, *m_pVariable);
 }
 
-void SIntConfigVariable::SerializeHumanReadable(char *pOut, size_t Size) const
-{
-	Serialize(pOut, Size);
-}
-
 void SIntConfigVariable::SetValue(int Value)
 {
 	if(CheckReadOnly())
@@ -163,12 +158,6 @@ void SColorConfigVariable::Serialize(char *pOut, size_t Size, unsigned Value) co
 void SColorConfigVariable::Serialize(char *pOut, size_t Size) const
 {
 	Serialize(pOut, Size, *m_pVariable);
-}
-
-void SColorConfigVariable::SerializeHumanReadable(char *pOut, size_t Size) const
-{
-	const ColorRGBA Rgba = color_cast<ColorRGBA>(ColorHSLA(*m_pVariable, m_Alpha).UnclampLighting(m_DarkestLighting));
-	str_format(pOut, Size, "%s $%0*X", m_pScriptName, m_Alpha ? 8 : 6, Rgba.PackAlphaLast(m_Alpha));
 }
 
 void SColorConfigVariable::SetValue(unsigned Value)
@@ -248,11 +237,6 @@ void SStringConfigVariable::Serialize(char *pOut, size_t Size) const
 	Serialize(pOut, Size, m_pStr);
 }
 
-void SStringConfigVariable::SerializeHumanReadable(char *pOut, size_t Size) const
-{
-	Serialize(pOut, Size);
-}
-
 void SStringConfigVariable::SetValue(const char *pValue)
 {
 	if(CheckReadOnly())
@@ -277,8 +261,11 @@ CConfigManager::CConfigManager()
 {
 	m_pConsole = nullptr;
 	m_pStorage = nullptr;
-	m_ConfigFile = nullptr;
-	m_Failed = false;
+	for(ConfigDomain ConfigDomain = ConfigDomain::START; ConfigDomain < ConfigDomain::NUM; ++ConfigDomain)
+	{
+		m_aConfigFile[ConfigDomain] = nullptr;
+		m_aFailed[ConfigDomain] = false;
+	}
 }
 
 void CConfigManager::Init()
@@ -286,7 +273,9 @@ void CConfigManager::Init()
 	m_pConsole = Kernel()->RequestInterface<IConsole>();
 	m_pStorage = Kernel()->RequestInterface<IStorage>();
 
-	const auto &&AddVariable = [this](SConfigVariable *pVariable) {
+	ConfigDomain ConfigDomain;
+	const auto &&AddVariable = [this, &ConfigDomain](SConfigVariable *pVariable) {
+		pVariable->m_ConfigDomain = ConfigDomain;
 		m_vpAllVariables.push_back(pVariable);
 		if((pVariable->m_Flags & CFGFLAG_GAME) != 0)
 			m_vpGameVariables.push_back(pVariable);
@@ -296,7 +285,6 @@ void CConfigManager::Init()
 	const auto &&AddIntVariable = [this, AddVariable](const char *pScriptName, int Flags, const char *pDesc, int *pVariable, int Default, int Min, int Max) {
 		dbg_assert(Min == 0 || Max == 0 || Min < Max, "MACRO_CONFIG_INT(%s): minimum (%d) must be less than maximum (%d)", pScriptName, Min, Max);
 		dbg_assert((Min == 0 || Default >= Min) && (Max == 0 || Default <= Max), "MACRO_CONFIG_INT(%s): default (%d) must be in range of minimum (%d) and maximum (%d)", pScriptName, Default, Min, Max);
-
 		char aHelp[512];
 		size_t HelpSize;
 		if(Min == 0 && Max == 0)
@@ -311,43 +299,42 @@ void CConfigManager::Init()
 			m_pConsole, pScriptName, SConfigVariable::VAR_INT, Flags, m_ConfigHeap.StoreString(aHelp), pVariable, Default, Min, Max));
 	};
 
-	const auto &&AddColorVariable = [this, AddVariable](const char *pScriptName, int Flags, const char *pDesc, unsigned *pVariable, unsigned Default) {
-		const bool Alpha = (Flags & CFGFLAG_COLALPHA) != 0;
+#define MACRO_CONFIG_INT(Name, ScriptName, Def, Min, Max, Flags, Desc) \
+	{ \
+		AddIntVariable(#ScriptName, Flags, Desc, &g_Config.m_##Name, Def, Min, Max); \
+	}
 
-		char aHelp[512];
-		const size_t HelpSize = str_format(aHelp, sizeof(aHelp), "%s (default: $%0*X)", pDesc, Alpha ? 8 : 6, color_cast<ColorRGBA>(ColorHSLA(Default, Alpha)).Pack(Alpha));
-		dbg_assert(HelpSize < sizeof(aHelp) - UTF8_BYTE_LENGTH - 1, "MACRO_CONFIG_COL(%s): help text possibly truncated. Increase size of aHelp.", pScriptName);
+#define MACRO_CONFIG_COL(Name, ScriptName, Def, Flags, Desc) \
+	{ \
+		const char *pScriptName = #ScriptName; \
+		const bool Alpha = ((Flags) & CFGFLAG_COLALPHA) != 0; \
+		char aHelp[512]; \
+		const size_t HelpSize = str_format(aHelp, sizeof(aHelp), "%s (default: $%0*X)", Desc, Alpha ? 8 : 6, color_cast<ColorRGBA>(ColorHSLA(Def, Alpha)).Pack(Alpha)); \
+		dbg_assert(HelpSize < sizeof(aHelp) - UTF8_BYTE_LENGTH - 1, "MACRO_CONFIG_COL(%s): help text possibly truncated. Increase size of aHelp.", pScriptName); \
+		AddVariable(m_ConfigHeap.Allocate<SColorConfigVariable>( \
+			m_pConsole, pScriptName, SConfigVariable::VAR_COLOR, Flags, m_ConfigHeap.StoreString(aHelp), &g_Config.m_##Name, Def)); \
+	}
 
-		AddVariable(m_ConfigHeap.Allocate<SColorConfigVariable>(
-			m_pConsole, pScriptName, SConfigVariable::VAR_COLOR, Flags, m_ConfigHeap.StoreString(aHelp), pVariable, Default));
-	};
-
-	const auto &&AddStringVariable = [this, AddVariable](const char *pScriptName, int Flags, const char *pDesc, char *pVariable, size_t Len, const char *pDefault) {
-		dbg_assert(Len > 0 && Len <= 16 * 1024, "MACRO_CONFIG_STR(%s): length (%" PRIzu ") is invalid.", pScriptName, Len);
-
-		char aHelp[512];
-		const size_t HelpSize = str_format(aHelp, sizeof(aHelp), "%s (default: \"%s\", max length: %" PRIzu ")", pDesc, pDefault, Len - 1);
-		dbg_assert(HelpSize < sizeof(aHelp) - UTF8_BYTE_LENGTH - 1, "MACRO_CONFIG_STR(%s): help text possibly truncated. Increase size of aHelp.", pScriptName);
-
-		char *pOldValue = static_cast<char *>(m_ConfigHeap.Allocate(Len));
-
-		AddVariable(m_ConfigHeap.Allocate<SStringConfigVariable>(
-			m_pConsole, pScriptName, SConfigVariable::VAR_STRING, Flags, m_ConfigHeap.StoreString(aHelp), pVariable, pDefault, Len, pOldValue));
-	};
-
-#define MACRO_CONFIG_INT(Name, ScriptName, Def, Min, Max, Flags, Desc) AddIntVariable(#ScriptName, Flags, Desc, &g_Config.m_##Name, Def, Min, Max);
-#define MACRO_CONFIG_COL(Name, ScriptName, Def, Flags, Desc) AddColorVariable(#ScriptName, Flags, Desc, &g_Config.m_##Name, Def);
-#define MACRO_CONFIG_STR(Name, ScriptName, Len, Def, Flags, Desc) AddStringVariable(#ScriptName, Flags, Desc, g_Config.m_##Name, Len, Def);
-
-#include "config_variables.h"
-
+#define MACRO_CONFIG_STR(Name, ScriptName, Len, Def, Flags, Desc) \
+	{ \
+		const char *pScriptName = #ScriptName; \
+		char aHelp[512]; \
+		const size_t HelpSize = str_format(aHelp, sizeof(aHelp), "%s (default: \"%s\", max length: %d)", Desc, Def, Len - 1); \
+		dbg_assert(HelpSize < sizeof(aHelp) - UTF8_BYTE_LENGTH - 1, "MACRO_CONFIG_STR(%s): help text possibly truncated. Increase size of aHelp.", pScriptName); \
+		char *pOldValue = static_cast<char *>(m_ConfigHeap.Allocate(Len)); \
+		AddVariable(m_ConfigHeap.Allocate<SStringConfigVariable>( \
+			m_pConsole, pScriptName, SConfigVariable::VAR_STRING, Flags, m_ConfigHeap.StoreString(aHelp), g_Config.m_##Name, Def, Len, pOldValue)); \
+	}
+#define SET_CONFIG_DOMAIN(_ConfigDomain) ConfigDomain = _ConfigDomain;
+#include "config_includes.h"
+#undef SET_CONFIG_DOMAIN
 #undef MACRO_CONFIG_INT
 #undef MACRO_CONFIG_COL
 #undef MACRO_CONFIG_STR
 
-	m_pConsole->Register("reset", "s[config]", CFGFLAG_SERVER | CFGFLAG_CLIENT | CFGFLAG_STORE, Con_Reset, this, "Reset a config to its default value");
-	m_pConsole->Register("toggle", "s[config] s[value 1] s[value 2]", CFGFLAG_SERVER | CFGFLAG_CLIENT, Con_Toggle, this, "Toggle config value");
-	m_pConsole->Register("+toggle", "s[config] s[value 1] s[value 2]", CFGFLAG_CLIENT, Con_ToggleStroke, this, "Toggle config value via keypress");
+	m_pConsole->Register("reset", "s[config-name]", CFGFLAG_SERVER | CFGFLAG_CLIENT | CFGFLAG_STORE, Con_Reset, this, "Reset a config to its default value");
+	m_pConsole->Register("toggle", "s[config-option] s[value 1] s[value 2]", CFGFLAG_SERVER | CFGFLAG_CLIENT, Con_Toggle, this, "Toggle config value");
+	m_pConsole->Register("+toggle", "s[config-option] s[value 1] s[value 2]", CFGFLAG_CLIENT, Con_ToggleStroke, this, "Toggle config value via keypress");
 }
 
 void CConfigManager::Reset(const char *pScriptName)
@@ -361,7 +348,7 @@ void CConfigManager::Reset(const char *pScriptName)
 		}
 	}
 
-	log_error("config", "Invalid config variable: '%s'", pScriptName);
+	log_error("config", "Invalid command: '%s'.", pScriptName);
 }
 
 void CConfigManager::ResetGameSettings()
@@ -382,8 +369,7 @@ void CConfigManager::SetReadOnly(const char *pScriptName, bool ReadOnly)
 			return;
 		}
 	}
-
-	dbg_assert_failed("Invalid config variable for SetReadOnly: '%s'", pScriptName);
+	dbg_assert_failed("Invalid command for SetReadOnly: '%s'", pScriptName);
 }
 
 void CConfigManager::SetGameSettingsReadOnly(bool ReadOnly)
@@ -399,83 +385,118 @@ bool CConfigManager::Save()
 	if(!m_pStorage || !g_Config.m_ClSaveSettings)
 		return true;
 
-	char aConfigFileTmp[IO_MAX_PATH_LENGTH];
-	m_ConfigFile = m_pStorage->OpenFile(IStorage::FormatTmpPath(aConfigFileTmp, sizeof(aConfigFileTmp), CONFIG_FILE), IOFLAG_WRITE, IStorage::TYPE_SAVE);
+	bool aFailedError[ConfigDomain::NUM] = {};
+	for(ConfigDomain ConfigDomain = ConfigDomain::START; ConfigDomain < ConfigDomain::NUM; ++ConfigDomain)
+		m_aFailed[ConfigDomain] = false;
 
-	if(!m_ConfigFile)
+	char aaConfigFileTmp[ConfigDomain::NUM][IO_MAX_PATH_LENGTH];
+	for(ConfigDomain ConfigDomain = ConfigDomain::START; ConfigDomain < ConfigDomain::NUM; ++ConfigDomain)
 	{
-		log_error("config", "ERROR: opening %s failed", aConfigFileTmp);
-		return false;
-	}
-
-	m_Failed = false;
-
-	char aLineBuf[2048];
-	for(const SConfigVariable *pVariable : m_vpAllVariables)
-	{
-		if((pVariable->m_Flags & CFGFLAG_SAVE) != 0 && !pVariable->IsDefault())
+		if(s_aConfigDomains[ConfigDomain].m_aConfigPath == nullptr)
 		{
-			pVariable->Serialize(aLineBuf, sizeof(aLineBuf));
-			WriteLine(aLineBuf);
+			m_aConfigFile[ConfigDomain] = nullptr;
+			continue;
+		}
+		m_aConfigFile[ConfigDomain] = m_pStorage->OpenFile(IStorage::FormatTmpPath(
+									   aaConfigFileTmp[ConfigDomain], sizeof(aaConfigFileTmp[ConfigDomain]), s_aConfigDomains[ConfigDomain].m_aConfigPath),
+			IOFLAG_WRITE, IStorage::TYPE_SAVE);
+
+		if(!m_aConfigFile[ConfigDomain])
+		{
+			log_error("config", "ERROR: opening %s failed", aaConfigFileTmp[ConfigDomain]);
+			aFailedError[ConfigDomain] = m_aFailed[ConfigDomain] = true;
 		}
 	}
 
-	for(const auto &Callback : m_vCallbacks)
+	for(ConfigDomain ConfigDomain = ConfigDomain::START; ConfigDomain < ConfigDomain::NUM; ++ConfigDomain)
 	{
-		Callback.m_pfnFunc(this, Callback.m_pUserData);
+		if(!s_aConfigDomains[ConfigDomain].m_HasVars)
+			continue;
+		if(!m_aConfigFile[ConfigDomain])
+			continue;
+		char aLineBuf[2048];
+		for(const SConfigVariable *pVariable : m_vpAllVariables)
+		{
+			if(pVariable->m_ConfigDomain == ConfigDomain && (pVariable->m_Flags & CFGFLAG_SAVE) != 0 && !pVariable->IsDefault())
+			{
+				pVariable->Serialize(aLineBuf, sizeof(aLineBuf));
+				WriteLine(aLineBuf, ConfigDomain);
+			}
+		}
 	}
 
-	for(const char *pCommand : m_vpUnknownCommands)
+	for(ConfigDomain ConfigDomain = ConfigDomain::START; ConfigDomain < ConfigDomain::NUM; ++ConfigDomain)
 	{
-		WriteLine(pCommand);
+		if(m_aFailed[ConfigDomain])
+			continue;
+		if(!m_aConfigFile[ConfigDomain])
+			continue;
+		for(const auto &Callback : m_avCallbacks[ConfigDomain])
+			Callback.m_pfnFunc(this, Callback.m_pUserData);
 	}
 
-	if(m_Failed)
+	if(!m_aFailed[ConfigDomain::DDNET] && m_aConfigFile[ConfigDomain::DDNET])
+		for(const char *pCommand : m_vpUnknownCommands)
+			WriteLine(pCommand);
+
+	for(ConfigDomain ConfigDomain = ConfigDomain::START; ConfigDomain < ConfigDomain::NUM; ++ConfigDomain)
 	{
-		log_error("config", "ERROR: writing to %s failed", aConfigFileTmp);
+		if(!m_aConfigFile[ConfigDomain])
+			continue;
+		if(m_aFailed[ConfigDomain])
+		{
+			if(!aFailedError[ConfigDomain])
+			{
+				log_error("config", "ERROR: writing to %s failed", aaConfigFileTmp[ConfigDomain]);
+				aFailedError[ConfigDomain] = true;
+			}
+		}
+		else
+		{
+			if(io_sync(m_aConfigFile[ConfigDomain]) != 0)
+			{
+				log_error("config", "ERROR: synchronizing %s failed", aaConfigFileTmp[ConfigDomain]);
+				aFailedError[ConfigDomain] = m_aFailed[ConfigDomain] = true;
+			}
+			else if(io_close(m_aConfigFile[ConfigDomain]) != 0)
+			{
+				log_error("config", "ERROR: closing %s failed", aaConfigFileTmp[ConfigDomain]);
+				aFailedError[ConfigDomain] = m_aFailed[ConfigDomain] = true;
+			}
+			else if(!m_pStorage->RenameFile(aaConfigFileTmp[ConfigDomain], s_aConfigDomains[ConfigDomain].m_aConfigPath, IStorage::TYPE_SAVE))
+			{
+				log_error("config", "ERROR: renaming %s to %s failed", aaConfigFileTmp[ConfigDomain], s_aConfigDomains[ConfigDomain].m_aConfigPath);
+				aFailedError[ConfigDomain] = m_aFailed[ConfigDomain] = true;
+			}
+			else
+			{
+				log_info("config", "saved to %s", s_aConfigDomains[ConfigDomain].m_aConfigPath);
+			}
+		}
 	}
 
-	if(io_sync(m_ConfigFile) != 0)
-	{
-		m_Failed = true;
-		log_error("config", "ERROR: synchronizing %s failed", aConfigFileTmp);
-	}
+	for(ConfigDomain ConfigDomain = ConfigDomain::START; ConfigDomain < ConfigDomain::NUM; ++ConfigDomain)
+		m_aConfigFile[ConfigDomain] = nullptr;
 
-	if(io_close(m_ConfigFile) != 0)
-	{
-		m_Failed = true;
-		log_error("config", "ERROR: closing %s failed", aConfigFileTmp);
-	}
+	for(ConfigDomain ConfigDomain = ConfigDomain::START; ConfigDomain < ConfigDomain::NUM; ++ConfigDomain)
+		if(m_aFailed[ConfigDomain])
+			return false;
 
-	m_ConfigFile = nullptr;
-
-	if(m_Failed)
-	{
-		return false;
-	}
-
-	if(!m_pStorage->RenameFile(aConfigFileTmp, CONFIG_FILE, IStorage::TYPE_SAVE))
-	{
-		log_error("config", "ERROR: renaming %s to " CONFIG_FILE " failed", aConfigFileTmp);
-		return false;
-	}
-
-	log_info("config", "saved to " CONFIG_FILE);
 	return true;
 }
 
-void CConfigManager::RegisterCallback(SAVECALLBACKFUNC pfnFunc, void *pUserData)
+void CConfigManager::RegisterCallback(SAVECALLBACKFUNC pfnFunc, void *pUserData, ConfigDomain ConfigDomain)
 {
-	m_vCallbacks.emplace_back(pfnFunc, pUserData);
+	m_avCallbacks[ConfigDomain].emplace_back(pfnFunc, pUserData);
 }
 
-void CConfigManager::WriteLine(const char *pLine)
+void CConfigManager::WriteLine(const char *pLine, ConfigDomain ConfigDomain)
 {
-	if(!m_ConfigFile ||
-		io_write(m_ConfigFile, pLine, str_length(pLine)) != static_cast<unsigned>(str_length(pLine)) ||
-		!io_write_newline(m_ConfigFile))
+	if(!m_aConfigFile[ConfigDomain] ||
+		io_write(m_aConfigFile[ConfigDomain], pLine, str_length(pLine)) != static_cast<unsigned>(str_length(pLine)) ||
+		!io_write_newline(m_aConfigFile[ConfigDomain]))
 	{
-		m_Failed = true;
+		m_aFailed[ConfigDomain] = true;
 	}
 }
 
@@ -483,6 +504,14 @@ void CConfigManager::StoreUnknownCommand(const char *pCommand)
 {
 	m_vpUnknownCommands.push_back(m_ConfigHeap.StoreString(pCommand));
 }
+
+// bestclient
+void CConfigManager::VisitVariables(void (*pfnCallback)(SConfigVariable *pVariable, void *pUserData), void *pUserData)
+{
+	for(SConfigVariable *pVariable : m_vpAllVariables)
+		pfnCallback(pVariable, pUserData);
+}
+// bestclient
 
 void CConfigManager::PossibleConfigVariables(const char *pStr, int FlagMask, POSSIBLECFGFUNC pfnCallback, void *pUserData)
 {
@@ -496,16 +525,6 @@ void CConfigManager::PossibleConfigVariables(const char *pStr, int FlagMask, POS
 			}
 		}
 	}
-}
-
-const SConfigVariable *CConfigManager::FindVariable(const char *pScriptName) const
-{
-	for(const auto *pVariable : m_vpAllVariables)
-	{
-		if(str_comp(pVariable->m_pScriptName, pScriptName) == 0)
-			return pVariable;
-	}
-	return nullptr;
 }
 
 void CConfigManager::Con_Reset(IConsole::IResult *pResult, void *pUserData)
@@ -549,7 +568,7 @@ void CConfigManager::Con_Toggle(IConsole::IResult *pResult, void *pUserData)
 		return;
 	}
 
-	log_error("config", "Invalid config variable: '%s'", pScriptName);
+	log_error("config", "Invalid command: '%s'.", pScriptName);
 }
 
 void CConfigManager::Con_ToggleStroke(IConsole::IResult *pResult, void *pUserData)
@@ -572,7 +591,7 @@ void CConfigManager::Con_ToggleStroke(IConsole::IResult *pResult, void *pUserDat
 		return;
 	}
 
-	log_error("config", "Invalid config variable: '%s'", pScriptName);
+	log_error("config", "Invalid command: '%s'.", pScriptName);
 }
 
 IConfigManager *CreateConfigManager() { return new CConfigManager; }

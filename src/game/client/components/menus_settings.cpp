@@ -8,16 +8,21 @@
 
 #include <engine/graphics.h>
 #include <engine/shared/config.h>
+// bestclient
+#include <engine/updater.h>
+#include <SDL.h>
+// bestclient
 
-#include <game/client/components/cclient.h>
-#include <game/client/components/cclient_style.h>
 #include <game/client/components/menu_background.h>
 #include <game/client/gameclient.h>
 #include <game/client/ui.h>
+#include <game/client/ui_listbox.h> // bestclient
+// bestclient
+#include <game/client/components/bestclient/ui_theme/settings_nav.h>
+#include <game/client/components/bestclient/ui_theme/style.h>
+#include <game/client/components/bestclient/settings_search.h>
+// bestclient
 #include <game/localization.h>
-
-#include <algorithm>
-#include <cmath>
 
 void CMenus::SetNeedSendInfo()
 {
@@ -27,242 +32,191 @@ void CMenus::SetNeedSendInfo()
 		m_NeedSendinfo = true;
 }
 
+CUi::EPopupMenuFunctionResult CMenus::PopupSettingsCountrySelection(void *pContext, CUIRect View, bool Active) // bestclient
+{
+	SPopupSettingsCountrySelectionContext *pPopupContext = static_cast<SPopupSettingsCountrySelectionContext *>(pContext);
+	CMenus *pMenus = pPopupContext->m_pMenus;
+
+	static CListBox s_ListBox;
+	s_ListBox.SetActive(Active);
+	s_ListBox.DoStart(50.0f, pMenus->GameClient()->m_CountryFlags.Num(), 8, 1, -1, &View, false);
+
+	if(pPopupContext->m_New)
+	{
+		pPopupContext->m_New = false;
+		s_ListBox.ScrollToSelected();
+	}
+
+	for(size_t i = 0; i < pMenus->GameClient()->m_CountryFlags.Num(); ++i)
+	{
+		const CCountryFlags::CCountryFlag &Entry = pMenus->GameClient()->m_CountryFlags.GetByIndex(i);
+		const CListboxItem Item = s_ListBox.DoNextItem(&Entry, Entry.m_CountryCode == pPopupContext->m_Selection);
+		if(!Item.m_Visible)
+			continue;
+
+		CUIRect FlagRect, Label;
+		Item.m_Rect.Margin(5.0f, &FlagRect);
+		FlagRect.HSplitBottom(12.0f, &FlagRect, &Label);
+		Label.HSplitTop(2.0f, nullptr, &Label);
+		const float OldWidth = FlagRect.w;
+		FlagRect.w = FlagRect.h * 2.0f;
+		FlagRect.x += (OldWidth - FlagRect.w) / 2.0f;
+		pMenus->GameClient()->m_CountryFlags.Render(Entry.m_CountryCode, ColorRGBA(1.0f, 1.0f, 1.0f, 1.0f), FlagRect.x, FlagRect.y, FlagRect.w, FlagRect.h);
+		pMenus->Ui()->DoLabel(&Label, Entry.m_aCountryCodeString, 10.0f, TEXTALIGN_MC);
+	}
+
+	const int NewSelected = s_ListBox.DoEnd();
+	if(NewSelected >= 0 && (size_t)NewSelected < pMenus->GameClient()->m_CountryFlags.Num())
+		pPopupContext->m_Selection = pMenus->GameClient()->m_CountryFlags.GetByIndex(NewSelected).m_CountryCode;
+	if(s_ListBox.WasItemSelected() || s_ListBox.WasItemActivated())
+	{
+		if(pPopupContext->m_pCountry != nullptr && NewSelected >= 0 && (size_t)NewSelected < pMenus->GameClient()->m_CountryFlags.Num())
+		{
+			*pPopupContext->m_pCountry = pPopupContext->m_Selection;
+			pMenus->SetNeedSendInfo();
+		}
+		return CUi::POPUP_CLOSE_CURRENT;
+	}
+
+	return CUi::POPUP_KEEP_OPEN;
+} // bestclient
+
 void CMenus::RenderSettings(CUIRect MainView)
 {
-	// C-Client design: dark panel, header with the client icon on the left and the
-	// pages as pills on the top right
-	CUIRect Header, RestartBar;
-	MainView.Draw(CCStyle::PANEL, IGraphics::CORNER_B, 14.0f);
-	MainView.Margin(16.0f, &MainView);
-	MainView.HSplitTop(28.0f, &Header, &MainView);
-	MainView.HSplitTop(14.0f, nullptr, &MainView);
+	// bestclient
+	if(m_AssetsEditorState.m_Open)
+		SDL_ShowCursor(SDL_ENABLE);
+	if(m_AssetsEditorState.m_Open && m_AssetsEditorState.m_ExploreSide >= 0 && !Ui()->IsPopupOpen() && Ui()->ConsumeHotkey(CUi::HOTKEY_ESCAPE))
+		m_AssetsEditorState.m_ExploreSide = -1;
+	if(m_AssetsEditorState.m_Open && m_AssetsEditorState.m_ExploreSide < 0 && g_Config.m_UiSettingsPage == SETTINGS_ASSETS)
+	{
+		RenderAssetsEditorScreen(*Ui()->Screen());
+		return;
+	}
+	// bestclient
 
-	const bool NeedRestart = m_NeedRestartGraphics || m_NeedRestartSound || m_NeedRestartUpdate;
+	// render background
+	CUIRect Button, TabBar, RestartBar;
+	// bestclient
+	const float TabBarWidth = 120.0f;
+	const bool NavOnLeft = BestClientUiTheme::IsSettingsNavOnLeft();
+	if(NavOnLeft)
+		MainView.VSplitLeft(TabBarWidth, &TabBar, &MainView);
+	else
+		MainView.VSplitRight(TabBarWidth, &MainView, &TabBar);
+	BestClientUiTheme::DrawUiMainPanel(&MainView, ms_ColorTabbarActive, false, IGraphics::CORNER_B, 10.0f);
+	// bestclient
+	MainView.Margin(20.0f, &MainView);
+
+	const bool NeedRestart = m_NeedRestartGraphics || m_NeedRestartSound || m_NeedRestartUpdate || m_NeedRestartDiscord; // bestclient
 	if(NeedRestart)
 	{
 		MainView.HSplitBottom(20.0f, &MainView, &RestartBar);
 		MainView.HSplitBottom(10.0f, &MainView, nullptr);
 	}
 
-	const char *apTabs[SETTINGS_LENGTH] = {
-		Localize("Language"),
-		Localize("General"),
-		Localize("Player"),
-		Client()->IsSixup() ? "Tee 0.7" : Localize("Tee"),
-		Localize("Appearance"),
-		Localize("Controls"),
-		Localize("Graphics"),
-		Localize("Sound"),
-		Localize("DDNet"),
-		"C-Client",
-		Localize("Assets"),
-		Localize("Credits")};
-	static CButtonContainer s_aTabButtons[SETTINGS_LENGTH];
+	if(g_Config.m_UiSettingsPage == SETTINGS_LANGUAGE || g_Config.m_UiSettingsPage == SETTINGS_PLAYER) // bestclient
+		g_Config.m_UiSettingsPage = g_Config.m_UiSettingsPage == SETTINGS_LANGUAGE ? SETTINGS_GENERAL : SETTINGS_TEE; // bestclient
 
+	TabBar.HSplitTop(50.0f, &Button, &TabBar);
+	// bestclient
+	BestClientUiTheme::DrawUiMainPanel(&Button, ms_ColorTabbarActive, false, NavOnLeft ? IGraphics::CORNER_BL : IGraphics::CORNER_BR, 10.0f);
+	const bool ExploreLockCorner = m_AssetsEditorState.m_Open && m_AssetsEditorState.m_ExploreSide >= 0;
+	if(!ExploreLockCorner)
 	{
-		// icon and name
-		CUIRect Icon, Title;
-		Header.VSplitLeft(26.0f, &Icon, &Title);
-		Icon.HMargin((Icon.h - 26.0f) / 2.0f, &Icon);
-		Graphics()->TextureSet(GameClient()->m_CClient.IconTexture());
-		Graphics()->QuadsBegin();
-		Graphics()->SetColor(1.0f, 1.0f, 1.0f, 1.0f);
-		IGraphics::CQuadItem IconQuad(Icon.x, Icon.y, Icon.w, Icon.h);
-		Graphics()->QuadsDrawTL(&IconQuad, 1);
-		Graphics()->QuadsEnd();
+		BestClientSettingsSearch::Update(Client()->RenderFrameTime());
+		BestClientSettingsSearch::RenderCornerButton(this, Ui(), GameClient(), Input(), Button);
+	}
+	// bestclient
 
-		const float TitleSize = 16.0f;
-		const char *pFirst = "Cr\xe2\x99\xb1stal ";
-		TextRender()->SetFontPreset(EFontPreset::TITLE_FONT);
-		const float FirstW = TextRender()->TextWidth(TitleSize, pFirst);
-		const float TitleW = FirstW + TextRender()->TextWidth(TitleSize, "Client");
-		const float TextX = Title.x + 9.0f;
-		const float TextY = Title.y + (Title.h - TitleSize) / 2.0f - 1.0f;
-		TextRender()->TextOutlineColor(0.0f, 0.0f, 0.0f, 0.0f); // no dark edge around the glow
-		CCStyle::NeonGlow([&](vec2 Offset, ColorRGBA Color) {
-			TextRender()->TextColor(Color);
-			TextRender()->Text(TextX + Offset.x, TextY + Offset.y, TitleSize, pFirst);
-			TextRender()->Text(TextX + FirstW + Offset.x, TextY + Offset.y, TitleSize, "Client");
-		},
-			ColorRGBA(1.0f, 0.12f, 0.3f, 1.0f), CCStyle::NeonPulse(Client()->GlobalTime()), 1.1f);
-		TextRender()->TextOutlineColor(TextRender()->DefaultTextOutlineColor());
-		TextRender()->TextColor(CCStyle::TEXT);
-		TextRender()->Text(TextX, TextY, TitleSize, pFirst);
-		TextRender()->TextColor(CCStyle::ACCENT_TEXT);
-		TextRender()->Text(TextX + FirstW, TextY, TitleSize, "Client");
-		TextRender()->TextColor(TextRender()->DefaultTextColor());
-		TextRender()->SetFontPreset(EFontPreset::DEFAULT_FONT);
-		Title.VSplitLeft(TitleW + 24.0f, nullptr, &Title);
-
-		// pills, as wide as their text; smaller text if they don't fit
-		float FontSize = 11.0f;
-		float PadX = 9.0f;
-		float aWidths[SETTINGS_LENGTH];
-		float Total = 0.0f;
-		for(int Try = 0; Try < 3; Try++)
-		{
-			Total = 6.0f;
-			for(int i = 0; i < SETTINGS_LENGTH; i++)
-			{
-				aWidths[i] = TextRender()->TextWidth(FontSize, apTabs[i]) + PadX * 2.0f;
-				Total += aWidths[i];
-			}
-			if(Total <= Title.w)
-				break;
-			FontSize -= 1.0f;
-			PadX -= 2.0f;
-		}
-		if(Total > Title.w)
-		{
-			// still too wide: equal parts
-			for(float &Width : aWidths)
-				Width = (Title.w - 6.0f) / (float)SETTINGS_LENGTH;
-			Total = Title.w;
-		}
-
-		CUIRect Nav;
-		Title.VSplitRight(Total, nullptr, &Nav);
-		Nav.Draw(ColorRGBA(1.0f, 1.0f, 1.0f, 0.045f), IGraphics::CORNER_ALL, Nav.h / 2.0f);
-		Nav.Margin(3.0f, &Nav);
-
-		// where every pill is
-		CUIRect aPills[SETTINGS_LENGTH];
-		CUIRect Rest = Nav;
-		for(int i = 0; i < SETTINGS_LENGTH; i++)
-			Rest.VSplitLeft(aWidths[i], &aPills[i], &Rest);
-
-		// the red highlight slides smoothly to the chosen page
-		static float s_HighlightX = -1.0f;
-		static float s_HighlightW = 0.0f;
-		const CUIRect &Target = aPills[std::clamp(g_Config.m_UiSettingsPage, 0, SETTINGS_LENGTH - 1)];
-		const float Follow = 1.0f - std::exp(-14.0f * std::min(Client()->RenderFrameTime(), 0.1f));
-		if(s_HighlightX < 0.0f || absolute(s_HighlightX - Target.x) > Nav.w)
-		{
-			s_HighlightX = Target.x;
-			s_HighlightW = Target.w;
-		}
-		s_HighlightX += (Target.x - s_HighlightX) * Follow;
-		s_HighlightW += (Target.w - s_HighlightW) * Follow;
-
-		for(int i = 0; i < SETTINGS_LENGTH; i++)
-		{
-			const float HoverA = Ui()->HoverAnim(&s_aTabButtons[i]);
-			if(HoverA > 0.01f && g_Config.m_UiSettingsPage != i)
-				aPills[i].Draw(CCStyle::HOVER.WithMultipliedAlpha(HoverA), IGraphics::CORNER_ALL, aPills[i].h / 2.0f);
-		}
-		CUIRect Highlight = Target;
-		Highlight.x = s_HighlightX;
-		Highlight.w = s_HighlightW;
-		Highlight.Draw(CCStyle::ACCENT, IGraphics::CORNER_ALL, Highlight.h / 2.0f);
-
-		for(int i = 0; i < SETTINGS_LENGTH; i++)
-		{
-			// text turns white while the highlight is under it
-			const float Overlap = std::clamp((std::min(aPills[i].x + aPills[i].w, Highlight.x + Highlight.w) - std::max(aPills[i].x, Highlight.x)) / std::max(aPills[i].w, 1.0f), 0.0f, 1.0f);
-			SLabelProperties Props;
-			Props.SetColor(CCStyle::Mix(CCStyle::Mix(CCStyle::TEXT_DIM, CCStyle::TEXT, Ui()->HoverAnim(&s_aTabButtons[i])), ColorRGBA(1.0f, 1.0f, 1.0f, 1.0f), Overlap));
-			Ui()->DoLabel(&aPills[i], apTabs[i], FontSize, TEXTALIGN_MC, Props);
-			if(Ui()->DoButtonLogic(&s_aTabButtons[i], 0, &aPills[i], BUTTONFLAG_LEFT))
-				g_Config.m_UiSettingsPage = i;
-		}
-	}
-
-	if(g_Config.m_UiSettingsPage == SETTINGS_LANGUAGE)
+	// bestclient
+	if(BestClientUiTheme::IsNewTabOption())
 	{
-		GameClient()->m_MenuBackground.ChangePosition(CMenuBackground::POS_SETTINGS_LANGUAGE);
-		RenderLanguageSettings(MainView);
-	}
-	else if(g_Config.m_UiSettingsPage == SETTINGS_GENERAL)
-	{
-		GameClient()->m_MenuBackground.ChangePosition(CMenuBackground::POS_SETTINGS_GENERAL);
-		RenderSettingsGeneral(MainView);
-	}
-	else if(g_Config.m_UiSettingsPage == SETTINGS_PLAYER)
-	{
-		GameClient()->m_MenuBackground.ChangePosition(CMenuBackground::POS_SETTINGS_PLAYER);
-		RenderSettingsPlayer(MainView);
-	}
-	else if(g_Config.m_UiSettingsPage == SETTINGS_TEE)
-	{
-		GameClient()->m_MenuBackground.ChangePosition(CMenuBackground::POS_SETTINGS_TEE);
-		if(Client()->IsSixup())
-			RenderSettingsTee7(MainView);
-		else
-			RenderSettingsTee(MainView);
-	}
-	else if(g_Config.m_UiSettingsPage == SETTINGS_APPEARANCE)
-	{
-		GameClient()->m_MenuBackground.ChangePosition(CMenuBackground::POS_SETTINGS_APPEARANCE);
-		RenderSettingsAppearance(MainView);
-	}
-	else if(g_Config.m_UiSettingsPage == SETTINGS_CONTROLS)
-	{
-		GameClient()->m_MenuBackground.ChangePosition(CMenuBackground::POS_SETTINGS_CONTROLS);
-		m_MenusSettingsControls.Render(MainView);
-	}
-	else if(g_Config.m_UiSettingsPage == SETTINGS_GRAPHICS)
-	{
-		GameClient()->m_MenuBackground.ChangePosition(CMenuBackground::POS_SETTINGS_GRAPHICS);
-		RenderSettingsGraphics(MainView);
-	}
-	else if(g_Config.m_UiSettingsPage == SETTINGS_SOUND)
-	{
-		GameClient()->m_MenuBackground.ChangePosition(CMenuBackground::POS_SETTINGS_SOUND);
-		RenderSettingsSound(MainView);
-	}
-	else if(g_Config.m_UiSettingsPage == SETTINGS_DDNET)
-	{
-		GameClient()->m_MenuBackground.ChangePosition(CMenuBackground::POS_SETTINGS_DDNET);
-		RenderSettingsDDNet(MainView);
-	}
-	else if(g_Config.m_UiSettingsPage == SETTINGS_CCLIENT)
-	{
-		GameClient()->m_MenuBackground.ChangePosition(CMenuBackground::POS_SETTINGS_DDNET);
-		RenderSettingsCClient(MainView);
-	}
-	else if(g_Config.m_UiSettingsPage == SETTINGS_ASSETS)
-	{
-		GameClient()->m_MenuBackground.ChangePosition(CMenuBackground::POS_SETTINGS_ASSETS);
-		RenderSettingsAssets(MainView);
-	}
-	else if(g_Config.m_UiSettingsPage == SETTINGS_CREDITS)
-	{
-		GameClient()->m_MenuBackground.ChangePosition(CMenuBackground::POS_SETTINGS_CREDITS);
-		RenderSettingsCredits(MainView);
+		RenderSettingsNavNewStyle(TabBar);
 	}
 	else
 	{
-		dbg_assert_failed("ui_settings_page invalid");
+		// bestclient
+		const char *apTabs[SETTINGS_LENGTH] = {
+			Localize("Language"),
+			Localize("General"),
+			Localize("Player"),
+			Client()->IsSixup() ? "Tee 0.7" : Localize("Tee"),
+			Localize("Appearance"),
+			Localize("Controls"),
+			Localize("Graphics"),
+			Localize("Sound"),
+			Localize("DDNet"),
+			Localize("Assets"),
+			TCLocalize("TClient"), // TClient
+			Localize("BestClient"), // bestclient
+			Localize("Profiles"), // TClient
+			Localize("Configs"), // TClient
+			Localize("Credits")};
+		static CButtonContainer s_aTabButtons[SETTINGS_LENGTH];
+		const int TabCorners = NavOnLeft ? IGraphics::CORNER_L : IGraphics::CORNER_R;
+
+		for(int i = 0; i < SETTINGS_LENGTH; i++)
+		{
+			if(i == SETTINGS_LANGUAGE || i == SETTINGS_PLAYER) // bestclient
+				continue; // bestclient
+			TabBar.HSplitTop(10.0f, nullptr, &TabBar);
+			TabBar.HSplitTop(26.0f, &Button, &TabBar);
+			// bestclient
+			const bool ExploreLock = m_AssetsEditorState.m_Open && m_AssetsEditorState.m_ExploreSide >= 0;
+			const bool AssetsTab = i == SETTINGS_ASSETS;
+			if(DoButton_MenuTab(&s_aTabButtons[i], apTabs[i], g_Config.m_UiSettingsPage == i, &Button, TabCorners, &m_aAnimatorsSettingsTab[i], nullptr, nullptr, nullptr, 10.0f, nullptr, true, IGraphics::CORNER_NONE, -1.0f, ExploreLock && !AssetsTab ? 0.35f : 1.0f) && (!ExploreLock || AssetsTab))
+			// bestclient
+				g_Config.m_UiSettingsPage = i;
+		}
+		// bestclient
 	}
+	// bestclient
+
+	// bestclient
+	if(m_AssetsEditorState.m_Open && m_AssetsEditorState.m_ExploreSide >= 0 && g_Config.m_UiSettingsPage != SETTINGS_ASSETS)
+		m_AssetsEditorState.m_ExploreSide = -1;
+	if(BestClientUiTheme::IsNewTabOption())
+		RenderSettingsContentNewStyle(MainView);
+	else
+		RenderSettingsContentLegacyStyle(MainView);
+	// bestclient
 
 	if(NeedRestart)
 	{
+		// bestclient
 		CUIRect RestartWarning, RestartButton;
-		RestartBar.VSplitRight(125.0f, &RestartWarning, &RestartButton);
-		RestartWarning.VSplitRight(10.0f, &RestartWarning, nullptr);
-		if(m_NeedRestartUpdate)
+#if defined(CONF_AUTOUPDATE)
+		const bool UpdateReady = Updater()->GetCurrentState() == IUpdater::NEED_RESTART;
+#else
+		const bool UpdateReady = false;
+#endif
+		if(UpdateReady)
 		{
-			TextRender()->TextColor(1.0f, 0.4f, 0.4f, 1.0f);
-			Ui()->DoLabel(&RestartWarning, Localize("DDNet Client needs to be restarted to complete update!"), 14.0f, TEXTALIGN_ML);
+			TextRender()->TextColor(0.7f, 1.0f, 0.7f, 1.0f);
+			Ui()->DoLabel(&RestartBar, Localize("BestClient update downloaded! Restart to apply."), 14.0f, TEXTALIGN_ML);
 			TextRender()->TextColor(1.0f, 1.0f, 1.0f, 1.0f);
 		}
 		else
 		{
+			RestartBar.VSplitRight(125.0f, &RestartWarning, &RestartButton);
+			RestartWarning.VSplitRight(10.0f, &RestartWarning, nullptr);
 			Ui()->DoLabel(&RestartWarning, Localize("You must restart the game for all settings to take effect."), 14.0f, TEXTALIGN_ML);
-		}
 
-		static CButtonContainer s_RestartButton;
-		if(DoButton_Menu(&s_RestartButton, Localize("Restart"), 0, &RestartButton))
-		{
-			if(Client()->State() == IClient::STATE_ONLINE || GameClient()->Editor()->HasUnsavedData())
+			static CButtonContainer s_RestartButton;
+			if(DoButton_Menu(&s_RestartButton, Localize("Restart"), 0, &RestartButton))
 			{
-				m_Popup = POPUP_RESTART;
-			}
-			else
-			{
-				Client()->Restart();
+				if(Client()->State() == IClient::STATE_ONLINE || GameClient()->Editor()->HasUnsavedData())
+				{
+					m_Popup = POPUP_RESTART;
+				}
+				else
+				{
+					Client()->Restart();
+				}
 			}
 		}
+		// bestclient
 	}
 }
 

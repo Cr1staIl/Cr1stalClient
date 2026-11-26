@@ -166,6 +166,9 @@ void CCollision::Unload()
 	m_pTune = nullptr;
 	delete[] m_pDoor;
 	m_pDoor = nullptr;
+	// bestclient
+	m_pExtraDoorTiles = nullptr;
+	// bestclient
 }
 
 void CCollision::FillAntibot(CAntibotMapData *pMapData) const
@@ -303,6 +306,14 @@ int CCollision::GetMoveRestrictions(CALLBACK_SWITCHACTIVE pfnSwitchActive, void 
 			{
 				Restrictions |= ::GetMoveRestrictions(d, DoorTile.m_Index, DoorTile.m_Flags);
 			}
+			// bestclient
+			if(m_pExtraDoorTiles)
+			{
+				const CDoorTile &ExtraTile = m_pExtraDoorTiles[ModMapIndex];
+				if(ExtraTile.m_Index && (int)ExtraTile.m_Number <= m_HighestSwitchNumber && pfnSwitchActive(ExtraTile.m_Number, pUser))
+					Restrictions |= ::GetMoveRestrictions(d, ExtraTile.m_Index, ExtraTile.m_Flags);
+			}
+			// bestclient
 		}
 	}
 	return Restrictions;
@@ -532,7 +543,7 @@ void CCollision::MoveBox(vec2 *pInoutPos, vec2 *pInoutVel, vec2 Size, vec2 Elast
 	vec2 Vel = *pInoutVel;
 
 	float Distance = length(Vel);
-	int Max = round_truncate(Distance);
+	int Max = (int)Distance;
 
 	if(Distance > 0.00001f)
 	{
@@ -665,7 +676,9 @@ int CCollision::IsTeleport(int Index) const
 
 int CCollision::IsEvilTeleport(int Index) const
 {
-	if(Index < 0 || !m_pTele)
+	if(Index < 0)
+		return 0;
+	if(!m_pTele)
 		return 0;
 
 	if(m_pTele[Index].m_Type == TILE_TELEINEVIL)
@@ -690,7 +703,10 @@ bool CCollision::IsCheckEvilTeleport(int Index) const
 
 int CCollision::IsTeleCheckpoint(int Index) const
 {
-	if(Index < 0 || !m_pTele)
+	if(Index < 0)
+		return 0;
+
+	if(!m_pTele)
 		return 0;
 
 	if(m_pTele[Index].m_Type == TILE_TELECHECK)
@@ -901,17 +917,10 @@ bool CCollision::TileExistsNext(int Index) const
 	return false;
 }
 
-static int TileIndexFromCoord(float Coord, int Size)
-{
-	if(!(Coord > 0.0f))
-		return 0;
-	return (int)std::min((double)Coord / 32.0, (double)(Size - 1));
-}
-
 int CCollision::GetMapIndex(vec2 Pos) const
 {
-	int Nx = TileIndexFromCoord(Pos.x, m_Width);
-	int Ny = TileIndexFromCoord(Pos.y, m_Height);
+	int Nx = std::clamp((int)Pos.x / 32, 0, m_Width - 1);
+	int Ny = std::clamp((int)Pos.y / 32, 0, m_Height - 1);
 	int Index = Ny * m_Width + Nx;
 
 	if(TileExists(Index))

@@ -224,7 +224,6 @@ int CConsole::ParseArgs(CResult *pResult, const char *pFormat)
 			{
 				if(Command == 'v')
 				{
-					// If the victim argument is optional we default to "me"
 					pResult->AddVictim("me");
 					break;
 				}
@@ -360,12 +359,16 @@ LEVEL IConsole::ToLogLevel(int Level)
 	case IConsole::OUTPUT_LEVEL_DEBUG:
 		return LEVEL_TRACE;
 	}
-	dbg_assert_failed("Invalid log level: %d", Level);
+	dbg_assert(0, "invalid log level");
+	return LEVEL_INFO;
 }
 
 int IConsole::ToLogLevelFilter(int Level)
 {
-	dbg_assert(-3 <= Level && Level <= 2, "Invalid log level filter: %d", Level);
+	if(!(-3 <= Level && Level <= 2))
+	{
+		dbg_assert(0, "invalid log level filter");
+	}
 	return Level + 2;
 }
 
@@ -729,8 +732,12 @@ CConsole::CCommand *CConsole::FindCommand(const char *pName, int FlagMask)
 
 void CConsole::ExecuteLine(const char *pStr, int ClientId, bool InterpretSemicolons)
 {
+	// bestclient
+	m_InstantStrokeDepth++;
 	CConsole::ExecuteLineStroked(1, pStr, ClientId, InterpretSemicolons); // press it
 	CConsole::ExecuteLineStroked(0, pStr, ClientId, InterpretSemicolons); // then release it
+	m_InstantStrokeDepth--;
+	// bestclient
 }
 
 void CConsole::ExecuteLineFlag(const char *pStr, int FlagMask, int ClientId, bool InterpretSemicolons)
@@ -753,10 +760,7 @@ bool CConsole::ExecuteFile(const char *pFilename, int ClientId, bool LogFailure,
 			return false;
 	}
 	if(!m_pStorage)
-	{
-		log_error("console", "Storage is not initialized");
 		return false;
-	}
 
 	// push this one to the stack
 	CExecFile ThisFile;

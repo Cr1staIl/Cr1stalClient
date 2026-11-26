@@ -15,6 +15,7 @@ CMapLayers::CMapLayers(ERenderType Type, bool OnlineOnly)
 	// static parameters for ingame rendering
 	m_Params.m_RenderType = m_Type;
 	m_Params.m_RenderInvalidTiles = false;
+	m_Params.m_TileAndQuadBuffering = true;
 	m_Params.m_RenderTileBorder = true;
 }
 
@@ -44,15 +45,13 @@ void CMapLayers::OnMapLoad()
 
 	m_EnvEvaluator = CEnvelopeState(m_pLayers->Map(), m_OnlineOnly);
 	m_EnvEvaluator.OnInterfacesInit(GameClient());
-	m_MapRenderer.Load(m_Type, m_pLayers, m_pImages, &m_EnvEvaluator, ProgressBarCallback, true);
+	m_MapRenderer.Load(m_Type, m_pLayers, m_pImages, &m_EnvEvaluator, ProgressBarCallback);
 }
 
 void CMapLayers::OnRender()
 {
 	if(m_OnlineOnly && Client()->State() != IClient::STATE_ONLINE && Client()->State() != IClient::STATE_DEMOPLAYBACK)
 		return;
-
-	m_EnvEvaluator.Update();
 
 	// dynamic parameters for ingame rendering
 	m_Params.m_EntityOverlayVal = m_Type == RENDERTYPE_FULL_DESIGN ? 0 : g_Config.m_ClOverlayEntities;
@@ -63,6 +62,14 @@ void CMapLayers::OnRender()
 	m_Params.m_DebugRenderQuadClips = g_Config.m_DbgRenderQuadClips;
 	m_Params.m_DebugRenderClusterClips = g_Config.m_DbgRenderClusterClips;
 	m_Params.m_DebugRenderTileClips = g_Config.m_DbgRenderTileClips;
+
+	// bestclient
+	m_Params.m_FpsFogEnabled = GameClient()->OptimizerFpsFogEnabled();
+	m_Params.m_FpsFogCullMapTiles = GameClient()->m_Optimizer.CullMapTiles();
+	m_Params.m_FpsFogHalfW = GameClient()->m_Optimizer.FogHalfW();
+	m_Params.m_FpsFogHalfH = GameClient()->m_Optimizer.FogHalfH();
+	m_Params.m_DisableMapQuads = GameClient()->m_Optimizer.DisableQuads();
+	// bestclient
 
 	m_MapRenderer.Render(m_Params);
 }

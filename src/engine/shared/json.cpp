@@ -120,7 +120,7 @@ int json_boolean_get(const json_value *pBoolean)
 	return pBoolean->u.boolean != 0;
 }
 
-char EscapeJsonChar(char c)
+static char EscapeJsonChar(char c)
 {
 	switch(c)
 	{

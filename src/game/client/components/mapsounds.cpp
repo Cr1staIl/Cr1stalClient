@@ -208,9 +208,6 @@ void CMapSounds::OnRender()
 		}
 	}
 
-	CEnvelopeState &EnvEvaluator = GameClient()->m_MapLayersBackground.EnvEvaluator();
-	EnvEvaluator.Update();
-
 	const vec2 Center = GameClient()->m_Camera.m_Center;
 	for(const auto &Source : m_vSourceQueue)
 	{
@@ -218,6 +215,7 @@ void CMapSounds::OnRender()
 			continue;
 
 		ColorRGBA Position = ColorRGBA(0.0f, 0.0f, 0.0f, 0.0f);
+		CEnvelopeState &EnvEvaluator = GameClient()->m_MapLayersBackground.EnvEvaluator();
 		EnvEvaluator.EnvelopeEval(Source.m_pSource->m_PosEnvOffset, Source.m_pSource->m_PosEnv, Position, 2);
 
 		float x = fx2f(Source.m_pSource->m_Position.x) + Position.r;

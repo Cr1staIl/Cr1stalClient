@@ -26,6 +26,23 @@
 
 using namespace std::chrono_literals;
 
+// bestclient
+extern void (*BCGradient_ApplyEverythingHook)(CTextCursor *pCursor, const char *pText, int Length);
+// bestclient
+
+// TClient
+static void ReplaceHyphensWithSpaces(char *pStr)
+{
+	if(pStr == nullptr)
+		return;
+	while(*pStr)
+	{
+		if(*pStr == '-')
+			*pStr = ' ';
+		pStr++;
+	}
+}
+
 enum
 {
 	FONT_NAME_SIZE = 128,
@@ -327,7 +344,6 @@ private:
 	// Font faces
 	FT_Face m_DefaultFace = nullptr;
 	FT_Face m_IconFace = nullptr;
-	FT_Face m_TitleFace = nullptr;
 	FT_Face m_VariantFace = nullptr;
 	FT_Face m_SelectedFace = nullptr;
 	std::vector<FT_Face> m_vFallbackFaces;
@@ -352,6 +368,16 @@ private:
 
 			// Second best match: font face with matching family
 			if(!FamilyNameMatch && str_comp(pFamilyName, CurrentFace->family_name) == 0)
+			{
+				FamilyNameMatch = CurrentFace;
+			}
+
+			// TClient
+			// Third best match: match the fucking font name
+			char aBuf[256];
+			str_copy(aBuf, FT_Get_Postscript_Name(CurrentFace));
+			ReplaceHyphensWithSpaces(aBuf);
+			if(!FamilyNameMatch && str_comp(pFamilyName, aBuf) == 0)
 			{
 				FamilyNameMatch = CurrentFace;
 			}
@@ -406,6 +432,10 @@ private:
 
 	FT_UInt GetCharGlyph(int Chr, FT_Face *pFace, bool AllowReplacementCharacter)
 	{
+		// TClient: 0xE0073 is '󠁳', which doesn't get rendered if Noto Emoji is used as fallback font
+		if(Chr == 0xe0073)
+			Chr = REPLACEMENT_CHARACTER;
+
 		for(FT_Face Face : {m_SelectedFace, m_DefaultFace, m_VariantFace})
 		{
 			if(Face && Face->charmap)
@@ -607,6 +637,8 @@ public:
 			delete[] pTextureData;
 		}
 	}
+	// TClient
+	std::vector<FT_Face> *GetFaces() { return &m_vFtFaces; }
 
 	FT_Face DefaultFace() const
 	{
@@ -644,17 +676,6 @@ public:
 		if(!m_IconFace)
 		{
 			log_error("textrender", "The icon font face '%s' could not be found", pFamilyName);
-			return false;
-		}
-		return true;
-	}
-
-	bool SetTitleFaceByName(const char *pFamilyName)
-	{
-		m_TitleFace = GetFaceByName(pFamilyName);
-		if(!m_TitleFace)
-		{
-			log_error("textrender", "The title font face '%s' could not be found", pFamilyName);
 			return false;
 		}
 		return true;
@@ -702,9 +723,6 @@ public:
 			break;
 		case EFontPreset::ICON_FONT:
 			m_SelectedFace = m_IconFace;
-			break;
-		case EFontPreset::TITLE_FONT:
-			m_SelectedFace = m_TitleFace; // falls back to the default font if missing
 			break;
 		}
 	}
@@ -904,6 +922,9 @@ struct STextContainer
 
 	bool m_HasCursor;
 	bool m_ForceCursorRendering;
+	// bestclient
+	bool m_HideCursorQuad;
+	// bestclient
 	bool m_HasSelection;
 
 	bool m_SingleTimeUse;
@@ -929,6 +950,9 @@ struct STextContainer
 
 		m_HasCursor = false;
 		m_ForceCursorRendering = false;
+		// bestclient
+		m_HideCursorQuad = false;
+		// bestclient
 		m_HasSelection = false;
 
 		m_SingleTimeUse = false;
@@ -978,7 +1002,6 @@ class CTextRender : public IEngineTextRender
 	std::vector<void *> m_vpFontData;
 
 	std::vector<SFontLanguageVariant> m_vVariants;
-	char m_aDefaultFaceName[128] = "";
 
 	unsigned m_RenderFlags;
 
@@ -995,6 +1018,10 @@ class CTextRender : public IEngineTextRender
 	SBufferContainerInfo m_DefaultTextContainerInfo;
 
 	std::chrono::nanoseconds m_CursorRenderTime;
+
+	// TClient
+	std::vector<std::string> m_CustomFontFaces;
+	std::vector<std::string> m_DefaultFontFaces;
 
 	int GetFreeTextContainerIndex()
 	{
@@ -1057,25 +1084,25 @@ class CTextRender : public IEngineTextRender
 
 	bool LoadFontCollection(const char *pFontName, const FT_Byte *pFontData, FT_Long FontDataSize)
 	{
-		FT_Face FtFaceCollection;
-		FT_Error CollectionLoadError = FT_New_Memory_Face(m_FTLibrary, pFontData, FontDataSize, -1, &FtFaceCollection);
+		FT_Face FtFace;
+		FT_Error CollectionLoadError = FT_New_Memory_Face(m_FTLibrary, pFontData, FontDataSize, -1, &FtFace);
 		if(CollectionLoadError)
 		{
 			log_error("textrender", "Failed to load font file '%s': %s", pFontName, FT_Error_String(CollectionLoadError));
 			return false;
 		}
 
-		const FT_Long NumFaces = FtFaceCollection->num_faces;
-		FT_Done_Face(FtFaceCollection);
+		const FT_Long NumFaces = FtFace->num_faces;
+		FT_Done_Face(FtFace);
 
 		bool LoadedAny = false;
 		for(FT_Long FaceIndex = 0; FaceIndex < NumFaces; ++FaceIndex)
 		{
-			FT_Face FtFace;
 			FT_Error FaceLoadError = FT_New_Memory_Face(m_FTLibrary, pFontData, FontDataSize, FaceIndex, &FtFace);
 			if(FaceLoadError)
 			{
 				log_error("textrender", "Failed to load font face %ld from font file '%s': %s", FaceIndex, pFontName, FT_Error_String(FaceLoadError));
+				FT_Done_Face(FtFace);
 				continue;
 			}
 
@@ -1191,6 +1218,104 @@ public:
 		m_pStorage = nullptr;
 	}
 
+	// TClient
+	static int LaziestFileCallback(const char *pFilename, int IsDir, int StorageType, void *pUser)
+	{
+		std::vector<std::string> *pVector = static_cast<std::vector<std::string> *>(pUser);
+		if(IsDir)
+			return 0;
+		pVector->emplace_back(pFilename);
+		return 0;
+	}
+	// TClient
+	void CheckDefaultFaces()
+	{
+		for(const auto &CurrentFace : *m_pGlyphMap->GetFaces())
+		{
+			char aBuf[256];
+			str_copy(aBuf, FT_Get_Postscript_Name(CurrentFace));
+			ReplaceHyphensWithSpaces(aBuf);
+			m_DefaultFontFaces.emplace_back(aBuf);
+		}
+	}
+	// TClient
+	void UpdateCustomFontList()
+	{
+		std::vector<std::string> vAllFaces;
+		for(const auto &CurrentFace : *m_pGlyphMap->GetFaces())
+		{
+			char aBuf[256];
+			str_copy(aBuf, FT_Get_Postscript_Name(CurrentFace));
+			ReplaceHyphensWithSpaces(aBuf);
+			vAllFaces.emplace_back(aBuf);
+		}
+
+		m_CustomFontFaces.clear();
+		m_CustomFontFaces.emplace_back("DejaVu Sans");
+		for(const auto &Face : vAllFaces)
+			if(std::find(m_DefaultFontFaces.begin(), m_DefaultFontFaces.end(), Face) == m_DefaultFontFaces.end())
+				m_CustomFontFaces.push_back(Face);
+	}
+	// TClient
+	void LoadCustomFonts()
+	{
+		CheckDefaultFaces();
+		std::vector<std::string> vCustomFonts;
+		Storage()->ListDirectory(IStorage::TYPE_ALL, "tclient/fonts", LaziestFileCallback, &vCustomFonts);
+		std::sort(vCustomFonts.begin(), vCustomFonts.end());
+		for(const std::string &FilePath : vCustomFonts)
+		{
+			char aFontName[IO_MAX_PATH_LENGTH];
+			str_format(aFontName, sizeof(aFontName), "tclient/fonts/%s", FilePath.c_str());
+			void *pFontData;
+			unsigned FontDataSize;
+			if(Storage()->ReadFile(aFontName, IStorage::TYPE_ALL, &pFontData, &FontDataSize))
+			{
+				if(LoadFontCollection(aFontName, static_cast<FT_Byte *>(pFontData), (FT_Long)FontDataSize))
+				{
+					m_vpFontData.push_back(pFontData);
+				}
+				else
+				{
+					free(pFontData);
+				}
+			}
+			else
+			{
+				log_error("textrender", "Failed to open/read font file '%s'", aFontName);
+			}
+		}
+		// bestclient
+		{
+			const char *pBcFontPath = "BestClient/ActayWide-Bold.otf";
+			void *pBcFontData;
+			unsigned BcFontDataSize;
+			if(Storage()->ReadFile(pBcFontPath, IStorage::TYPE_ALL, &pBcFontData, &BcFontDataSize))
+			{
+				if(LoadFontCollection(pBcFontPath, static_cast<FT_Byte *>(pBcFontData), (FT_Long)BcFontDataSize))
+					m_vpFontData.push_back(pBcFontData);
+				else
+					free(pBcFontData);
+			}
+			else
+			{
+				log_error("textrender", "Failed to open/read font file '%s'", pBcFontPath);
+			}
+		}
+		// bestclient
+		UpdateCustomFontList();
+	}
+	// TClient
+	std::vector<std::string> *GetCustomFaces() override
+	{
+		return &m_CustomFontFaces;
+	}
+	// TClient
+	void SetCustomFace(const char *pFace) override
+	{
+		m_pGlyphMap->SetDefaultFaceByName(pFace);
+	}
+
 	bool LoadFonts() override
 	{
 		// read file data into buffer
@@ -1266,7 +1391,6 @@ public:
 		const json_value &DefaultFace = (*pJsonData)["default"];
 		if(DefaultFace.type == json_string)
 		{
-			str_copy(m_aDefaultFaceName, DefaultFace.u.string.ptr);
 			if(!m_pGlyphMap->SetDefaultFaceByName(DefaultFace.u.string.ptr))
 			{
 				Success = false;
@@ -1277,6 +1401,9 @@ public:
 			log_error("textrender", "Font index malformed: 'default' must be a string");
 			Success = false;
 		}
+		// TClient
+		LoadCustomFonts();
+		m_pGlyphMap->AddFallbackFaceByName("DejaVu Sans");
 
 		// extract language variant family names
 		const json_value &Variants = (*pJsonData)["language variants"];
@@ -1344,13 +1471,6 @@ public:
 			Success = false;
 		}
 
-		// optional bold title font
-		const json_value &TitleFace = (*pJsonData)["title"];
-		if(TitleFace.type == json_string)
-		{
-			m_pGlyphMap->SetTitleFaceByName(TitleFace.u.string.ptr);
-		}
-
 		json_value_free(pJsonData);
 		return Success;
 	}
@@ -1358,13 +1478,6 @@ public:
 	void SetFontPreset(EFontPreset FontPreset) override
 	{
 		m_pGlyphMap->SetFontPreset(FontPreset);
-	}
-
-	void SetCustomDefaultFont(const char *pFamilyName) override
-	{
-		const char *pName = pFamilyName != nullptr && pFamilyName[0] != '\0' ? pFamilyName : m_aDefaultFaceName;
-		if(!m_pGlyphMap->SetDefaultFaceByName(pName))
-			m_pGlyphMap->SetDefaultFaceByName(m_aDefaultFaceName);
 	}
 
 	void SetFontLanguageVariant(const char *pLanguageFile) override
@@ -1562,6 +1675,11 @@ public:
 		else
 			Length = std::min(Length, str_length(pText));
 
+		// bestclient
+		if(BCGradient_ApplyEverythingHook && pCursor->m_vColorSplits.empty())
+			BCGradient_ApplyEverythingHook(pCursor, pText, Length);
+		// bestclient
+
 		const char *pCurrent = pText;
 		const char *pEnd = pCurrent + Length;
 		const char *pPrevBatchEnd = nullptr;
@@ -1603,36 +1721,27 @@ public:
 		int SelectionStartChar = -1;
 		int SelectionEndChar = -1;
 
-		const auto &&CheckChar = [&](vec2 CursorPos, float CharX, float CharWidth, float CharY) -> bool {
-			float AlignedCharTop = CharY - pCursor->m_AlignedFontSize;
-			float AlignedCharBottom = CharY + pCursor->m_AlignedLineSpacing;
-			if((RenderFlags & TEXT_RENDER_FLAG_NO_PIXEL_ALIGNMENT) == 0)
-			{
-				AlignedCharTop = round_to_int(AlignedCharTop * FakeToScreen.y) / FakeToScreen.y;
-				AlignedCharBottom = round_to_int(AlignedCharBottom * FakeToScreen.y) / FakeToScreen.y;
-			}
-			return (CharX + CharWidth / 2.0f > CursorPos.x &&
-				       CursorPos.y >= AlignedCharTop &&
-				       CursorPos.y < AlignedCharBottom) ||
-			       (CursorPos.x >= pCursor->m_X &&
-				       CursorPos.y < AlignedCharTop);
-		};
-		const auto &&CheckInsideChar = [&](bool CheckOuter, vec2 CursorPos, float CharX, float CharWidth, float CharY) -> bool {
-			return CheckChar(CursorPos, CharX, CharWidth, CharY) ||
+		const auto &&CheckInsideChar = [&](bool CheckOuter, vec2 CursorPos, float LastCharX, float LastCharWidth, float CharX, float CharWidth, float CharY) -> bool {
+			return (LastCharX - LastCharWidth / 2 <= CursorPos.x &&
+				       CharX + CharWidth / 2 > CursorPos.x &&
+				       CursorPos.y >= CharY - pCursor->m_AlignedFontSize &&
+				       CursorPos.y < CharY + pCursor->m_AlignedLineSpacing) ||
 			       (CheckOuter &&
 				       CursorPos.y <= CharY - pCursor->m_AlignedFontSize);
 		};
-		const auto &&CheckSelectionStart = [&](bool CheckOuter, vec2 CursorPos, int &SelectionChar, bool &SelectionUsedCase, float CharX, float CharWidth, float CharY) {
+		const auto &&CheckSelectionStart = [&](bool CheckOuter, vec2 CursorPos, int &SelectionChar, bool &SelectionUsedCase, float LastCharX, float LastCharWidth, float CharX, float CharWidth, float CharY) {
 			if(!SelectionStarted && !SelectionUsedCase &&
-				CheckInsideChar(CheckOuter, CursorPos, CharX, CharWidth, CharY))
+				CheckInsideChar(CheckOuter, CursorPos, LastCharX, LastCharWidth, CharX, CharWidth, CharY))
 			{
 				SelectionChar = pCursor->m_GlyphCount;
-				SelectionStarted = true;
+				SelectionStarted = !SelectionStarted;
 				SelectionUsedCase = true;
 			}
 		};
 		const auto &&CheckOutsideChar = [&](bool CheckOuter, vec2 CursorPos, float CharX, float CharWidth, float CharY) -> bool {
-			return CheckChar(CursorPos, CharX, CharWidth, CharY) ||
+			return (CharX + CharWidth / 2 > CursorPos.x &&
+				       CursorPos.y >= CharY - pCursor->m_AlignedFontSize &&
+				       CursorPos.y < CharY + pCursor->m_AlignedLineSpacing) ||
 			       (CheckOuter &&
 				       CursorPos.y >= CharY + pCursor->m_AlignedLineSpacing);
 		};
@@ -1641,7 +1750,7 @@ public:
 				CheckOutsideChar(CheckOuter, CursorPos, CharX, CharWidth, CharY))
 			{
 				SelectionChar = pCursor->m_GlyphCount;
-				SelectionStarted = false;
+				SelectionStarted = !SelectionStarted;
 				SelectionUsedCase = true;
 			}
 		};
@@ -1752,9 +1861,6 @@ public:
 					{
 						if(StartNewLine())
 						{
-							// Count the newline as a decoded character, so that m_GlyphCount stays
-							// in sync with the decoded character offsets used for text selection
-							pCursor->m_GlyphCount++;
 							pLastGlyph = nullptr;
 							continue;
 						}
@@ -1926,7 +2032,7 @@ public:
 
 					if(pCursor->m_CursorMode == TEXT_CURSOR_CURSOR_MODE_CALCULATE)
 					{
-						if(pCursor->m_CursorCharacter == -1 && CheckInsideChar(pCursor->m_GlyphCount == 0, pCursor->m_ReleaseMouse, CharX, CharWidth, TmpY))
+						if(pCursor->m_CursorCharacter == -1 && CheckInsideChar(pCursor->m_GlyphCount == 0, pCursor->m_ReleaseMouse, pCursor->m_GlyphCount == 0 ? std::numeric_limits<float>::lowest() : LastCharX, LastCharWidth, CharX, CharWidth, TmpY))
 						{
 							pCursor->m_CursorCharacter = pCursor->m_GlyphCount;
 						}
@@ -1934,9 +2040,15 @@ public:
 
 					if(pCursor->m_CalculateSelectionMode == TEXT_CURSOR_SELECTION_MODE_CALCULATE)
 					{
+						if(pCursor->m_GlyphCount == 0)
+						{
+							CheckSelectionStart(true, pCursor->m_PressMouse, SelectionStartChar, SelectionUsedPress, std::numeric_limits<float>::lowest(), 0, CharX, CharWidth, TmpY);
+							CheckSelectionStart(true, pCursor->m_ReleaseMouse, SelectionEndChar, SelectionUsedRelease, std::numeric_limits<float>::lowest(), 0, CharX, CharWidth, TmpY);
+						}
+
 						// if selection didn't start and the mouse pos is at least on 50% of the right side of the character start
-						CheckSelectionStart(pCursor->m_GlyphCount == 0, pCursor->m_PressMouse, SelectionStartChar, SelectionUsedPress, CharX, CharWidth, TmpY);
-						CheckSelectionStart(pCursor->m_GlyphCount == 0, pCursor->m_ReleaseMouse, SelectionEndChar, SelectionUsedRelease, CharX, CharWidth, TmpY);
+						CheckSelectionStart(false, pCursor->m_PressMouse, SelectionStartChar, SelectionUsedPress, LastCharX, LastCharWidth, CharX, CharWidth, TmpY);
+						CheckSelectionStart(false, pCursor->m_ReleaseMouse, SelectionEndChar, SelectionUsedRelease, LastCharX, LastCharWidth, CharX, CharWidth, TmpY);
 						CheckSelectionEnd(false, pCursor->m_ReleaseMouse, SelectionEndChar, SelectionUsedRelease, CharX, CharWidth, TmpY);
 						CheckSelectionEnd(false, pCursor->m_PressMouse, SelectionStartChar, SelectionUsedPress, CharX, CharWidth, TmpY);
 					}
@@ -2090,6 +2202,9 @@ public:
 			TextContainer.m_HasCursor = HasCursor;
 			TextContainer.m_HasSelection = HasSelection;
 			TextContainer.m_ForceCursorRendering = pCursor->m_ForceCursorRendering;
+			// bestclient
+			TextContainer.m_HideCursorQuad = pCursor->m_HideCursorQuad;
+			// bestclient
 
 			if(HasSelection)
 			{
@@ -2109,6 +2224,10 @@ public:
 		pCursor->m_LineCount = LineCount;
 
 		TextContainer.m_BoundingBox = pCursor->BoundingBox();
+
+		// bestclient
+		pCursor->m_vColorSplits.clear();
+		// bestclient
 	}
 
 	bool CreateOrAppendTextContainer(STextContainerIndex &TextContainerIndex, CTextCursor *pCursor, const char *pText, int Length = -1) override
@@ -2237,7 +2356,9 @@ public:
 				Graphics()->SetColor(1.0f, 1.0f, 1.0f, 1.0f);
 			}
 
-			if(TextContainer.m_HasCursor)
+			// bestclient
+			if(TextContainer.m_HasCursor && !TextContainer.m_HideCursorQuad)
+			// bestclient
 			{
 				const auto CurTime = time_get_nanoseconds();
 

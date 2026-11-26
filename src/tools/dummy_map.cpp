@@ -1,3 +1,4 @@
+#include <base/dbg.h>
 #include <base/hash.h>
 #include <base/logger.h>
 #include <base/os.h>
@@ -10,7 +11,7 @@
 
 #include <zlib.h>
 
-static constexpr const char *const TOOL_NAME = "dummy_map";
+static const char *TOOL_NAME = "dummy_map";
 
 static void CreateEmptyMap(IStorage *pStorage)
 {

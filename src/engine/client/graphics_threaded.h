@@ -126,6 +126,7 @@ public:
 		CMD_TEXT_TEXTURES_CREATE,
 		CMD_TEXT_TEXTURES_DESTROY,
 		CMD_TEXT_TEXTURE_UPDATE,
+		CMD_TEXTURE_UPDATE,
 
 		// rendering
 		CMD_CLEAR,
@@ -574,6 +575,20 @@ public:
 		uint8_t *m_pData; // will be freed by the command processor
 	};
 
+	struct SCommand_Texture_Update : public SCommand
+	{
+		SCommand_Texture_Update() :
+			SCommand(CMD_TEXTURE_UPDATE) {}
+
+		int m_Slot;
+
+		int m_X;
+		int m_Y;
+		size_t m_Width;
+		size_t m_Height;
+		uint8_t *m_pData; // will be freed by the command processor
+	};
+
 	struct SCommand_WindowCreateNtf : public CCommandBuffer::SCommand
 	{
 		SCommand_WindowCreateNtf() :
@@ -858,15 +873,20 @@ class CGraphics_Threaded : public IEngineGraphics
 	void AddVertices(int Count, CCommandBuffer::SVertexTex3DStream *pVertices);
 
 	template<typename TName>
-	void Rotate(const CCommandBuffer::SPoint &Center, TName *pPoints, size_t NumPoints)
+	void Rotate(const CCommandBuffer::SPoint &Center, TName *pPoints, int NumPoints)
 	{
-		const float Cos = std::cos(m_Rotation);
-		const float Sin = std::sin(m_Rotation);
-		for(size_t i = 0; i < NumPoints; i++)
+		float c = std::cos(m_Rotation);
+		float s = std::sin(m_Rotation);
+		float x, y;
+		int i;
+
+		TName *pVertices = pPoints;
+		for(i = 0; i < NumPoints; i++)
 		{
-			const vec2 Offset = pPoints[i].m_Pos - Center;
-			pPoints[i].m_Pos.x = Offset.x * Cos - Offset.y * Sin + Center.x;
-			pPoints[i].m_Pos.y = Offset.x * Sin + Offset.y * Cos + Center.y;
+			x = pVertices[i].m_Pos.x - Center.x;
+			y = pVertices[i].m_Pos.y - Center.y;
+			pVertices[i].m_Pos.x = x * c - y * s + Center.x;
+			pVertices[i].m_Pos.y = x * s + y * c + Center.y;
 		}
 	}
 
@@ -939,6 +959,7 @@ public:
 	bool LoadTextTextures(size_t Width, size_t Height, CTextureHandle &TextTexture, CTextureHandle &TextOutlineTexture, uint8_t *pTextData, uint8_t *pTextOutlineData) override;
 	bool UnloadTextTextures(CTextureHandle &TextTexture, CTextureHandle &TextOutlineTexture) override;
 	bool UpdateTextTexture(CTextureHandle TextureId, int x, int y, size_t Width, size_t Height, uint8_t *pData, bool IsMovedPointer) override;
+	bool UpdateTextureRaw(CTextureHandle TextureId, int x, int y, size_t Width, size_t Height, uint8_t *pData, bool IsMovedPointer) override;
 
 	CTextureHandle LoadSpriteTexture(const CImageInfo &FromImageInfo, const std::optional<CImageInfo> &FallbackImageInfo, const struct CDataSprite *pSprite) override;
 
@@ -1089,8 +1110,8 @@ public:
 	int CreateQuadContainer(bool AutomaticUpload = true) override;
 	void QuadContainerChangeAutomaticUpload(int ContainerIndex, bool AutomaticUpload) override;
 	void QuadContainerUpload(int ContainerIndex) override;
-	int QuadContainerAddQuads(int ContainerIndex, const CQuadItem *pArray, int Num) override;
-	int QuadContainerAddQuads(int ContainerIndex, const CFreeformItem *pArray, int Num) override;
+	int QuadContainerAddQuads(int ContainerIndex, CQuadItem *pArray, int Num) override;
+	int QuadContainerAddQuads(int ContainerIndex, CFreeformItem *pArray, int Num) override;
 	void QuadContainerReset(int ContainerIndex) override;
 	void DeleteQuadContainer(int &ContainerIndex) override;
 	void RenderQuadContainer(int ContainerIndex, int QuadDrawNum) override;
@@ -1268,7 +1289,22 @@ public:
 	const char *GetFatalError() const override;
 
 	TGLBackendReadPresentedImageData &GetReadPresentedImageDataFuncUnsafe() override;
+
+	// TClient
+	void SetForcedAspect(bool Force, bool ApplyCustomAspect = true) override;
+	// bestclient
+	void SetScreenAspectOverrideEnabled(bool Enabled) override;
+	void PushPreviewViewport(int X, int Y, int W, int H) override;
+	void PopPreviewViewport() override;
+
+private:
+	bool m_PreviewViewportPushed = false;
+	float m_PreviewSavedAspectOverride = 0.0f;
+	bool m_PreviewSavedAspectOverrideEnabled = false;
+	// bestclient
 };
+
+extern bool g_GraphicsForcedAspect;
 
 typedef std::function<const char *(const char *, const char *)> TTranslateFunc;
 extern IGraphicsBackend *CreateGraphicsBackend(TTranslateFunc &&TranslateFunc);

@@ -134,13 +134,15 @@ public:
 	bool GrenadeHitDisabled() const { return m_Core.m_GrenadeHitDisabled; }
 
 	bool IsSuper() const { return m_Core.m_Super; }
+	int m_FreezeAccumulation;
+	int m_AliveAccumulation;
+
+	// TClient
+	CNetObj_PlayerInput *LatestInput() { return &m_LatestInput; }
 
 	// antiping
 	void AntiPingInterference(int ClientId, bool DisallowReset = false, bool HasToBeUnfrozen = false);
 	bool IsInterfering() const { return m_Interfering; }
-
-	// C-Client (from TClient): newest input, for the improved antiping
-	CNetObj_PlayerInput *LatestInput() { return &m_LatestInput; }
 
 private:
 	// weapon info
