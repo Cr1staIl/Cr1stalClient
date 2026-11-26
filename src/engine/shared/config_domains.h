@@ -8,6 +8,7 @@
 CONFIG_DOMAIN(DDNET, "settings_ddnet.cfg", true)
 CONFIG_DOMAIN(TCLIENT, "settings_tclient.cfg", true)
 CONFIG_DOMAIN(BESTCLIENT, "settings_BestClient.cfg", true)
+CONFIG_DOMAIN(CRYSTAL, "settings_cr1stal.cfg", true) // Cr1stal Client
 CONFIG_DOMAIN(HUDLAYOUT, "BestClient/hud_layout.cfg", false) // bestclient
 CONFIG_DOMAIN(TCLIENTPROFILES, "tclient_profiles.cfg", false)
 CONFIG_DOMAIN(TCLIENTCHATBINDS, "tclient_chatbinds.cfg", false)

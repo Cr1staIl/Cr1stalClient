@@ -946,6 +946,7 @@ if(TARGET_OS STREQUAL "windows")
   list(APPEND PLATFORM_LIBS ws2_32.lib) # Windows sockets
   list(APPEND PLATFORM_LIBS advapi32.lib) # Reg* and Crypt* functions
   list(APPEND PLATFORM_LIBS bcrypt.lib userenv.lib) # for Rust (https://github.com/rust-lang/rust/issues/91974)
+  list(APPEND PLATFORM_LIBS synchronization.lib) # for Rust (newer toolchains use WaitOnAddress)
   list(APPEND PLATFORM_LIBS ole32.lib) # CoInitialize(Ex)
   list(APPEND PLATFORM_LIBS runtimeobject.lib) # RoGetActivationFactory / WinRT music player
   list(APPEND PLATFORM_LIBS shell32.lib)
@@ -1489,6 +1490,7 @@ set(EXPECTED_DATA
   BestClient/bc_dev_icon.png
   BestClient/bc_fake_icon.png
   BestClient/bc_icon.png
+  cclient/badge.png
   BestClient/bc_light_icon.png
   BestClient/gui_logo.png
   BestClient/languages/russian.txt
@@ -2578,6 +2580,7 @@ set_src(ENGINE_SHARED GLOB_RECURSE src/engine/shared
   config_includes.h
   config_variables.h
   config_variables_bestclient.h
+  config_variables_crystal.h
   config_variables_tclient.h
   console.cpp
   console.h
@@ -3028,6 +3031,8 @@ if(CLIENT)
     components/bestclient/clientindicator/client_indicator.cpp
     components/bestclient/clientindicator/client_indicator.h
     components/bestclient/clientindicator/client_indicator_sync.h
+    components/cclient_presence.cpp
+    components/cclient_presence.h
     components/bestclient/clientindicator/presence_cache.cpp
     components/bestclient/clientindicator/presence_cache.h
     components/bestclient/clientindicator/protocol.h

@@ -37,95 +37,248 @@ CGameClient::CImageAsset CGameClient::LoadAssetFromPath(const char *pPath, bool 
 	return LoadedAsset;
 }
 
+void CGameClient::UnloadGameSkin(CGameSkin &Skin)
+{
+	Graphics()->UnloadTexture(&Skin.m_SpriteHealthFull);
+	Graphics()->UnloadTexture(&Skin.m_SpriteHealthEmpty);
+	Graphics()->UnloadTexture(&Skin.m_SpriteArmorFull);
+	Graphics()->UnloadTexture(&Skin.m_SpriteArmorEmpty);
+
+	Graphics()->UnloadTexture(&Skin.m_SpriteWeaponHammerCursor);
+	Graphics()->UnloadTexture(&Skin.m_SpriteWeaponGunCursor);
+	Graphics()->UnloadTexture(&Skin.m_SpriteWeaponShotgunCursor);
+	Graphics()->UnloadTexture(&Skin.m_SpriteWeaponGrenadeCursor);
+	Graphics()->UnloadTexture(&Skin.m_SpriteWeaponNinjaCursor);
+	Graphics()->UnloadTexture(&Skin.m_SpriteWeaponLaserCursor);
+
+	std::fill(std::begin(Skin.m_aSpriteWeaponCursors), std::end(Skin.m_aSpriteWeaponCursors), IGraphics::CTextureHandle());
+
+	Graphics()->UnloadTexture(&Skin.m_SpriteHookChain);
+	Graphics()->UnloadTexture(&Skin.m_SpriteHookHead);
+	Graphics()->UnloadTexture(&Skin.m_SpriteWeaponHammer);
+	Graphics()->UnloadTexture(&Skin.m_SpriteWeaponGun);
+	Graphics()->UnloadTexture(&Skin.m_SpriteWeaponShotgun);
+	Graphics()->UnloadTexture(&Skin.m_SpriteWeaponGrenade);
+	Graphics()->UnloadTexture(&Skin.m_SpriteWeaponNinja);
+	Graphics()->UnloadTexture(&Skin.m_SpriteWeaponLaser);
+
+	std::fill(std::begin(Skin.m_aSpriteWeapons), std::end(Skin.m_aSpriteWeapons), IGraphics::CTextureHandle());
+
+	for(auto &SpriteParticle : Skin.m_aSpriteParticles)
+	{
+		Graphics()->UnloadTexture(&SpriteParticle);
+	}
+
+	for(auto &SpriteStar : Skin.m_aSpriteStars)
+	{
+		Graphics()->UnloadTexture(&SpriteStar);
+	}
+
+	Graphics()->UnloadTexture(&Skin.m_SpriteWeaponGunProjectile);
+	Graphics()->UnloadTexture(&Skin.m_SpriteWeaponShotgunProjectile);
+	Graphics()->UnloadTexture(&Skin.m_SpriteWeaponGrenadeProjectile);
+	Graphics()->UnloadTexture(&Skin.m_SpriteWeaponHammerProjectile);
+	Graphics()->UnloadTexture(&Skin.m_SpriteWeaponNinjaProjectile);
+	Graphics()->UnloadTexture(&Skin.m_SpriteWeaponLaserProjectile);
+
+	std::fill(std::begin(Skin.m_aSpriteWeaponProjectiles), std::end(Skin.m_aSpriteWeaponProjectiles), IGraphics::CTextureHandle());
+
+	for(int i = 0; i < 3; ++i)
+	{
+		Graphics()->UnloadTexture(&Skin.m_aSpriteWeaponGunMuzzles[i]);
+		Graphics()->UnloadTexture(&Skin.m_aSpriteWeaponShotgunMuzzles[i]);
+		Graphics()->UnloadTexture(&Skin.m_aaSpriteWeaponNinjaMuzzles[i]);
+	}
+	for(auto &aSpriteWeaponsMuzzles : Skin.m_aaSpriteWeaponsMuzzles)
+	{
+		std::fill(std::begin(aSpriteWeaponsMuzzles), std::end(aSpriteWeaponsMuzzles), IGraphics::CTextureHandle());
+	}
+
+	Graphics()->UnloadTexture(&Skin.m_SpritePickupHealth);
+	Graphics()->UnloadTexture(&Skin.m_SpritePickupFreeze);
+	Graphics()->UnloadTexture(&Skin.m_SpritePickupArmor);
+	Graphics()->UnloadTexture(&Skin.m_SpritePickupArmorShotgun);
+	Graphics()->UnloadTexture(&Skin.m_SpritePickupArmorGrenade);
+	Graphics()->UnloadTexture(&Skin.m_SpritePickupArmorLaser);
+	Graphics()->UnloadTexture(&Skin.m_SpritePickupArmorNinja);
+	Graphics()->UnloadTexture(&Skin.m_SpritePickupGrenade);
+	Graphics()->UnloadTexture(&Skin.m_SpritePickupShotgun);
+	Graphics()->UnloadTexture(&Skin.m_SpritePickupLaser);
+	Graphics()->UnloadTexture(&Skin.m_SpritePickupNinja);
+	Graphics()->UnloadTexture(&Skin.m_SpritePickupGun);
+	Graphics()->UnloadTexture(&Skin.m_SpritePickupHammer);
+
+	std::fill(std::begin(Skin.m_aSpritePickupWeapons), std::end(Skin.m_aSpritePickupWeapons), IGraphics::CTextureHandle());
+	std::fill(std::begin(Skin.m_aSpritePickupWeaponArmor), std::end(Skin.m_aSpritePickupWeaponArmor), IGraphics::CTextureHandle());
+
+	Graphics()->UnloadTexture(&Skin.m_SpriteFlagBlue);
+	Graphics()->UnloadTexture(&Skin.m_SpriteFlagRed);
+
+	if(Skin.IsSixup())
+	{
+		Graphics()->UnloadTexture(&Skin.m_SpriteNinjaBarFullLeft);
+		Graphics()->UnloadTexture(&Skin.m_SpriteNinjaBarFull);
+		Graphics()->UnloadTexture(&Skin.m_SpriteNinjaBarEmpty);
+		Graphics()->UnloadTexture(&Skin.m_SpriteNinjaBarEmptyRight);
+	}
+
+	Skin.m_Loaded = false;
+}
+
+void CGameClient::FillGameSkin(CGameSkin &Skin, CImageInfo &ImgInfo, std::optional<CImageInfo> &FallbackImgInfo)
+{
+	Skin.m_SpriteHealthFull = Graphics()->LoadSpriteTexture(ImgInfo, FallbackImgInfo, &g_pData->m_aSprites[SPRITE_HEALTH_FULL]);
+	Skin.m_SpriteHealthEmpty = Graphics()->LoadSpriteTexture(ImgInfo, FallbackImgInfo, &g_pData->m_aSprites[SPRITE_HEALTH_EMPTY]);
+	Skin.m_SpriteArmorFull = Graphics()->LoadSpriteTexture(ImgInfo, FallbackImgInfo, &g_pData->m_aSprites[SPRITE_ARMOR_FULL]);
+	Skin.m_SpriteArmorEmpty = Graphics()->LoadSpriteTexture(ImgInfo, FallbackImgInfo, &g_pData->m_aSprites[SPRITE_ARMOR_EMPTY]);
+
+	Skin.m_SpriteWeaponHammerCursor = Graphics()->LoadSpriteTexture(ImgInfo, FallbackImgInfo, &g_pData->m_aSprites[SPRITE_WEAPON_HAMMER_CURSOR]);
+	Skin.m_SpriteWeaponGunCursor = Graphics()->LoadSpriteTexture(ImgInfo, FallbackImgInfo, &g_pData->m_aSprites[SPRITE_WEAPON_GUN_CURSOR]);
+	Skin.m_SpriteWeaponShotgunCursor = Graphics()->LoadSpriteTexture(ImgInfo, FallbackImgInfo, &g_pData->m_aSprites[SPRITE_WEAPON_SHOTGUN_CURSOR]);
+	Skin.m_SpriteWeaponGrenadeCursor = Graphics()->LoadSpriteTexture(ImgInfo, FallbackImgInfo, &g_pData->m_aSprites[SPRITE_WEAPON_GRENADE_CURSOR]);
+	Skin.m_SpriteWeaponNinjaCursor = Graphics()->LoadSpriteTexture(ImgInfo, FallbackImgInfo, &g_pData->m_aSprites[SPRITE_WEAPON_NINJA_CURSOR]);
+	Skin.m_SpriteWeaponLaserCursor = Graphics()->LoadSpriteTexture(ImgInfo, FallbackImgInfo, &g_pData->m_aSprites[SPRITE_WEAPON_LASER_CURSOR]);
+
+	Skin.m_aSpriteWeaponCursors[0] = Skin.m_SpriteWeaponHammerCursor;
+	Skin.m_aSpriteWeaponCursors[1] = Skin.m_SpriteWeaponGunCursor;
+	Skin.m_aSpriteWeaponCursors[2] = Skin.m_SpriteWeaponShotgunCursor;
+	Skin.m_aSpriteWeaponCursors[3] = Skin.m_SpriteWeaponGrenadeCursor;
+	Skin.m_aSpriteWeaponCursors[4] = Skin.m_SpriteWeaponLaserCursor;
+	Skin.m_aSpriteWeaponCursors[5] = Skin.m_SpriteWeaponNinjaCursor;
+
+	// weapons and hook
+	Skin.m_SpriteHookChain = Graphics()->LoadSpriteTexture(ImgInfo, FallbackImgInfo, &g_pData->m_aSprites[SPRITE_HOOK_CHAIN]);
+	Skin.m_SpriteHookHead = Graphics()->LoadSpriteTexture(ImgInfo, FallbackImgInfo, &g_pData->m_aSprites[SPRITE_HOOK_HEAD]);
+	Skin.m_SpriteWeaponHammer = Graphics()->LoadSpriteTexture(ImgInfo, FallbackImgInfo, &g_pData->m_aSprites[SPRITE_WEAPON_HAMMER_BODY]);
+	Skin.m_SpriteWeaponGun = Graphics()->LoadSpriteTexture(ImgInfo, FallbackImgInfo, &g_pData->m_aSprites[SPRITE_WEAPON_GUN_BODY]);
+	Skin.m_SpriteWeaponShotgun = Graphics()->LoadSpriteTexture(ImgInfo, FallbackImgInfo, &g_pData->m_aSprites[SPRITE_WEAPON_SHOTGUN_BODY]);
+	Skin.m_SpriteWeaponGrenade = Graphics()->LoadSpriteTexture(ImgInfo, FallbackImgInfo, &g_pData->m_aSprites[SPRITE_WEAPON_GRENADE_BODY]);
+	Skin.m_SpriteWeaponNinja = Graphics()->LoadSpriteTexture(ImgInfo, FallbackImgInfo, &g_pData->m_aSprites[SPRITE_WEAPON_NINJA_BODY]);
+	Skin.m_SpriteWeaponLaser = Graphics()->LoadSpriteTexture(ImgInfo, FallbackImgInfo, &g_pData->m_aSprites[SPRITE_WEAPON_LASER_BODY]);
+
+	Skin.m_aSpriteWeapons[0] = Skin.m_SpriteWeaponHammer;
+	Skin.m_aSpriteWeapons[1] = Skin.m_SpriteWeaponGun;
+	Skin.m_aSpriteWeapons[2] = Skin.m_SpriteWeaponShotgun;
+	Skin.m_aSpriteWeapons[3] = Skin.m_SpriteWeaponGrenade;
+	Skin.m_aSpriteWeapons[4] = Skin.m_SpriteWeaponLaser;
+	Skin.m_aSpriteWeapons[5] = Skin.m_SpriteWeaponNinja;
+
+	// particles
+	for(int i = 0; i < 9; ++i)
+	{
+		Skin.m_aSpriteParticles[i] = Graphics()->LoadSpriteTexture(ImgInfo, FallbackImgInfo, &g_pData->m_aSprites[SPRITE_PART1 + i]);
+	}
+
+	// stars
+	for(int i = 0; i < 3; ++i)
+	{
+		Skin.m_aSpriteStars[i] = Graphics()->LoadSpriteTexture(ImgInfo, FallbackImgInfo, &g_pData->m_aSprites[SPRITE_STAR1 + i]);
+	}
+
+	// projectiles
+	Skin.m_SpriteWeaponGunProjectile = Graphics()->LoadSpriteTexture(ImgInfo, FallbackImgInfo, &g_pData->m_aSprites[SPRITE_WEAPON_GUN_PROJ]);
+	Skin.m_SpriteWeaponShotgunProjectile = Graphics()->LoadSpriteTexture(ImgInfo, FallbackImgInfo, &g_pData->m_aSprites[SPRITE_WEAPON_SHOTGUN_PROJ]);
+	Skin.m_SpriteWeaponGrenadeProjectile = Graphics()->LoadSpriteTexture(ImgInfo, FallbackImgInfo, &g_pData->m_aSprites[SPRITE_WEAPON_GRENADE_PROJ]);
+
+	// these weapons have no projectiles
+	Skin.m_SpriteWeaponHammerProjectile = IGraphics::CTextureHandle();
+	Skin.m_SpriteWeaponNinjaProjectile = IGraphics::CTextureHandle();
+
+	Skin.m_SpriteWeaponLaserProjectile = Graphics()->LoadSpriteTexture(ImgInfo, FallbackImgInfo, &g_pData->m_aSprites[SPRITE_WEAPON_LASER_PROJ]);
+
+	Skin.m_aSpriteWeaponProjectiles[0] = Skin.m_SpriteWeaponHammerProjectile;
+	Skin.m_aSpriteWeaponProjectiles[1] = Skin.m_SpriteWeaponGunProjectile;
+	Skin.m_aSpriteWeaponProjectiles[2] = Skin.m_SpriteWeaponShotgunProjectile;
+	Skin.m_aSpriteWeaponProjectiles[3] = Skin.m_SpriteWeaponGrenadeProjectile;
+	Skin.m_aSpriteWeaponProjectiles[4] = Skin.m_SpriteWeaponLaserProjectile;
+	Skin.m_aSpriteWeaponProjectiles[5] = Skin.m_SpriteWeaponNinjaProjectile;
+
+	// muzzles
+	for(int i = 0; i < 3; ++i)
+	{
+		Skin.m_aSpriteWeaponGunMuzzles[i] = Graphics()->LoadSpriteTexture(ImgInfo, FallbackImgInfo, &g_pData->m_aSprites[SPRITE_WEAPON_GUN_MUZZLE1 + i]);
+		Skin.m_aSpriteWeaponShotgunMuzzles[i] = Graphics()->LoadSpriteTexture(ImgInfo, FallbackImgInfo, &g_pData->m_aSprites[SPRITE_WEAPON_SHOTGUN_MUZZLE1 + i]);
+		Skin.m_aaSpriteWeaponNinjaMuzzles[i] = Graphics()->LoadSpriteTexture(ImgInfo, FallbackImgInfo, &g_pData->m_aSprites[SPRITE_WEAPON_NINJA_MUZZLE1 + i]);
+
+		Skin.m_aaSpriteWeaponsMuzzles[1][i] = Skin.m_aSpriteWeaponGunMuzzles[i];
+		Skin.m_aaSpriteWeaponsMuzzles[2][i] = Skin.m_aSpriteWeaponShotgunMuzzles[i];
+		Skin.m_aaSpriteWeaponsMuzzles[5][i] = Skin.m_aaSpriteWeaponNinjaMuzzles[i];
+	}
+
+	// pickups
+	Skin.m_SpritePickupHealth = Graphics()->LoadSpriteTexture(ImgInfo, FallbackImgInfo, &g_pData->m_aSprites[SPRITE_PICKUP_HEALTH]);
+	Skin.m_SpritePickupFreeze = Graphics()->LoadSpriteTexture(ImgInfo, FallbackImgInfo, &g_pData->m_aSprites[SPRITE_PICKUP_FREEZE]);
+	Skin.m_SpritePickupArmor = Graphics()->LoadSpriteTexture(ImgInfo, FallbackImgInfo, &g_pData->m_aSprites[SPRITE_PICKUP_ARMOR]);
+	Skin.m_SpritePickupHammer = Graphics()->LoadSpriteTexture(ImgInfo, FallbackImgInfo, &g_pData->m_aSprites[SPRITE_PICKUP_HAMMER]);
+	Skin.m_SpritePickupGun = Graphics()->LoadSpriteTexture(ImgInfo, FallbackImgInfo, &g_pData->m_aSprites[SPRITE_PICKUP_GUN]);
+	Skin.m_SpritePickupShotgun = Graphics()->LoadSpriteTexture(ImgInfo, FallbackImgInfo, &g_pData->m_aSprites[SPRITE_PICKUP_SHOTGUN]);
+	Skin.m_SpritePickupGrenade = Graphics()->LoadSpriteTexture(ImgInfo, FallbackImgInfo, &g_pData->m_aSprites[SPRITE_PICKUP_GRENADE]);
+	Skin.m_SpritePickupLaser = Graphics()->LoadSpriteTexture(ImgInfo, FallbackImgInfo, &g_pData->m_aSprites[SPRITE_PICKUP_LASER]);
+	Skin.m_SpritePickupNinja = Graphics()->LoadSpriteTexture(ImgInfo, FallbackImgInfo, &g_pData->m_aSprites[SPRITE_PICKUP_NINJA]);
+	Skin.m_SpritePickupArmorShotgun = Graphics()->LoadSpriteTexture(ImgInfo, FallbackImgInfo, &g_pData->m_aSprites[SPRITE_PICKUP_ARMOR_SHOTGUN]);
+	Skin.m_SpritePickupArmorGrenade = Graphics()->LoadSpriteTexture(ImgInfo, FallbackImgInfo, &g_pData->m_aSprites[SPRITE_PICKUP_ARMOR_GRENADE]);
+	Skin.m_SpritePickupArmorNinja = Graphics()->LoadSpriteTexture(ImgInfo, FallbackImgInfo, &g_pData->m_aSprites[SPRITE_PICKUP_ARMOR_NINJA]);
+	Skin.m_SpritePickupArmorLaser = Graphics()->LoadSpriteTexture(ImgInfo, FallbackImgInfo, &g_pData->m_aSprites[SPRITE_PICKUP_ARMOR_LASER]);
+
+	Skin.m_aSpritePickupWeapons[0] = Skin.m_SpritePickupHammer;
+	Skin.m_aSpritePickupWeapons[1] = Skin.m_SpritePickupGun;
+	Skin.m_aSpritePickupWeapons[2] = Skin.m_SpritePickupShotgun;
+	Skin.m_aSpritePickupWeapons[3] = Skin.m_SpritePickupGrenade;
+	Skin.m_aSpritePickupWeapons[4] = Skin.m_SpritePickupLaser;
+	Skin.m_aSpritePickupWeapons[5] = Skin.m_SpritePickupNinja;
+
+	Skin.m_aSpritePickupWeaponArmor[0] = Skin.m_SpritePickupArmorShotgun;
+	Skin.m_aSpritePickupWeaponArmor[1] = Skin.m_SpritePickupArmorGrenade;
+	Skin.m_aSpritePickupWeaponArmor[2] = Skin.m_SpritePickupArmorNinja;
+	Skin.m_aSpritePickupWeaponArmor[3] = Skin.m_SpritePickupArmorLaser;
+
+	// flags
+	Skin.m_SpriteFlagBlue = Graphics()->LoadSpriteTexture(ImgInfo, FallbackImgInfo, &g_pData->m_aSprites[SPRITE_FLAG_BLUE]);
+	Skin.m_SpriteFlagRed = Graphics()->LoadSpriteTexture(ImgInfo, FallbackImgInfo, &g_pData->m_aSprites[SPRITE_FLAG_RED]);
+
+	// ninja bar (0.7)
+	if(!Graphics()->IsSpriteTextureFullyTransparent(ImgInfo, &client_data7::g_pData->m_aSprites[client_data7::SPRITE_NINJA_BAR_FULL_LEFT]) ||
+		!Graphics()->IsSpriteTextureFullyTransparent(ImgInfo, &client_data7::g_pData->m_aSprites[client_data7::SPRITE_NINJA_BAR_FULL]) ||
+		!Graphics()->IsSpriteTextureFullyTransparent(ImgInfo, &client_data7::g_pData->m_aSprites[client_data7::SPRITE_NINJA_BAR_EMPTY]) ||
+		!Graphics()->IsSpriteTextureFullyTransparent(ImgInfo, &client_data7::g_pData->m_aSprites[client_data7::SPRITE_NINJA_BAR_EMPTY_RIGHT]))
+	{
+		Skin.m_SpriteNinjaBarFullLeft = Graphics()->LoadSpriteTexture(ImgInfo, FallbackImgInfo, &client_data7::g_pData->m_aSprites[client_data7::SPRITE_NINJA_BAR_FULL_LEFT]);
+		Skin.m_SpriteNinjaBarFull = Graphics()->LoadSpriteTexture(ImgInfo, FallbackImgInfo, &client_data7::g_pData->m_aSprites[client_data7::SPRITE_NINJA_BAR_FULL]);
+		Skin.m_SpriteNinjaBarEmpty = Graphics()->LoadSpriteTexture(ImgInfo, FallbackImgInfo, &client_data7::g_pData->m_aSprites[client_data7::SPRITE_NINJA_BAR_EMPTY]);
+		Skin.m_SpriteNinjaBarEmptyRight = Graphics()->LoadSpriteTexture(ImgInfo, FallbackImgInfo, &client_data7::g_pData->m_aSprites[client_data7::SPRITE_NINJA_BAR_EMPTY_RIGHT]);
+	}
+
+	Skin.m_Loaded = true;
+}
+
+bool CGameClient::LoadGameSkinFile(CGameSkin &Skin, const char *pFile, int StorageType)
+{
+	if(Skin.m_Loaded)
+		UnloadGameSkin(Skin);
+	CImageInfo ImgInfo;
+	if(!Graphics()->LoadPng(ImgInfo, pFile, StorageType))
+		return false;
+	std::optional<CImageInfo> FallbackImgInfo;
+	CImageInfo ImgDefaultInfo;
+	if(Graphics()->LoadPng(ImgDefaultInfo, g_pData->m_aImages[IMAGE_GAME].m_pFilename, IStorage::TYPE_ALL))
+		FallbackImgInfo = std::move(ImgDefaultInfo);
+	bool Ok = false;
+	if(Graphics()->CheckImageDivisibility(pFile, ImgInfo, g_pData->m_aSprites[SPRITE_HEALTH_FULL].m_pSet->m_Gridx, g_pData->m_aSprites[SPRITE_HEALTH_FULL].m_pSet->m_Gridy, true) && Graphics()->IsImageFormatRgba(pFile, ImgInfo))
+	{
+		FillGameSkin(Skin, ImgInfo, FallbackImgInfo);
+		Ok = true;
+	}
+	ImgInfo.Free();
+	if(FallbackImgInfo.has_value())
+		FallbackImgInfo.value().Free();
+	return Ok;
+}
+
 void CGameClient::LoadGameSkin(const char *pPath, bool AsDir)
 {
 	if(m_GameSkin.m_Loaded)
-	{
-		Graphics()->UnloadTexture(&m_GameSkin.m_SpriteHealthFull);
-		Graphics()->UnloadTexture(&m_GameSkin.m_SpriteHealthEmpty);
-		Graphics()->UnloadTexture(&m_GameSkin.m_SpriteArmorFull);
-		Graphics()->UnloadTexture(&m_GameSkin.m_SpriteArmorEmpty);
-
-		Graphics()->UnloadTexture(&m_GameSkin.m_SpriteWeaponHammerCursor);
-		Graphics()->UnloadTexture(&m_GameSkin.m_SpriteWeaponGunCursor);
-		Graphics()->UnloadTexture(&m_GameSkin.m_SpriteWeaponShotgunCursor);
-		Graphics()->UnloadTexture(&m_GameSkin.m_SpriteWeaponGrenadeCursor);
-		Graphics()->UnloadTexture(&m_GameSkin.m_SpriteWeaponNinjaCursor);
-		Graphics()->UnloadTexture(&m_GameSkin.m_SpriteWeaponLaserCursor);
-
-		std::fill(std::begin(m_GameSkin.m_aSpriteWeaponCursors), std::end(m_GameSkin.m_aSpriteWeaponCursors), IGraphics::CTextureHandle());
-
-		Graphics()->UnloadTexture(&m_GameSkin.m_SpriteHookChain);
-		Graphics()->UnloadTexture(&m_GameSkin.m_SpriteHookHead);
-		Graphics()->UnloadTexture(&m_GameSkin.m_SpriteWeaponHammer);
-		Graphics()->UnloadTexture(&m_GameSkin.m_SpriteWeaponGun);
-		Graphics()->UnloadTexture(&m_GameSkin.m_SpriteWeaponShotgun);
-		Graphics()->UnloadTexture(&m_GameSkin.m_SpriteWeaponGrenade);
-		Graphics()->UnloadTexture(&m_GameSkin.m_SpriteWeaponNinja);
-		Graphics()->UnloadTexture(&m_GameSkin.m_SpriteWeaponLaser);
-
-		std::fill(std::begin(m_GameSkin.m_aSpriteWeapons), std::end(m_GameSkin.m_aSpriteWeapons), IGraphics::CTextureHandle());
-
-		for(auto &SpriteParticle : m_GameSkin.m_aSpriteParticles)
-		{
-			Graphics()->UnloadTexture(&SpriteParticle);
-		}
-
-		for(auto &SpriteStar : m_GameSkin.m_aSpriteStars)
-		{
-			Graphics()->UnloadTexture(&SpriteStar);
-		}
-
-		Graphics()->UnloadTexture(&m_GameSkin.m_SpriteWeaponGunProjectile);
-		Graphics()->UnloadTexture(&m_GameSkin.m_SpriteWeaponShotgunProjectile);
-		Graphics()->UnloadTexture(&m_GameSkin.m_SpriteWeaponGrenadeProjectile);
-		Graphics()->UnloadTexture(&m_GameSkin.m_SpriteWeaponHammerProjectile);
-		Graphics()->UnloadTexture(&m_GameSkin.m_SpriteWeaponNinjaProjectile);
-		Graphics()->UnloadTexture(&m_GameSkin.m_SpriteWeaponLaserProjectile);
-
-		std::fill(std::begin(m_GameSkin.m_aSpriteWeaponProjectiles), std::end(m_GameSkin.m_aSpriteWeaponProjectiles), IGraphics::CTextureHandle());
-
-		for(int i = 0; i < 3; ++i)
-		{
-			Graphics()->UnloadTexture(&m_GameSkin.m_aSpriteWeaponGunMuzzles[i]);
-			Graphics()->UnloadTexture(&m_GameSkin.m_aSpriteWeaponShotgunMuzzles[i]);
-			Graphics()->UnloadTexture(&m_GameSkin.m_aaSpriteWeaponNinjaMuzzles[i]);
-		}
-		for(auto &aSpriteWeaponsMuzzles : m_GameSkin.m_aaSpriteWeaponsMuzzles)
-		{
-			std::fill(std::begin(aSpriteWeaponsMuzzles), std::end(aSpriteWeaponsMuzzles), IGraphics::CTextureHandle());
-		}
-
-		Graphics()->UnloadTexture(&m_GameSkin.m_SpritePickupHealth);
-		Graphics()->UnloadTexture(&m_GameSkin.m_SpritePickupFreeze);
-		Graphics()->UnloadTexture(&m_GameSkin.m_SpritePickupArmor);
-		Graphics()->UnloadTexture(&m_GameSkin.m_SpritePickupArmorShotgun);
-		Graphics()->UnloadTexture(&m_GameSkin.m_SpritePickupArmorGrenade);
-		Graphics()->UnloadTexture(&m_GameSkin.m_SpritePickupArmorLaser);
-		Graphics()->UnloadTexture(&m_GameSkin.m_SpritePickupArmorNinja);
-		Graphics()->UnloadTexture(&m_GameSkin.m_SpritePickupGrenade);
-		Graphics()->UnloadTexture(&m_GameSkin.m_SpritePickupShotgun);
-		Graphics()->UnloadTexture(&m_GameSkin.m_SpritePickupLaser);
-		Graphics()->UnloadTexture(&m_GameSkin.m_SpritePickupNinja);
-		Graphics()->UnloadTexture(&m_GameSkin.m_SpritePickupGun);
-		Graphics()->UnloadTexture(&m_GameSkin.m_SpritePickupHammer);
-
-		std::fill(std::begin(m_GameSkin.m_aSpritePickupWeapons), std::end(m_GameSkin.m_aSpritePickupWeapons), IGraphics::CTextureHandle());
-		std::fill(std::begin(m_GameSkin.m_aSpritePickupWeaponArmor), std::end(m_GameSkin.m_aSpritePickupWeaponArmor), IGraphics::CTextureHandle());
-
-		Graphics()->UnloadTexture(&m_GameSkin.m_SpriteFlagBlue);
-		Graphics()->UnloadTexture(&m_GameSkin.m_SpriteFlagRed);
-
-		if(m_GameSkin.IsSixup())
-		{
-			Graphics()->UnloadTexture(&m_GameSkin.m_SpriteNinjaBarFullLeft);
-			Graphics()->UnloadTexture(&m_GameSkin.m_SpriteNinjaBarFull);
-			Graphics()->UnloadTexture(&m_GameSkin.m_SpriteNinjaBarEmpty);
-			Graphics()->UnloadTexture(&m_GameSkin.m_SpriteNinjaBarEmptyRight);
-		}
-
-		m_GameSkin.m_Loaded = false;
-	}
+		UnloadGameSkin(m_GameSkin);
+	m_aCcGameSkinFile[0] = '\0';
 
 	CImageAsset LoadedAsset = LoadAssetFromPath(pPath, AsDir, IMAGE_GAME, "game");
 	CImageInfo &ImgInfo = LoadedAsset.m_ImageInfo;
@@ -139,128 +292,10 @@ void CGameClient::LoadGameSkin(const char *pPath, bool AsDir)
 	}
 	else if(LoadedAsset.IsLoaded() && Graphics()->CheckImageDivisibility(LoadedAsset.m_aPath, ImgInfo, g_pData->m_aSprites[SPRITE_HEALTH_FULL].m_pSet->m_Gridx, g_pData->m_aSprites[SPRITE_HEALTH_FULL].m_pSet->m_Gridy, true) && Graphics()->IsImageFormatRgba(LoadedAsset.m_aPath, ImgInfo))
 	{
-		m_GameSkin.m_SpriteHealthFull = Graphics()->LoadSpriteTexture(ImgInfo, FallbackImgInfo, &g_pData->m_aSprites[SPRITE_HEALTH_FULL]);
-		m_GameSkin.m_SpriteHealthEmpty = Graphics()->LoadSpriteTexture(ImgInfo, FallbackImgInfo, &g_pData->m_aSprites[SPRITE_HEALTH_EMPTY]);
-		m_GameSkin.m_SpriteArmorFull = Graphics()->LoadSpriteTexture(ImgInfo, FallbackImgInfo, &g_pData->m_aSprites[SPRITE_ARMOR_FULL]);
-		m_GameSkin.m_SpriteArmorEmpty = Graphics()->LoadSpriteTexture(ImgInfo, FallbackImgInfo, &g_pData->m_aSprites[SPRITE_ARMOR_EMPTY]);
-
-		m_GameSkin.m_SpriteWeaponHammerCursor = Graphics()->LoadSpriteTexture(ImgInfo, FallbackImgInfo, &g_pData->m_aSprites[SPRITE_WEAPON_HAMMER_CURSOR]);
-		m_GameSkin.m_SpriteWeaponGunCursor = Graphics()->LoadSpriteTexture(ImgInfo, FallbackImgInfo, &g_pData->m_aSprites[SPRITE_WEAPON_GUN_CURSOR]);
-		m_GameSkin.m_SpriteWeaponShotgunCursor = Graphics()->LoadSpriteTexture(ImgInfo, FallbackImgInfo, &g_pData->m_aSprites[SPRITE_WEAPON_SHOTGUN_CURSOR]);
-		m_GameSkin.m_SpriteWeaponGrenadeCursor = Graphics()->LoadSpriteTexture(ImgInfo, FallbackImgInfo, &g_pData->m_aSprites[SPRITE_WEAPON_GRENADE_CURSOR]);
-		m_GameSkin.m_SpriteWeaponNinjaCursor = Graphics()->LoadSpriteTexture(ImgInfo, FallbackImgInfo, &g_pData->m_aSprites[SPRITE_WEAPON_NINJA_CURSOR]);
-		m_GameSkin.m_SpriteWeaponLaserCursor = Graphics()->LoadSpriteTexture(ImgInfo, FallbackImgInfo, &g_pData->m_aSprites[SPRITE_WEAPON_LASER_CURSOR]);
-
-		m_GameSkin.m_aSpriteWeaponCursors[0] = m_GameSkin.m_SpriteWeaponHammerCursor;
-		m_GameSkin.m_aSpriteWeaponCursors[1] = m_GameSkin.m_SpriteWeaponGunCursor;
-		m_GameSkin.m_aSpriteWeaponCursors[2] = m_GameSkin.m_SpriteWeaponShotgunCursor;
-		m_GameSkin.m_aSpriteWeaponCursors[3] = m_GameSkin.m_SpriteWeaponGrenadeCursor;
-		m_GameSkin.m_aSpriteWeaponCursors[4] = m_GameSkin.m_SpriteWeaponLaserCursor;
-		m_GameSkin.m_aSpriteWeaponCursors[5] = m_GameSkin.m_SpriteWeaponNinjaCursor;
-
-		// weapons and hook
-		m_GameSkin.m_SpriteHookChain = Graphics()->LoadSpriteTexture(ImgInfo, FallbackImgInfo, &g_pData->m_aSprites[SPRITE_HOOK_CHAIN]);
-		m_GameSkin.m_SpriteHookHead = Graphics()->LoadSpriteTexture(ImgInfo, FallbackImgInfo, &g_pData->m_aSprites[SPRITE_HOOK_HEAD]);
-		m_GameSkin.m_SpriteWeaponHammer = Graphics()->LoadSpriteTexture(ImgInfo, FallbackImgInfo, &g_pData->m_aSprites[SPRITE_WEAPON_HAMMER_BODY]);
-		m_GameSkin.m_SpriteWeaponGun = Graphics()->LoadSpriteTexture(ImgInfo, FallbackImgInfo, &g_pData->m_aSprites[SPRITE_WEAPON_GUN_BODY]);
-		m_GameSkin.m_SpriteWeaponShotgun = Graphics()->LoadSpriteTexture(ImgInfo, FallbackImgInfo, &g_pData->m_aSprites[SPRITE_WEAPON_SHOTGUN_BODY]);
-		m_GameSkin.m_SpriteWeaponGrenade = Graphics()->LoadSpriteTexture(ImgInfo, FallbackImgInfo, &g_pData->m_aSprites[SPRITE_WEAPON_GRENADE_BODY]);
-		m_GameSkin.m_SpriteWeaponNinja = Graphics()->LoadSpriteTexture(ImgInfo, FallbackImgInfo, &g_pData->m_aSprites[SPRITE_WEAPON_NINJA_BODY]);
-		m_GameSkin.m_SpriteWeaponLaser = Graphics()->LoadSpriteTexture(ImgInfo, FallbackImgInfo, &g_pData->m_aSprites[SPRITE_WEAPON_LASER_BODY]);
-
-		m_GameSkin.m_aSpriteWeapons[0] = m_GameSkin.m_SpriteWeaponHammer;
-		m_GameSkin.m_aSpriteWeapons[1] = m_GameSkin.m_SpriteWeaponGun;
-		m_GameSkin.m_aSpriteWeapons[2] = m_GameSkin.m_SpriteWeaponShotgun;
-		m_GameSkin.m_aSpriteWeapons[3] = m_GameSkin.m_SpriteWeaponGrenade;
-		m_GameSkin.m_aSpriteWeapons[4] = m_GameSkin.m_SpriteWeaponLaser;
-		m_GameSkin.m_aSpriteWeapons[5] = m_GameSkin.m_SpriteWeaponNinja;
-
-		// particles
-		for(int i = 0; i < 9; ++i)
-		{
-			m_GameSkin.m_aSpriteParticles[i] = Graphics()->LoadSpriteTexture(ImgInfo, FallbackImgInfo, &g_pData->m_aSprites[SPRITE_PART1 + i]);
-		}
-
-		// stars
-		for(int i = 0; i < 3; ++i)
-		{
-			m_GameSkin.m_aSpriteStars[i] = Graphics()->LoadSpriteTexture(ImgInfo, FallbackImgInfo, &g_pData->m_aSprites[SPRITE_STAR1 + i]);
-		}
-
-		// projectiles
-		m_GameSkin.m_SpriteWeaponGunProjectile = Graphics()->LoadSpriteTexture(ImgInfo, FallbackImgInfo, &g_pData->m_aSprites[SPRITE_WEAPON_GUN_PROJ]);
-		m_GameSkin.m_SpriteWeaponShotgunProjectile = Graphics()->LoadSpriteTexture(ImgInfo, FallbackImgInfo, &g_pData->m_aSprites[SPRITE_WEAPON_SHOTGUN_PROJ]);
-		m_GameSkin.m_SpriteWeaponGrenadeProjectile = Graphics()->LoadSpriteTexture(ImgInfo, FallbackImgInfo, &g_pData->m_aSprites[SPRITE_WEAPON_GRENADE_PROJ]);
-
-		// these weapons have no projectiles
-		m_GameSkin.m_SpriteWeaponHammerProjectile = IGraphics::CTextureHandle();
-		m_GameSkin.m_SpriteWeaponNinjaProjectile = IGraphics::CTextureHandle();
-
-		m_GameSkin.m_SpriteWeaponLaserProjectile = Graphics()->LoadSpriteTexture(ImgInfo, FallbackImgInfo, &g_pData->m_aSprites[SPRITE_WEAPON_LASER_PROJ]);
-
-		m_GameSkin.m_aSpriteWeaponProjectiles[0] = m_GameSkin.m_SpriteWeaponHammerProjectile;
-		m_GameSkin.m_aSpriteWeaponProjectiles[1] = m_GameSkin.m_SpriteWeaponGunProjectile;
-		m_GameSkin.m_aSpriteWeaponProjectiles[2] = m_GameSkin.m_SpriteWeaponShotgunProjectile;
-		m_GameSkin.m_aSpriteWeaponProjectiles[3] = m_GameSkin.m_SpriteWeaponGrenadeProjectile;
-		m_GameSkin.m_aSpriteWeaponProjectiles[4] = m_GameSkin.m_SpriteWeaponLaserProjectile;
-		m_GameSkin.m_aSpriteWeaponProjectiles[5] = m_GameSkin.m_SpriteWeaponNinjaProjectile;
-
-		// muzzles
-		for(int i = 0; i < 3; ++i)
-		{
-			m_GameSkin.m_aSpriteWeaponGunMuzzles[i] = Graphics()->LoadSpriteTexture(ImgInfo, FallbackImgInfo, &g_pData->m_aSprites[SPRITE_WEAPON_GUN_MUZZLE1 + i]);
-			m_GameSkin.m_aSpriteWeaponShotgunMuzzles[i] = Graphics()->LoadSpriteTexture(ImgInfo, FallbackImgInfo, &g_pData->m_aSprites[SPRITE_WEAPON_SHOTGUN_MUZZLE1 + i]);
-			m_GameSkin.m_aaSpriteWeaponNinjaMuzzles[i] = Graphics()->LoadSpriteTexture(ImgInfo, FallbackImgInfo, &g_pData->m_aSprites[SPRITE_WEAPON_NINJA_MUZZLE1 + i]);
-
-			m_GameSkin.m_aaSpriteWeaponsMuzzles[1][i] = m_GameSkin.m_aSpriteWeaponGunMuzzles[i];
-			m_GameSkin.m_aaSpriteWeaponsMuzzles[2][i] = m_GameSkin.m_aSpriteWeaponShotgunMuzzles[i];
-			m_GameSkin.m_aaSpriteWeaponsMuzzles[5][i] = m_GameSkin.m_aaSpriteWeaponNinjaMuzzles[i];
-		}
-
-		// pickups
-		m_GameSkin.m_SpritePickupHealth = Graphics()->LoadSpriteTexture(ImgInfo, FallbackImgInfo, &g_pData->m_aSprites[SPRITE_PICKUP_HEALTH]);
-		m_GameSkin.m_SpritePickupFreeze = Graphics()->LoadSpriteTexture(ImgInfo, FallbackImgInfo, &g_pData->m_aSprites[SPRITE_PICKUP_FREEZE]);
-		m_GameSkin.m_SpritePickupArmor = Graphics()->LoadSpriteTexture(ImgInfo, FallbackImgInfo, &g_pData->m_aSprites[SPRITE_PICKUP_ARMOR]);
-		m_GameSkin.m_SpritePickupHammer = Graphics()->LoadSpriteTexture(ImgInfo, FallbackImgInfo, &g_pData->m_aSprites[SPRITE_PICKUP_HAMMER]);
-		m_GameSkin.m_SpritePickupGun = Graphics()->LoadSpriteTexture(ImgInfo, FallbackImgInfo, &g_pData->m_aSprites[SPRITE_PICKUP_GUN]);
-		m_GameSkin.m_SpritePickupShotgun = Graphics()->LoadSpriteTexture(ImgInfo, FallbackImgInfo, &g_pData->m_aSprites[SPRITE_PICKUP_SHOTGUN]);
-		m_GameSkin.m_SpritePickupGrenade = Graphics()->LoadSpriteTexture(ImgInfo, FallbackImgInfo, &g_pData->m_aSprites[SPRITE_PICKUP_GRENADE]);
-		m_GameSkin.m_SpritePickupLaser = Graphics()->LoadSpriteTexture(ImgInfo, FallbackImgInfo, &g_pData->m_aSprites[SPRITE_PICKUP_LASER]);
-		m_GameSkin.m_SpritePickupNinja = Graphics()->LoadSpriteTexture(ImgInfo, FallbackImgInfo, &g_pData->m_aSprites[SPRITE_PICKUP_NINJA]);
-		m_GameSkin.m_SpritePickupArmorShotgun = Graphics()->LoadSpriteTexture(ImgInfo, FallbackImgInfo, &g_pData->m_aSprites[SPRITE_PICKUP_ARMOR_SHOTGUN]);
-		m_GameSkin.m_SpritePickupArmorGrenade = Graphics()->LoadSpriteTexture(ImgInfo, FallbackImgInfo, &g_pData->m_aSprites[SPRITE_PICKUP_ARMOR_GRENADE]);
-		m_GameSkin.m_SpritePickupArmorNinja = Graphics()->LoadSpriteTexture(ImgInfo, FallbackImgInfo, &g_pData->m_aSprites[SPRITE_PICKUP_ARMOR_NINJA]);
-		m_GameSkin.m_SpritePickupArmorLaser = Graphics()->LoadSpriteTexture(ImgInfo, FallbackImgInfo, &g_pData->m_aSprites[SPRITE_PICKUP_ARMOR_LASER]);
-
-		m_GameSkin.m_aSpritePickupWeapons[0] = m_GameSkin.m_SpritePickupHammer;
-		m_GameSkin.m_aSpritePickupWeapons[1] = m_GameSkin.m_SpritePickupGun;
-		m_GameSkin.m_aSpritePickupWeapons[2] = m_GameSkin.m_SpritePickupShotgun;
-		m_GameSkin.m_aSpritePickupWeapons[3] = m_GameSkin.m_SpritePickupGrenade;
-		m_GameSkin.m_aSpritePickupWeapons[4] = m_GameSkin.m_SpritePickupLaser;
-		m_GameSkin.m_aSpritePickupWeapons[5] = m_GameSkin.m_SpritePickupNinja;
-
-		m_GameSkin.m_aSpritePickupWeaponArmor[0] = m_GameSkin.m_SpritePickupArmorShotgun;
-		m_GameSkin.m_aSpritePickupWeaponArmor[1] = m_GameSkin.m_SpritePickupArmorGrenade;
-		m_GameSkin.m_aSpritePickupWeaponArmor[2] = m_GameSkin.m_SpritePickupArmorNinja;
-		m_GameSkin.m_aSpritePickupWeaponArmor[3] = m_GameSkin.m_SpritePickupArmorLaser;
-
-		// flags
-		m_GameSkin.m_SpriteFlagBlue = Graphics()->LoadSpriteTexture(ImgInfo, FallbackImgInfo, &g_pData->m_aSprites[SPRITE_FLAG_BLUE]);
-		m_GameSkin.m_SpriteFlagRed = Graphics()->LoadSpriteTexture(ImgInfo, FallbackImgInfo, &g_pData->m_aSprites[SPRITE_FLAG_RED]);
-
-		// ninja bar (0.7)
-		if(!Graphics()->IsSpriteTextureFullyTransparent(ImgInfo, &client_data7::g_pData->m_aSprites[client_data7::SPRITE_NINJA_BAR_FULL_LEFT]) ||
-			!Graphics()->IsSpriteTextureFullyTransparent(ImgInfo, &client_data7::g_pData->m_aSprites[client_data7::SPRITE_NINJA_BAR_FULL]) ||
-			!Graphics()->IsSpriteTextureFullyTransparent(ImgInfo, &client_data7::g_pData->m_aSprites[client_data7::SPRITE_NINJA_BAR_EMPTY]) ||
-			!Graphics()->IsSpriteTextureFullyTransparent(ImgInfo, &client_data7::g_pData->m_aSprites[client_data7::SPRITE_NINJA_BAR_EMPTY_RIGHT]))
-		{
-			m_GameSkin.m_SpriteNinjaBarFullLeft = Graphics()->LoadSpriteTexture(ImgInfo, FallbackImgInfo, &client_data7::g_pData->m_aSprites[client_data7::SPRITE_NINJA_BAR_FULL_LEFT]);
-			m_GameSkin.m_SpriteNinjaBarFull = Graphics()->LoadSpriteTexture(ImgInfo, FallbackImgInfo, &client_data7::g_pData->m_aSprites[client_data7::SPRITE_NINJA_BAR_FULL]);
-			m_GameSkin.m_SpriteNinjaBarEmpty = Graphics()->LoadSpriteTexture(ImgInfo, FallbackImgInfo, &client_data7::g_pData->m_aSprites[client_data7::SPRITE_NINJA_BAR_EMPTY]);
-			m_GameSkin.m_SpriteNinjaBarEmptyRight = Graphics()->LoadSpriteTexture(ImgInfo, FallbackImgInfo, &client_data7::g_pData->m_aSprites[client_data7::SPRITE_NINJA_BAR_EMPTY_RIGHT]);
-		}
-
-		m_GameSkin.m_Loaded = true;
+		FillGameSkin(m_GameSkin, ImgInfo, FallbackImgInfo);
+		// C-Client: remember the file, other Cr1stal players can see this pack
+		if(!LoadedAsset.m_IsDefault)
+			str_copy(m_aCcGameSkinFile, LoadedAsset.m_aPath);
 	}
 	ImgInfo.Free();
 	if(FallbackImgInfo.has_value())

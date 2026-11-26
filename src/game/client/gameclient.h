@@ -29,6 +29,7 @@
 
 // components
 #include "components/background.h"
+#include "components/cclient_presence.h" // Cr1stal Client
 #include "components/bestclient/3d_particles.h" // bestclient
 #include "components/bestclient/admin_panel.h" // bestclient
 #include "components/bestclient/aspect_ratio.h" // bestclient
@@ -241,6 +242,7 @@ public:
 	CSpecPauseRadio m_SpecPauseRadio; // bestclient
 	CShowPoints m_ShowPoints; // bestclient
 	CClientIndicator m_ClientIndicator; // bestclient
+	CCPresence m_CPresence; // Cr1stal Client
 	CVoiceChat m_VoiceChat; // bestclient
 	CAdminPanel m_AdminPanel; // bestclient
 	CAspectRatio m_AspectRatio; // bestclient
@@ -1037,6 +1039,13 @@ public:
 		}
 	};
 	CGameSkin m_GameSkin;
+	// Cr1stal Client: game packs of other Cr1stal Client players
+	bool LoadGameSkinFile(CGameSkin &Skin, const char *pFile, int StorageType);
+	void UnloadGameSkin(CGameSkin &Skin);
+	void FillGameSkin(CGameSkin &Skin, CImageInfo &ImgInfo, std::optional<CImageInfo> &FallbackImgInfo);
+	const CGameSkin &GameSkinOf(int ClientId);
+	char m_aCcGameSkinFile[IO_MAX_PATH_LENGTH] = "";
+	std::map<std::string, CGameSkin> m_CcPackSkins;
 
 	class CParticlesSkin
 	{

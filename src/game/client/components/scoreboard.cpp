@@ -927,6 +927,13 @@ void CScoreboard::RenderScoreboard(CUIRect Scoreboard, int Team, int CountStart,
 					Player.m_MuteMark.Render(TextRender(), vec2(NameTextOffset, TextY), NameColor);
 					NameTextOffset += Player.m_MuteMark.Width();
 				}
+				// Cr1stal Client: the client avatar of Cr1stal Client players
+				if(g_Config.m_CcClientBadge && pInfo->m_ClientId >= 0 && GameClient()->m_CPresence.IsCrystal(pInfo->m_ClientId))
+				{
+					const float BadgeSize = FontSize * 1.1f;
+					GameClient()->m_CPresence.RenderBadge(vec2(NameTextOffset + BadgeSize * 0.5f, Row.y + Row.h / 2.0f), BadgeSize, TextColor.a);
+					NameTextOffset += BadgeSize + FontSize * 0.25f;
+				}
 				// bestclient
 				const bool HasWarNameColor = pInfo->m_ClientId >= 0 && g_Config.m_TcWarList && g_Config.m_TcWarListScoreboard && GameClient()->m_WarList.GetAnyWar(pInfo->m_ClientId);
 				if(!HasWarNameColor && pInfo->m_ClientId >= 0 && g_Config.m_BcNameplateGradient && CBcGradient::AppliesTo(pInfo->m_ClientId, GameClient()))

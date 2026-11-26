@@ -205,6 +205,7 @@ void CGameClient::OnConsoleInit()
 					      &m_LegitFinishedMaps, // bestclient
 					      &m_ShowPoints, // bestclient
 					      &m_ClientIndicator, // bestclient
+					      &m_CPresence, // Cr1stal Client
 					      &m_VoiceChat, // bestclient
 					      &m_Hud,
 					      &m_BestClient, // bestclient
@@ -6215,4 +6216,26 @@ const char *CGameClient::GetComponentName(const CComponent *pComp) const
 	if(pComp == &m_HudEditor)
 		return "HudEditor";
 	return "Unknown";
+}
+
+const CGameClient::CGameSkin &CGameClient::GameSkinOf(int ClientId)
+{
+	// Cr1stal Client: other Cr1stal Client players are drawn with their own game pack
+	if(!g_Config.m_CcOthersPacks)
+		return m_GameSkin;
+	const char *pPack = m_CPresence.PackOf(ClientId);
+	if(!pPack)
+		return m_GameSkin;
+	auto It = m_CcPackSkins.find(pPack);
+	if(It == m_CcPackSkins.end())
+	{
+		if(m_CcPackSkins.size() >= 12)
+			return m_GameSkin;
+		char aFile[IO_MAX_PATH_LENGTH];
+		str_format(aFile, sizeof(aFile), "cclient_packs/%s.png", pPack);
+		CGameSkin &Skin = m_CcPackSkins[pPack];
+		LoadGameSkinFile(Skin, aFile, IStorage::TYPE_SAVE);
+		It = m_CcPackSkins.find(pPack);
+	}
+	return It->second.m_Loaded ? It->second : m_GameSkin;
 }

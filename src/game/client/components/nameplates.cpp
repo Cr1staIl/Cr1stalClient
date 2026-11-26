@@ -861,6 +861,31 @@ public:
 };
 
 // bestclient
+class CNamePlatePartBadge : public CNamePlatePart
+{
+protected:
+	float m_Alpha = 1.0f;
+
+public:
+	friend class CGameClient;
+	void Update(CGameClient &This, const CNamePlateData &Data) override
+	{
+		// Cr1stal Client: the client avatar of Cr1stal Client players, left of the name
+		const float Size = Data.m_FontSize * 1.1f;
+		m_Size = vec2(Size, Size);
+		m_Padding = vec2(DEFAULT_PADDING * 0.6f, DEFAULT_PADDING);
+		m_Alpha = Data.m_Color.a;
+		m_Visible = g_Config.m_CcClientBadge && Data.m_ShowName &&
+			    (Data.m_InGame ? This.m_CPresence.IsCrystal(Data.m_ClientId) : true);
+	}
+	void Render(CGameClient &This, vec2 Pos) const override
+	{
+		This.m_CPresence.RenderBadge(Pos, m_Size.x, m_Alpha);
+	}
+	CNamePlatePartBadge(CGameClient &This) :
+		CNamePlatePart(This) {}
+};
+
 class CNamePlatePartBClientIndicator : public CNamePlatePartIcon
 {
 protected:
@@ -1136,6 +1161,7 @@ private:
 			// bestclient
 			AddPart<CNamePlatePartBClientIndicator>(This);
 			AddPart<CNamePlatePartVoiceTalking>(This);
+			AddPart<CNamePlatePartBadge>(This); // Cr1stal Client
 			// bestclient
 			AddPart<CNamePlatePartName>(This);
 			AddPart<CNamePlatePartNewLine>(This);

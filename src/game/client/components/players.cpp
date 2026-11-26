@@ -607,7 +607,7 @@ void CPlayers::RenderHook(
 	float d = distance(Pos, HookPos);
 	vec2 Dir = normalize(Pos - HookPos);
 
-	Graphics()->TextureSet(GameClient()->m_GameSkin.m_SpriteHookHead);
+	Graphics()->TextureSet(GameClient()->GameSkinOf(ClientId).m_SpriteHookHead);
 	Graphics()->QuadsSetRotation(angle(Dir) + pi);
 	// render head
 	int QuadOffset = NUM_WEAPONS * 2 + 2;
@@ -632,7 +632,7 @@ void CPlayers::RenderHook(
 		s_aHookChainRenderInfo[HookChainCount].m_Scale = 1;
 		s_aHookChainRenderInfo[HookChainCount].m_Rotation = angle(Dir) + pi;
 	}
-	Graphics()->TextureSet(GameClient()->m_GameSkin.m_SpriteHookChain);
+	Graphics()->TextureSet(GameClient()->GameSkinOf(ClientId).m_SpriteHookChain);
 	Graphics()->RenderQuadContainerAsSpriteMultiple(m_WeaponEmoteQuadContainerIndex, QuadOffset, HookChainCount, s_aHookChainRenderInfo);
 
 	Graphics()->QuadsSetRotation(0);
@@ -914,7 +914,7 @@ void CPlayers::RenderPlayer(
 
 			// normal weapons
 			int CurrentWeapon = std::clamp(Player.m_Weapon, 0, NUM_WEAPONS - 1);
-			Graphics()->TextureSet(GameClient()->m_GameSkin.m_aSpriteWeapons[CurrentWeapon]);
+			Graphics()->TextureSet(GameClient()->GameSkinOf(ClientId).m_aSpriteWeapons[CurrentWeapon]);
 			int QuadOffset = CurrentWeapon * 2 + (Direction.x < 0.0f ? 1 : 0);
 
 			float Recoil = 0.0f;
@@ -1059,7 +1059,7 @@ void CPlayers::RenderPlayer(
 						WeaponPosition = Position;
 						float OffsetX = g_pData->m_Weapons.m_aId[CurrentWeapon].m_Muzzleoffsetx;
 						WeaponPosition -= HadokenDirection * OffsetX * WeaponScale; // bestclient
-						Graphics()->TextureSet(GameClient()->m_GameSkin.m_aaSpriteWeaponsMuzzles[CurrentWeapon][IteX]);
+						Graphics()->TextureSet(GameClient()->GameSkinOf(ClientId).m_aaSpriteWeaponsMuzzles[CurrentWeapon][IteX]);
 						Graphics()->RenderQuadContainerAsSprite(m_aWeaponSpriteMuzzleQuadContainerIndex[CurrentWeapon], QuadOffset, WeaponPosition.x, WeaponPosition.y, WeaponScale, WeaponScale); // bestclient
 					}
 				}
@@ -1115,7 +1115,7 @@ void CPlayers::RenderPlayer(
 						vec2 DirectionY(-Direction.y, Direction.x);
 						// bestclient
 						vec2 MuzzlePos = WeaponPosition + (Direction * g_pData->m_Weapons.m_aId[CurrentWeapon].m_Muzzleoffsetx + DirectionY * OffsetY) * WeaponScale;
-						Graphics()->TextureSet(GameClient()->m_GameSkin.m_aaSpriteWeaponsMuzzles[CurrentWeapon][IteX]);
+						Graphics()->TextureSet(GameClient()->GameSkinOf(ClientId).m_aaSpriteWeaponsMuzzles[CurrentWeapon][IteX]);
 						Graphics()->RenderQuadContainerAsSprite(m_aWeaponSpriteMuzzleQuadContainerIndex[CurrentWeapon], QuadOffset, MuzzlePos.x, MuzzlePos.y, WeaponScale, WeaponScale);
 						// bestclient
 					}
