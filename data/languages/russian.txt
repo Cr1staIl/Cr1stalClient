@@ -3825,9 +3825,6 @@ Fix commands typed in the Russian layout
 Your tee was moved in the game!
 == Твоего ти сдвинули в игре!
 
-Virtual joystick which only aims and moves the mouse pointer relatively.
-== 
-
 Gores mode
 == Режим гореса
 
@@ -3896,3 +3893,30 @@ Action
 
 Key
 == Клавиша
+
+Virtual joystick which only aims and moves the mouse pointer relatively.
+== 
+
+Configs
+== Конфиги
+
+Save all your settings and binds under a name and switch between them
+== Сохраняй все настройки и бинды под именем и переключайся между ними
+
+No saved configs yet
+== Пока нет сохранённых конфигов
+
+Save current settings under this name
+== Сохранить текущие настройки под этим именем
+
+Load the selected config
+== Загрузить выбранный конфиг
+
+Rename the selected config to the name
+== Переименовать выбранный в это имя
+
+Delete the selected config
+== Удалить выбранный конфиг
+
+Open the configs folder
+== Открыть папку конфигов

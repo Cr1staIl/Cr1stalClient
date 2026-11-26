@@ -3444,6 +3444,30 @@ Action
 Key
 == 
 
+Configs
+== 
+
+Save all your settings and binds under a name and switch between them
+== 
+
+No saved configs yet
+== 
+
+Save current settings under this name
+== 
+
+Load the selected config
+== 
+
+Rename the selected config to the name
+== 
+
+Delete the selected config
+== 
+
+Open the configs folder
+== 
+
 Effects
 == 
 

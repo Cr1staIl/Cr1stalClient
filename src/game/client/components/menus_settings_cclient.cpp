@@ -1,7 +1,9 @@
 /* Cr1stal Client (C-Client) settings page. Based on DDNet, see licence.txt. */
 #include "menus.h"
 
+#include <base/io.h>
 #include <base/str.h>
+#include <base/time.h>
 
 #include <engine/shared/config.h>
 #include <engine/textrender.h>
@@ -290,8 +292,45 @@ enum
 	CARD_FUN,
 	CARD_EFFECTS,
 	CARD_GAMEPLAY,
+	CARD_CONFIGS,
 	NUM_CARDS,
 };
+
+// C-Client: whole configs saved under a name in cclient_configs/
+struct SCcConfigFile
+{
+	std::string m_Name;
+	time_t m_Time;
+};
+
+static int CcConfigScan(const CFsFileInfo *pInfo, int IsDir, int DirType, void *pUser)
+{
+	auto *pList = static_cast<std::vector<SCcConfigFile> *>(pUser);
+	if(IsDir || !str_endswith(pInfo->m_pName, ".cfg"))
+		return 0;
+	char aName[128];
+	str_truncate(aName, sizeof(aName), pInfo->m_pName, str_length(pInfo->m_pName) - 4);
+	pList->push_back({aName, pInfo->m_TimeModified});
+	return 0;
+}
+
+// copy a file in the save folder
+static bool CcCopyFile(IStorage *pStorage, const char *pFrom, const char *pTo)
+{
+	void *pData = nullptr;
+	unsigned Size = 0;
+	if(!pStorage->ReadFile(pFrom, IStorage::TYPE_SAVE, &pData, &Size))
+		return false;
+	IOHANDLE File = pStorage->OpenFile(pTo, IOFLAG_WRITE, IStorage::TYPE_SAVE);
+	bool Ok = false;
+	if(File)
+	{
+		Ok = io_write(File, pData, Size) == Size;
+		io_close(File);
+	}
+	free(pData);
+	return Ok;
+}
 
 // C-Client: the key a command is bound to (first match), or none
 static CBindSlot CcFindBind(CBinds &Binds, const char *pCommand)
@@ -344,8 +383,8 @@ void CMenus::RenderSettingsCClient(CUIRect MainView)
 		vColumns.emplace_back(this, Ui(), Rect);
 	}
 	// which column every card goes to, for 3 and for 2 columns
-	static const int s_aColumnOf3[NUM_CARDS] = {0, 0, 0, 0, 1, 1, 1, 1, 2, 2, 2, 2, 2, 2, 2, 2, 0, 1, 1, 0};
-	static const int s_aColumnOf2[NUM_CARDS] = {0, 0, 0, 0, 0, 0, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 0, 1, 0, 1};
+	static const int s_aColumnOf3[NUM_CARDS] = {0, 0, 0, 0, 1, 1, 1, 1, 2, 2, 2, 2, 2, 2, 2, 2, 0, 1, 1, 0, 2};
+	static const int s_aColumnOf2[NUM_CARDS] = {0, 0, 0, 0, 0, 0, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 0, 1, 0, 1, 1};
 	auto Col = [&](int Card) -> CCcColumn & {
 		return vColumns[NumColumns == 3 ? s_aColumnOf3[Card] : s_aColumnOf2[Card]];
 	};
@@ -801,6 +840,93 @@ void CMenus::RenderSettingsCClient(CUIRect MainView)
 				C.Edit(&s_aInputs[i], aLabel);
 				CcKeyRow(Ui(), GameClient(), C.Line(20.0f), Localize("Key"), aCommand, &s_aReaders[i], &s_aClears[i]);
 			}
+		}
+		C.EndCard();
+	}
+
+	// ---- configs ----
+	{
+		CCcColumn &C = Col(CARD_CONFIGS);
+		C.BeginCard(CARD_CONFIGS, Localize("Configs"));
+		C.Note(Localize("Save all your settings and binds under a name and switch between them"));
+		static std::vector<SCcConfigFile> s_vConfigs;
+		static bool s_Scanned = false;
+		static int s_Selected = -1;
+		static char s_aName[64] = "";
+		static CLineInput s_NameInput(s_aName, sizeof(s_aName));
+		if(!s_Scanned)
+		{
+			Storage()->CreateFolder("cclient_configs", IStorage::TYPE_SAVE);
+			s_vConfigs.clear();
+			Storage()->ListDirectoryInfo(IStorage::TYPE_SAVE, "cclient_configs", CcConfigScan, &s_vConfigs);
+			std::sort(s_vConfigs.begin(), s_vConfigs.end(), [](const SCcConfigFile &a, const SCcConfigFile &b) { return a.m_Time > b.m_Time; });
+			s_Scanned = true;
+			if(s_Selected >= (int)s_vConfigs.size())
+				s_Selected = -1;
+		}
+		// the list: name and date, click to select
+		static std::vector<CButtonContainer> s_vRowButtons;
+		s_vRowButtons.resize(s_vConfigs.size());
+		for(size_t i = 0; i < s_vConfigs.size(); i++)
+		{
+			CUIRect Row = C.Line(20.0f), Date;
+			const bool Selected = (int)i == s_Selected;
+			const float Hover = Ui()->HoverAnim(&s_vRowButtons[i]);
+			Row.Draw(Selected ? CCStyle::ACCENT.WithAlpha(0.45f) : ColorRGBA(1.0f, 1.0f, 1.0f, 0.04f + 0.05f * Hover), IGraphics::CORNER_ALL, 6.0f);
+			if(Ui()->DoButtonLogic(&s_vRowButtons[i], 0, &Row, BUTTONFLAG_LEFT))
+			{
+				s_Selected = i;
+				str_copy(s_aName, s_vConfigs[i].m_Name.c_str());
+			}
+			Row.VMargin(8.0f, &Row);
+			Row.VSplitRight(90.0f, &Row, &Date);
+			Ui()->DoLabel(&Row, s_vConfigs[i].m_Name.c_str(), 12.0f, TEXTALIGN_ML);
+			char aDate[32];
+			str_timestamp_ex(s_vConfigs[i].m_Time, aDate, sizeof(aDate), "%d.%m.%Y %H:%M");
+			TextRender()->TextColor(CCStyle::TEXT_DIM);
+			Ui()->DoLabel(&Date, aDate, 10.0f, TEXTALIGN_MR);
+			TextRender()->TextColor(TextRender()->DefaultTextColor());
+		}
+		if(s_vConfigs.empty())
+			C.Note(Localize("No saved configs yet"));
+		C.Edit(&s_NameInput, Localize("Name"));
+		char aFile[IO_MAX_PATH_LENGTH];
+		str_format(aFile, sizeof(aFile), "cclient_configs/%s.cfg", s_aName);
+		const bool HasName = s_aName[0] && !str_find(s_aName, "/") && !str_find(s_aName, "\\") && !str_find(s_aName, "..");
+		static CButtonContainer s_SaveButton, s_LoadButton, s_RenameButton, s_DeleteButton, s_FolderButton;
+		if(C.Button(&s_SaveButton, Localize("Save current settings under this name")) && HasName)
+		{
+			ConfigManager()->Save();
+			if(CcCopyFile(Storage(), CONFIG_FILE, aFile))
+				s_Scanned = false;
+		}
+		if(s_Selected >= 0 && s_Selected < (int)s_vConfigs.size())
+		{
+			char aSelected[IO_MAX_PATH_LENGTH];
+			str_format(aSelected, sizeof(aSelected), "cclient_configs/%s.cfg", s_vConfigs[s_Selected].m_Name.c_str());
+			if(C.Button(&s_LoadButton, Localize("Load the selected config")))
+			{
+				Console()->ExecuteFile(aSelected, IConsole::CLIENT_ID_UNSPECIFIED);
+				ConfigManager()->Save();
+			}
+			if(C.Button(&s_RenameButton, Localize("Rename the selected config to the name")) && HasName && str_comp(aSelected, aFile) != 0)
+			{
+				Storage()->RenameFile(aSelected, aFile, IStorage::TYPE_SAVE);
+				s_Scanned = false;
+			}
+			if(C.Button(&s_DeleteButton, Localize("Delete the selected config")))
+			{
+				Storage()->RemoveFile(aSelected, IStorage::TYPE_SAVE);
+				s_Selected = -1;
+				s_Scanned = false;
+			}
+		}
+		if(C.Button(&s_FolderButton, Localize("Open the configs folder")))
+		{
+			char aPath[IO_MAX_PATH_LENGTH];
+			Storage()->GetCompletePath(IStorage::TYPE_SAVE, "cclient_configs", aPath, sizeof(aPath));
+			Client()->ViewFile(aPath);
+			s_Scanned = false;
 		}
 		C.EndCard();
 	}
