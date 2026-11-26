@@ -289,8 +289,38 @@ enum
 	CARD_GHOSTS,
 	CARD_FUN,
 	CARD_EFFECTS,
+	CARD_GAMEPLAY,
 	NUM_CARDS,
 };
+
+// C-Client: the key a command is bound to (first match), or none
+static CBindSlot CcFindBind(CBinds &Binds, const char *pCommand)
+{
+	for(int Mod = 0; Mod < KeyModifier::COMBINATION_COUNT; Mod++)
+		for(int Key = KEY_FIRST; Key < KEY_LAST; Key++)
+		{
+			const char *pBind = Binds.Get(Key, Mod);
+			if(pBind[0] && str_comp(pBind, pCommand) == 0)
+				return CBindSlot(Key, Mod);
+		}
+	return EMPTY_BIND_SLOT;
+}
+
+static void CcKeyRow(CUi *pUi, CGameClient *pGameClient, CUIRect Row, const char *pLabel, const char *pCommand, CButtonContainer *pReader, CButtonContainer *pClear)
+{
+	const CBindSlot Current = CcFindBind(pGameClient->m_Binds, pCommand);
+	CUIRect Label, Reader;
+	Row.VSplitRight(110.0f, &Label, &Reader);
+	pUi->DoLabel(&Label, pLabel, 12.0f, TEXTALIGN_ML);
+	const CKeyBinder::CKeyReaderResult Result = pGameClient->m_KeyBinder.DoKeyReader(pReader, pClear, &Reader, Current, false);
+	if(!Result.m_Aborted && Result.m_Bind != Current)
+	{
+		if(Current.m_Key != KEY_UNKNOWN)
+			pGameClient->m_Binds.Bind(Current.m_Key, "", false, Current.m_ModifierMask);
+		if(Result.m_Bind.m_Key != KEY_UNKNOWN)
+			pGameClient->m_Binds.Bind(Result.m_Bind.m_Key, pCommand, false, Result.m_Bind.m_ModifierMask);
+	}
+}
 
 void CMenus::RenderSettingsCClient(CUIRect MainView)
 {
@@ -314,8 +344,8 @@ void CMenus::RenderSettingsCClient(CUIRect MainView)
 		vColumns.emplace_back(this, Ui(), Rect);
 	}
 	// which column every card goes to, for 3 and for 2 columns
-	static const int s_aColumnOf3[NUM_CARDS] = {0, 0, 0, 0, 1, 1, 1, 1, 2, 2, 2, 2, 2, 2, 2, 2, 0, 1, 1};
-	static const int s_aColumnOf2[NUM_CARDS] = {0, 0, 0, 0, 0, 0, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 0, 1, 0};
+	static const int s_aColumnOf3[NUM_CARDS] = {0, 0, 0, 0, 1, 1, 1, 1, 2, 2, 2, 2, 2, 2, 2, 2, 0, 1, 1, 0};
+	static const int s_aColumnOf2[NUM_CARDS] = {0, 0, 0, 0, 0, 0, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 0, 1, 0, 1};
 	auto Col = [&](int Card) -> CCcColumn & {
 		return vColumns[NumColumns == 3 ? s_aColumnOf3[Card] : s_aColumnOf2[Card]];
 	};
@@ -736,6 +766,45 @@ void CMenus::RenderSettingsCClient(CUIRect MainView)
 		C.EndCard();
 	}
 
+	// ---- gameplay ----
+	{
+		CCcColumn &C = Col(CARD_GAMEPLAY);
+		C.BeginCard(CARD_GAMEPLAY, Localize("Gameplay"));
+		C.Check(&g_Config.m_CcGoresMode, Localize("Gores mode"), Localize("You hold the gun, fire swings the hammer"));
+		if(g_Config.m_CcGoresMode)
+			C.Check(&g_Config.m_CcGoresModeWeapons, Localize("Pause it with shotgun, grenade or laser"));
+		C.Check(&g_Config.m_ClSubTickAiming, Localize("Sub-tick aiming"), Localize("Fire and hook go where you aimed at the moment of the click"));
+		C.Check(&g_Config.m_CcInputDebounce, Localize("Input debounce"), Localize("Very short taps of jump, hook and walking are not lost"));
+		C.Check(&g_Config.m_CcFinishPrediction, Localize("Finish prediction"), Localize("How far you are to the finish and your expected time"));
+		C.Check(&g_Config.m_CcEdgeInfo, Localize("Edge info"), Localize("Tiles to the next freeze left, below and right"));
+		C.Check(&g_Config.m_CcFineZoom, Localize("Finer zoom (half steps)"));
+		C.Check(&g_Config.m_CcCinematicCamera, Localize("Cinematic spectator camera"));
+		if(g_Config.m_CcCinematicCamera)
+			C.Slider(&g_Config.m_CcCinematicCameraStrength, Localize("Smoothness"), 0, 100, "%");
+		C.Check(&g_Config.m_CcBetterSpectate, Localize("Better spectating"), Localize("Free view: click the tee in the middle to follow it, right click to look freely"));
+		C.Check(&g_Config.m_CcSpecMovedNotify, Localize("Warn when your tee is moved while paused"));
+		C.Check(&g_Config.m_CcConfirmQuit, Localize("Always ask before quitting"));
+		C.Check(&g_Config.m_CcHighPriority, Localize("High process priority"), Localize("Windows gives the game more CPU time"));
+		C.Gap(4.0f);
+		C.Caption(Localize("Fast actions"));
+		{
+			char *apActions[] = {g_Config.m_CcFastAction1, g_Config.m_CcFastAction2, g_Config.m_CcFastAction3, g_Config.m_CcFastAction4, g_Config.m_CcFastAction5, g_Config.m_CcFastAction6};
+			static CLineInput s_aInputs[6];
+			static CButtonContainer s_aReaders[6];
+			static CButtonContainer s_aClears[6];
+			for(int i = 0; i < 6; i++)
+			{
+				s_aInputs[i].SetBuffer(apActions[i], sizeof(g_Config.m_CcFastAction1));
+				char aLabel[32], aCommand[32];
+				str_format(aLabel, sizeof(aLabel), "%s %d", Localize("Action"), i + 1);
+				str_format(aCommand, sizeof(aCommand), "cc_fast_action %d", i + 1);
+				C.Edit(&s_aInputs[i], aLabel);
+				CcKeyRow(Ui(), GameClient(), C.Line(20.0f), Localize("Key"), aCommand, &s_aReaders[i], &s_aClears[i]);
+			}
+		}
+		C.EndCard();
+	}
+
 	// ---- effects ----
 	{
 		CCcColumn &C = Col(CARD_EFFECTS);
@@ -858,30 +927,7 @@ void CMenus::RenderSettingsCClient(CUIRect MainView)
 			static CButtonContainer s_aReaders[std::size(aBinds)];
 			static CButtonContainer s_aClears[std::size(aBinds)];
 			for(size_t i = 0; i < std::size(aBinds); i++)
-			{
-				CBindSlot Current = EMPTY_BIND_SLOT;
-				for(int Mod = 0; Mod < KeyModifier::COMBINATION_COUNT && Current == EMPTY_BIND_SLOT; Mod++)
-					for(int Key = KEY_FIRST; Key < KEY_LAST; Key++)
-					{
-						const char *pBind = GameClient()->m_Binds.Get(Key, Mod);
-						if(pBind[0] && str_comp(pBind, aBinds[i].m_pCommand) == 0)
-						{
-							Current = CBindSlot(Key, Mod);
-							break;
-						}
-					}
-				CUIRect Row = C.Line(20.0f), Label, Reader;
-				Row.VSplitRight(110.0f, &Label, &Reader);
-				Ui()->DoLabel(&Label, aBinds[i].m_pLabel, 12.0f, TEXTALIGN_ML);
-				const CKeyBinder::CKeyReaderResult Result = GameClient()->m_KeyBinder.DoKeyReader(&s_aReaders[i], &s_aClears[i], &Reader, Current, false);
-				if(!Result.m_Aborted && Result.m_Bind != Current)
-				{
-					if(Current.m_Key != KEY_UNKNOWN)
-						GameClient()->m_Binds.Bind(Current.m_Key, "", false, Current.m_ModifierMask);
-					if(Result.m_Bind.m_Key != KEY_UNKNOWN)
-						GameClient()->m_Binds.Bind(Result.m_Bind.m_Key, aBinds[i].m_pCommand, false, Result.m_Bind.m_ModifierMask);
-				}
-			}
+				CcKeyRow(Ui(), GameClient(), C.Line(20.0f), aBinds[i].m_pLabel, aBinds[i].m_pCommand, &s_aReaders[i], &s_aClears[i]);
 		}
 		C.EndCard();
 	}

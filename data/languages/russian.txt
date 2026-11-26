@@ -3804,9 +3804,6 @@ Mention
 Copy message
 == Копировать сообщение
 
-Virtual joystick which only aims and moves the mouse pointer relatively.
-== 
-
 Click messages while typing
 == Клик по сообщениям в открытом чате
 
@@ -3824,3 +3821,78 @@ Fix commands typed in the Russian layout
 
 .ыфму becomes /save
 == .ыфму станет /save
+
+Your tee was moved in the game!
+== Твоего ти сдвинули в игре!
+
+Virtual joystick which only aims and moves the mouse pointer relatively.
+== 
+
+Gores mode
+== Режим гореса
+
+You hold the gun, fire swings the hammer
+== В руках пистолет, выстрел бьёт молотом
+
+Pause it with shotgun, grenade or laser
+== Не работает с дробовиком, гранатой, лазером
+
+Sub-tick aiming
+== Прицел между тиками
+
+Fire and hook go where you aimed at the moment of the click
+== Выстрел и хук идут туда, куда ты целился в момент клика
+
+Input debounce
+== Не терять короткие нажатия
+
+Very short taps of jump, hook and walking are not lost
+== Очень короткие прыжок, хук и шаг не теряются
+
+Finish prediction
+== Прогноз финиша
+
+How far you are to the finish and your expected time
+== Сколько пройдено до финиша и ожидаемое время
+
+Edge info
+== Инфо о краях
+
+Tiles to the next freeze left, below and right
+== Сколько тайлов до фриза слева, снизу и справа
+
+Finer zoom (half steps)
+== Плавный зум (полшага)
+
+Cinematic spectator camera
+== Кинокамера в наблюдении
+
+Smoothness
+== Плавность
+
+Better spectating
+== Удобное наблюдение
+
+Free view: click the tee in the middle to follow it, right click to look freely
+== Свободный обзор: клик по ти в центре — следить, ПКМ — снова свободно
+
+Warn when your tee is moved while paused
+== Предупреждать, если ти сдвинули на паузе
+
+Always ask before quitting
+== Всегда спрашивать перед выходом
+
+High process priority
+== Высокий приоритет процесса
+
+Windows gives the game more CPU time
+== Windows даёт игре больше времени процессора
+
+Fast actions
+== Быстрые действия
+
+Action
+== Действие
+
+Key
+== Клавиша

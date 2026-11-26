@@ -2691,6 +2691,8 @@ if(CLIENT)
     components/cclient_bg_draw_file.h
     components/cclient_effects.cpp
     components/cclient_effects.h
+    components/cclient_gameplay.cpp
+    components/cclient_gameplay.h
     components/cclient_media.cpp
     components/cclient_media.h
     components/cclient_moving_tiles.cpp
@@ -2699,6 +2701,7 @@ if(CLIENT)
     components/cclient_playtime.h
     components/cclient_presence.cpp
     components/cclient_presence.h
+    components/cclient_priority.cpp
     components/cclient_spt.cpp
     components/cclient_spt.h
     components/cclient_style.cpp

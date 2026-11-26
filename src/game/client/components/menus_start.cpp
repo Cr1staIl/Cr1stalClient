@@ -291,7 +291,7 @@ void CMenusStart::RenderStartMenu(CUIRect MainView)
 			NewPage = CMenus::PAGE_SETTINGS;
 		if(Clicked == DOCK_QUIT || (UsedEscape = Ui()->ConsumeHotkey(CUi::HOTKEY_ESCAPE)) || CheckHotKey(KEY_Q))
 		{
-			if(UsedEscape || GameClient()->Editor()->HasUnsavedData() || (GameClient()->CurrentRaceTime() / 60 >= g_Config.m_ClConfirmQuitTime && g_Config.m_ClConfirmQuitTime >= 0))
+			if(g_Config.m_CcConfirmQuit || UsedEscape || GameClient()->Editor()->HasUnsavedData() || (GameClient()->CurrentRaceTime() / 60 >= g_Config.m_ClConfirmQuitTime && g_Config.m_ClConfirmQuitTime >= 0))
 				GameClient()->m_Menus.ShowQuitPopup();
 			else
 				Client()->Quit();

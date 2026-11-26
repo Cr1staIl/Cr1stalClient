@@ -77,6 +77,28 @@ void CControls::ConKeyInputState(IConsole::IResult *pResult, void *pUserData)
 		return;
 
 	const int Stroke = pResult->GetInteger(0);
+	// C-Client: input debounce, a press that is let go before it was sent still gets sent once
+	{
+		CControls *pControls = pState->m_pControls;
+		const int Dummy = g_Config.m_ClDummy;
+		int *pVariable = pState->m_apVariables[Dummy];
+		int Kind = -1;
+		if(pVariable == &pControls->m_aInputDirectionLeft[Dummy])
+			Kind = 0;
+		else if(pVariable == &pControls->m_aInputDirectionRight[Dummy])
+			Kind = 1;
+		else if(pVariable == &pControls->m_aInputData[Dummy].m_Jump)
+			Kind = 2;
+		else if(pVariable == &pControls->m_aInputData[Dummy].m_Hook)
+			Kind = 3;
+		if(Kind >= 0)
+		{
+			if(Stroke && !*pVariable)
+				pControls->m_aaCcPressSnap[Dummy][Kind] = pControls->m_aCcSnaps[Dummy];
+			else if(!Stroke && *pVariable && g_Config.m_CcInputDebounce && pControls->m_aaCcPressSnap[Dummy][Kind] == pControls->m_aCcSnaps[Dummy])
+				pControls->m_aaCcPending[Dummy][Kind] = true;
+		}
+	}
 	*pState->m_apVariables[g_Config.m_ClDummy] = Stroke;
 
 	if(Stroke != 0 && pState->m_IsMouseAction && g_Config.m_ClSubTickAiming && pState->m_pControls->GameClient()->m_Binds.m_HandlingNewBind)
@@ -99,6 +121,8 @@ void CControls::ConKeyInputCounter(IConsole::IResult *pResult, void *pUserData)
 			pState->m_pControls->m_aMouseOnAction[g_Config.m_ClDummy] = true;
 	}
 	*pVariable &= INPUT_STATE_MASK;
+	if(pVariable == &pState->m_pControls->m_aInputData[g_Config.m_ClDummy].m_Fire)
+		pState->m_pControls->GameClient()->m_CGameplay.OnFireInput(Stroke != 0); // C-Client: gores mode
 }
 
 struct CInputSet
@@ -325,6 +349,23 @@ int CControls::SnapInput(int *pData)
 			m_aInputData[g_Config.m_ClDummy].m_Direction = -1;
 		if(!m_aInputDirectionLeft[g_Config.m_ClDummy] && m_aInputDirectionRight[g_Config.m_ClDummy])
 			m_aInputData[g_Config.m_ClDummy].m_Direction = 1;
+
+		// C-Client: send the very short presses that came and went since the last input
+		{
+			const int Dummy = g_Config.m_ClDummy;
+			bool *pPending = m_aaCcPending[Dummy];
+			if(pPending[0] && m_aInputData[Dummy].m_Direction == 0)
+				m_aInputData[Dummy].m_Direction = -1;
+			if(pPending[1] && m_aInputData[Dummy].m_Direction == 0)
+				m_aInputData[Dummy].m_Direction = 1;
+			if(pPending[2])
+				m_aInputData[Dummy].m_Jump = 1;
+			if(pPending[3])
+				m_aInputData[Dummy].m_Hook = 1;
+			for(int k = 0; k < 4; k++)
+				pPending[k] = false;
+			m_aCcSnaps[Dummy]++;
+		}
 
 		// dummy copy moves
 		if(g_Config.m_ClDummyCopyMoves)

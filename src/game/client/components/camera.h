@@ -71,6 +71,7 @@ public:
 	static float ZoomStepsToValue(float Steps) { return std::pow(CCamera::ZOOM_STEP, Steps); }
 
 	vec2 m_Center;
+	vec2 m_CcCinematicPos = vec2(0.0f, 0.0f); // C-Client
 	bool m_ZoomSet;
 	bool m_Zooming;
 	float m_Zoom;

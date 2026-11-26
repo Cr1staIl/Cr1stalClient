@@ -326,7 +326,17 @@ void CCamera::OnRender()
 			GameClient()->m_Controls.ClampMousePos();
 			m_CamType = CAMTYPE_SPEC;
 		}
-		m_Center = GameClient()->m_Controls.m_aMousePos[g_Config.m_ClDummy];
+		// C-Client: cinematic camera, the free view glides after the mouse
+		const vec2 Target = GameClient()->m_Controls.m_aMousePos[g_Config.m_ClDummy];
+		if(g_Config.m_CcCinematicCamera && distance(m_CcCinematicPos, Target) < 3000.0f)
+		{
+			const float Dt = std::clamp(Client()->RenderFrameTime(), 0.0f, 0.1f);
+			const float Speed = 1.5f + (100 - g_Config.m_CcCinematicCameraStrength) * 0.12f;
+			m_CcCinematicPos += (Target - m_CcCinematicPos) * (1.0f - std::exp(-Speed * Dt));
+		}
+		else
+			m_CcCinematicPos = Target;
+		m_Center = m_CcCinematicPos;
 	}
 	else
 	{
@@ -433,7 +443,8 @@ void CCamera::ConZoomPlus(IConsole::IResult *pResult, void *pUserData)
 	if(!pSelf->ZoomAllowed())
 		return;
 
-	float ZoomAmount = pResult->NumArguments() ? pResult->GetFloat(0) : 1.0f;
+	// C-Client: finer zoom in half steps
+	float ZoomAmount = pResult->NumArguments() ? pResult->GetFloat(0) : (g_Config.m_CcFineZoom ? 0.5f : 1.0f);
 
 	pSelf->ScaleZoom(CCamera::ZoomStepsToValue(ZoomAmount));
 
@@ -446,7 +457,7 @@ void CCamera::ConZoomMinus(IConsole::IResult *pResult, void *pUserData)
 	if(!pSelf->ZoomAllowed())
 		return;
 
-	float ZoomAmount = pResult->NumArguments() ? pResult->GetFloat(0) : 1.0f;
+	float ZoomAmount = pResult->NumArguments() ? pResult->GetFloat(0) : (g_Config.m_CcFineZoom ? 0.5f : 1.0f);
 	ZoomAmount *= -1.0f;
 
 	pSelf->ScaleZoom(CCamera::ZoomStepsToValue(ZoomAmount));

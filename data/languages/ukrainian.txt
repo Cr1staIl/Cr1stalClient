@@ -3074,6 +3074,9 @@ Loaded %d items
 Loaded %d items (discarded %d items)
 == 
 
+Your tee was moved in the game!
+== 
+
 [Playtime category]
 Easy
 == 
@@ -3502,6 +3505,75 @@ Emote wheel size
 == 
 
 Interface size
+== 
+
+Gores mode
+== 
+
+You hold the gun, fire swings the hammer
+== 
+
+Pause it with shotgun, grenade or laser
+== 
+
+Sub-tick aiming
+== 
+
+Fire and hook go where you aimed at the moment of the click
+== 
+
+Input debounce
+== 
+
+Very short taps of jump, hook and walking are not lost
+== 
+
+Finish prediction
+== 
+
+How far you are to the finish and your expected time
+== 
+
+Edge info
+== 
+
+Tiles to the next freeze left, below and right
+== 
+
+Finer zoom (half steps)
+== 
+
+Cinematic spectator camera
+== 
+
+Smoothness
+== 
+
+Better spectating
+== 
+
+Free view: click the tee in the middle to follow it, right click to look freely
+== 
+
+Warn when your tee is moved while paused
+== 
+
+Always ask before quitting
+== 
+
+High process priority
+== 
+
+Windows gives the game more CPU time
+== 
+
+Fast actions
+== 
+
+Action
+== 
+
+Key
 == 
 
 Effects

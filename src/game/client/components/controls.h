@@ -36,6 +36,10 @@ public:
 
 	int64_t m_LastSendTime;
 	CNetObj_PlayerInput m_aInputData[NUM_DUMMIES];
+	// C-Client: input debounce (left, right, jump, hook)
+	int m_aCcSnaps[NUM_DUMMIES] = {};
+	int m_aaCcPressSnap[NUM_DUMMIES][4] = {};
+	bool m_aaCcPending[NUM_DUMMIES][4] = {};
 	CNetObj_PlayerInput m_aLastData[NUM_DUMMIES];
 	int m_aInputDirectionLeft[NUM_DUMMIES];
 	int m_aInputDirectionRight[NUM_DUMMIES];

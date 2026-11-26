@@ -35,6 +35,7 @@
 #include "components/cclient.h"
 #include "components/cclient_bg_draw.h"
 #include "components/cclient_effects.h"
+#include "components/cclient_gameplay.h"
 #include "components/cclient_moving_tiles.h"
 #include "components/cclient_playtime.h"
 #include "components/cclient_presence.h"
@@ -198,6 +199,7 @@ public:
 	CCBgDraw m_CBgDraw;
 	CCPet m_CPet;
 	CCEffects m_CEffects;
+	CCGameplay m_CGameplay;
 	CCVisuals m_CVisuals;
 	CCGameBackground m_CGameBackground;
 	CCAutomation m_CAutomation;

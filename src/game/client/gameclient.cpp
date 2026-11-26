@@ -161,6 +161,7 @@ void CGameClient::OnConsoleInit()
 					      &m_FreezeBars,
 					      &m_DamageInd,
 					      &m_Hud,
+					      &m_CGameplay,
 					      &m_Spectator,
 					      &m_Emoticon,
 					      &m_CClient,
@@ -190,6 +191,7 @@ void CGameClient::OnConsoleInit()
 						  &m_Scoreboard,
 						  &m_Motd, // for pressing esc to remove it
 						  &m_Spectator,
+						  &m_CGameplay, // C-Client: clicks while spectating
 						  &m_CClient, // before the emote wheel: Shift + Q / E opens the save wheel
 						  &m_Emoticon,
 						  &m_ImportantAlert,
