@@ -3,6 +3,8 @@
 
 #include "chat.h"
 
+#include "cclient_style.h"
+
 #include <base/color.h>
 #include <base/io.h>
 #include <base/log.h>
@@ -272,6 +274,24 @@ bool CChat::OnInput(const IInput::CEvent &Event)
 {
 	if(m_Mode == MODE_NONE)
 		return false;
+
+	// C-Client: click on a message for a small menu, click an entry to use it
+	if(g_Config.m_CcChatInteract && (Event.m_Flags & IInput::FLAG_PRESS) && (Event.m_Key == KEY_MOUSE_1 || Event.m_Key == KEY_MOUSE_2))
+	{
+		if(m_CcMenuLine >= 0)
+		{
+			if(m_CcMenuHover >= 0)
+				CcMenuAction(m_CcMenuHover);
+			m_CcMenuLine = -1;
+			return true;
+		}
+		if(m_CcHoverLine >= 0)
+		{
+			m_CcMenuLine = m_CcHoverLine;
+			m_CcMenuPos = m_CcMouse;
+			return true;
+		}
+	}
 
 	if(Event.m_Flags & IInput::FLAG_PRESS && Event.m_Key == KEY_ESCAPE)
 	{
@@ -1073,6 +1093,15 @@ void CChat::OnPrepareLines(float y)
 		if(y < HeightLimit)
 			break;
 
+		// C-Client: remember where each message is, for clicking on it
+		if(m_NumCcLineRects < MAX_LINES)
+			m_aCcLineRects[m_NumCcLineRects++] = {y, y + Line.m_aYOffset[OffsetType], ((m_CurrentLine - i) + MAX_LINES) % MAX_LINES};
+		{
+			const int LineIndex = ((m_CurrentLine - i) + MAX_LINES) % MAX_LINES;
+			if(m_Mode != MODE_NONE && (m_CcHoverLine == LineIndex || m_CcMenuLine == LineIndex))
+				Graphics()->DrawRect(x - 2.0f, y, m_CcChatRight - x + 4.0f, Line.m_aYOffset[OffsetType], CCStyle::ACCENT.WithAlpha(m_CcMenuLine == LineIndex ? 0.35f : 0.2f), IGraphics::CORNER_ALL, 3.0f);
+		}
+
 		// the position the text was created
 		Line.m_TextYOffset = y + RealMsgPaddingY / 2.0f;
 
@@ -1285,6 +1314,10 @@ void CChat::OnRender()
 
 	OnPrepareLines(y);
 
+	m_NumCcLineRects = 0;
+	m_CcChatLeft = x;
+	m_CcChatRight = x + g_Config.m_ClChatWidth;
+
 	bool IsScoreBoardOpen = GameClient()->m_Scoreboard.IsActive() && (Graphics()->ScreenAspect() > 1.7f); // only assume scoreboard when screen ratio is widescreen(something around 16:9)
 
 	int64_t Now = time();
@@ -1357,6 +1390,132 @@ void CChat::OnRender()
 			TextRender()->RenderTextContainer(Line.m_TextContainerIndex, TextColor, TextOutlineColor, SlideX, (y + RealMsgPaddingY / 2.0f) - Line.m_TextYOffset);
 		}
 	}
+
+	if(m_Mode != MODE_NONE && g_Config.m_CcChatInteract)
+		CcRenderInteraction(Width, Height);
+	else
+	{
+		m_CcMenuLine = -1;
+		m_CcHoverLine = -1;
+		m_CcMouseInit = false;
+	}
+}
+
+// C-Client: what you can do with a message
+enum
+{
+	CC_CHAT_REPLY = 0,
+	CC_CHAT_MENTION,
+	CC_CHAT_COPY,
+	CC_CHAT_COPY_NAME,
+	CC_CHAT_MUTE,
+	NUM_CC_CHAT_ACTIONS,
+};
+
+void CChat::CcMenuAction(int Action)
+{
+	if(m_CcMenuLine < 0 || m_CcMenuLine >= MAX_LINES)
+		return;
+	const CLine &Line = m_aLines[m_CcMenuLine];
+	const bool HasName = Line.m_ClientId >= 0 && Line.m_aName[0];
+	switch(Action)
+	{
+	case CC_CHAT_REPLY:
+		if(HasName)
+		{
+			char aBuf[128];
+			str_format(aBuf, sizeof(aBuf), "%s: ", Line.m_aName);
+			m_Input.Set(aBuf);
+		}
+		break;
+	case CC_CHAT_MENTION:
+		if(HasName)
+		{
+			char aBuf[MAX_CHAT_LENGTH];
+			str_format(aBuf, sizeof(aBuf), "%s%s%s ", m_Input.GetString(), m_Input.GetString()[0] && !str_endswith(m_Input.GetString(), " ") ? " " : "", Line.m_aName);
+			m_Input.Set(aBuf);
+		}
+		break;
+	case CC_CHAT_COPY:
+		Input()->SetClipboardText(Line.m_aText);
+		break;
+	case CC_CHAT_COPY_NAME:
+		if(HasName)
+			Input()->SetClipboardText(Line.m_aName);
+		break;
+	case CC_CHAT_MUTE:
+		if(HasName && Line.m_ClientId < MAX_CLIENTS && str_comp(GameClient()->m_aClients[Line.m_ClientId].m_aName, Line.m_aName) == 0)
+			GameClient()->m_aClients[Line.m_ClientId].m_ChatIgnore ^= 1;
+		break;
+	}
+	m_Input.SetCursorOffset(m_Input.GetLength());
+	m_CcMenuLine = -1;
+}
+
+void CChat::CcRenderInteraction(float Width, float Height)
+{
+	if(!m_CcMouseInit)
+	{
+		m_CcMouse = vec2(m_CcChatLeft + 60.0f, Height - 60.0f);
+		m_CcMouseInit = true;
+	}
+	// which message is under the mouse
+	m_CcHoverLine = -1;
+	if(m_CcMenuLine < 0 && m_CcMouse.x >= m_CcChatLeft - 2.0f && m_CcMouse.x <= m_CcChatRight + 2.0f)
+		for(int i = 0; i < m_NumCcLineRects; i++)
+			if(m_CcMouse.y >= m_aCcLineRects[i].m_Y0 && m_CcMouse.y < m_aCcLineRects[i].m_Y1)
+				m_CcHoverLine = m_aCcLineRects[i].m_Line;
+
+	// the little menu
+	m_CcMenuHover = -1;
+	if(m_CcMenuLine >= 0)
+	{
+		const CLine &Line = m_aLines[m_CcMenuLine];
+		const bool HasName = Line.m_ClientId >= 0 && Line.m_aName[0];
+		const bool Muted = HasName && Line.m_ClientId < MAX_CLIENTS && GameClient()->m_aClients[Line.m_ClientId].m_ChatIgnore;
+		const char *apLabels[NUM_CC_CHAT_ACTIONS] = {Localize("Reply"), Localize("Mention"), Localize("Copy message"), Localize("Copy name"), Muted ? Localize("Unmute") : Localize("Mute")};
+		const float FontSize = 6.0f, RowH = 9.0f, MenuW = 62.0f;
+		const int NumRows = HasName ? NUM_CC_CHAT_ACTIONS : 1;
+		const float MenuH = RowH * NumRows + 4.0f;
+		const float MenuX = std::clamp(m_CcMenuPos.x, 0.0f, Width - MenuW);
+		const float MenuY = std::clamp(m_CcMenuPos.y - MenuH, 0.0f, Height - MenuH);
+		Graphics()->DrawRect(MenuX, MenuY, MenuW, MenuH, ColorRGBA(0.05f, 0.045f, 0.055f, 0.95f), IGraphics::CORNER_ALL, 4.0f);
+		for(int r = 0; r < NumRows; r++)
+		{
+			const int Action = HasName ? r : CC_CHAT_COPY;
+			const float RowY = MenuY + 2.0f + r * RowH;
+			const bool Hover = m_CcMouse.x >= MenuX && m_CcMouse.x <= MenuX + MenuW && m_CcMouse.y >= RowY && m_CcMouse.y < RowY + RowH;
+			if(Hover)
+			{
+				m_CcMenuHover = Action;
+				Graphics()->DrawRect(MenuX + 2.0f, RowY, MenuW - 4.0f, RowH, CCStyle::ACCENT.WithAlpha(0.7f), IGraphics::CORNER_ALL, 2.5f);
+			}
+			TextRender()->Text(MenuX + 6.0f, RowY + (RowH - FontSize) / 2.0f - 0.5f, FontSize, apLabels[Action], -1.0f);
+		}
+	}
+
+	// a small cursor
+	Graphics()->TextureClear();
+	Graphics()->QuadsBegin();
+	Graphics()->SetColor(0.0f, 0.0f, 0.0f, 0.6f);
+	const IGraphics::CFreeformItem Shadow(m_CcMouse.x - 0.6f, m_CcMouse.y - 0.8f, m_CcMouse.x - 0.6f, m_CcMouse.y + 9.5f, m_CcMouse.x + 7.8f, m_CcMouse.y + 7.0f, m_CcMouse.x + 7.8f, m_CcMouse.y + 7.0f);
+	Graphics()->QuadsDrawFreeform(&Shadow, 1);
+	Graphics()->SetColor(1.0f, 1.0f, 1.0f, 1.0f);
+	const IGraphics::CFreeformItem Arrow(m_CcMouse.x, m_CcMouse.y, m_CcMouse.x, m_CcMouse.y + 8.0f, m_CcMouse.x + 6.0f, m_CcMouse.y + 6.0f, m_CcMouse.x + 6.0f, m_CcMouse.y + 6.0f);
+	Graphics()->QuadsDrawFreeform(&Arrow, 1);
+	Graphics()->QuadsEnd();
+}
+
+bool CChat::OnCursorMove(float x, float y, IInput::ECursorType CursorType)
+{
+	if(m_Mode == MODE_NONE || !g_Config.m_CcChatInteract)
+		return false;
+	Ui()->ConvertMouseMove(&x, &y, CursorType);
+	const float Scale = 300.0f / std::max(1, Graphics()->ScreenHeight());
+	m_CcMouse += vec2(x, y) * Scale;
+	m_CcMouse.x = std::clamp(m_CcMouse.x, 0.0f, 300.0f * Graphics()->ScreenAspect());
+	m_CcMouse.y = std::clamp(m_CcMouse.y, 0.0f, 300.0f);
+	return true;
 }
 
 void CChat::EnsureCoherentFontSize() const
@@ -1386,6 +1545,58 @@ void CChat::SendChat(int Team, const char *pLine)
 	// don't send empty messages
 	if(*str_utf8_skip_whitespaces(pLine) == '\0')
 		return;
+
+	// C-Client: a command typed in the Russian or Ukrainian keyboard layout (".ыфму" or "/ыфму")
+	// is turned into the same keys in the English layout ("/save")
+	char aFixed[MAX_CHAT_LENGTH * 4];
+	if(g_Config.m_CcChatLayoutFix && (pLine[0] == '/' || pLine[0] == '.'))
+	{
+		static const char *const s_apCyr[] = {"й", "ц", "у", "к", "е", "н", "г", "ш", "щ", "з", "х", "ъ", "ф", "ы", "в", "а", "п", "р", "о", "л", "д", "ж", "э", "я", "ч", "с", "м", "и", "т", "ь", "б", "ю", "і", "ї", "є"};
+		static const char s_aLat[] = "qwertyuiop[]asdfghjkl;'zxcvbnm,.s]'";
+		const char *pWord = pLine + 1;
+		bool AnyCyrillic = false, OnlyLayout = true;
+		for(const char *p = pWord; *p && *p != ' ';)
+		{
+			const char *pBefore = p;
+			const int Code = str_utf8_decode(&p);
+			if(Code >= 0x400 && Code <= 0x4FF)
+			{
+				bool Known = false;
+				for(const char *pCyr : s_apCyr)
+					if(str_startswith(pBefore, pCyr) || str_startswith_nocase(pBefore, pCyr))
+						Known = true;
+				AnyCyrillic = true;
+				OnlyLayout = OnlyLayout && Known;
+			}
+		}
+		if(AnyCyrillic && OnlyLayout)
+		{
+			str_copy(aFixed, "/");
+			const char *p = pWord;
+			while(*p && *p != ' ')
+			{
+				const char *pBefore = p;
+				const int Code = str_utf8_decode(&p);
+				char aChar[8];
+				str_copy(aChar, pBefore, p - pBefore + 1);
+				int Found = -1;
+				char aLower[8];
+				str_utf8_tolower(aChar, aLower, sizeof(aLower));
+				for(int i = 0; i < (int)std::size(s_apCyr); i++)
+					if(str_comp(aLower, s_apCyr[i]) == 0)
+						Found = i;
+				if(Found >= 0)
+				{
+					const char aLat[2] = {s_aLat[Found], '\0'};
+					str_append(aFixed, aLat);
+				}
+				else if(Code > 0)
+					str_append(aFixed, aChar);
+			}
+			str_append(aFixed, p);
+			pLine = aFixed;
+		}
+	}
 
 	m_LastChatSend = time();
 

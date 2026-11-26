@@ -893,6 +893,9 @@ void CMenus::RenderSettingsCClient(CUIRect MainView)
 		C.Check(&g_Config.m_ClShowKillMessages, Localize("Show kill messages"));
 		C.Check(&g_Config.m_ClShowChatFriends, Localize("Only show chat of friends"));
 		C.Check(&g_Config.m_ClChatTeamColors, Localize("Names in team colors"));
+		C.Check(&g_Config.m_CcChatInteract, Localize("Click messages while typing"), Localize("Reply, mention, copy the message or the name, mute"));
+		C.Check(&g_Config.m_CcSilentTyping, Localize("Silent typing"), Localize("Others don't see that you are writing"));
+		C.Check(&g_Config.m_CcChatLayoutFix, Localize("Fix commands typed in the Russian layout"), Localize(".ыфму becomes /save"));
 		C.EndCard();
 	}
 

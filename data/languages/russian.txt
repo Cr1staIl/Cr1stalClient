@@ -3744,9 +3744,6 @@ Physics balls
 Number of balls
 == Количество мячиков
 
-Virtual joystick which only aims and moves the mouse pointer relatively.
-== 
-
 Also behind the map in game
 == Также за картой в игре
 
@@ -3800,3 +3797,30 @@ Save wheel (hold)
 
 Marker where you aim
 == Метка туда, куда целишься
+
+Mention
+== Упомянуть
+
+Copy message
+== Копировать сообщение
+
+Virtual joystick which only aims and moves the mouse pointer relatively.
+== 
+
+Click messages while typing
+== Клик по сообщениям в открытом чате
+
+Reply, mention, copy the message or the name, mute
+== Ответить, упомянуть, копировать сообщение или ник, замутить
+
+Silent typing
+== Тихая печать
+
+Others don't see that you are writing
+== Другие не видят, что ты пишешь
+
+Fix commands typed in the Russian layout
+== Исправлять команды в русской раскладке
+
+.ыфму becomes /save
+== .ыфму станет /save

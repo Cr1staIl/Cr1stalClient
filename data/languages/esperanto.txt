@@ -1872,6 +1872,18 @@ Other
 Changing name to %s near finish
 == 
 
+Reply
+== 
+
+Mention
+== 
+
+Copy message
+== 
+
+Copy name
+== 
+
 Match %d of %d
 == 
 
@@ -3390,6 +3402,24 @@ Only show chat of friends
 Names in team colors
 == 
 
+Click messages while typing
+== 
+
+Reply, mention, copy the message or the name, mute
+== 
+
+Silent typing
+== 
+
+Others don't see that you are writing
+== 
+
+Fix commands typed in the Russian layout
+== 
+
+.ыфму becomes /save
+== 
+
 Updates
 == 
 
@@ -3445,9 +3475,6 @@ Message in chat (empty: none)
 == 
 
 Auto reply to muted players
-== 
-
-Reply
 == 
 
 Auto reply when the game is minimized
@@ -3760,9 +3787,6 @@ Replay
 == 
 
 Whisper
-== 
-
-Copy name
 == 
 
 Copy skin (paste into console)

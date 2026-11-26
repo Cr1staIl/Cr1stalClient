@@ -242,8 +242,10 @@ void CControls::OnMessage(int Msg, void *pRawMsg)
 int CControls::SnapInput(int *pData)
 {
 	// update player state
-	if(GameClient()->m_Chat.IsActive())
+	if(GameClient()->m_Chat.IsActive() && !g_Config.m_CcSilentTyping) // C-Client: silent typing hides the chat bubble
 		m_aInputData[g_Config.m_ClDummy].m_PlayerFlags = PLAYERFLAG_CHATTING;
+	else if(GameClient()->m_Chat.IsActive())
+		m_aInputData[g_Config.m_ClDummy].m_PlayerFlags = PLAYERFLAG_PLAYING;
 	else if(GameClient()->m_Menus.IsActive())
 		m_aInputData[g_Config.m_ClDummy].m_PlayerFlags = PLAYERFLAG_IN_MENU;
 	else

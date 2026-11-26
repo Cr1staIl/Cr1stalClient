@@ -66,6 +66,24 @@ class CChat : public CComponent
 	bool m_PrevShowChat;
 
 	CLine m_aLines[MAX_LINES];
+
+	// C-Client: click on messages while the chat is open (reply, copy, mention, mute)
+	struct SCcLineRect
+	{
+		float m_Y0, m_Y1;
+		int m_Line;
+	};
+	SCcLineRect m_aCcLineRects[MAX_LINES];
+	int m_NumCcLineRects = 0;
+	vec2 m_CcMouse = vec2(0.0f, 0.0f);
+	bool m_CcMouseInit = false;
+	int m_CcHoverLine = -1;
+	int m_CcMenuLine = -1;
+	vec2 m_CcMenuPos = vec2(0.0f, 0.0f);
+	int m_CcMenuHover = -1;
+	float m_CcChatLeft = 0.0f, m_CcChatRight = 0.0f;
+	void CcRenderInteraction(float Width, float Height);
+	void CcMenuAction(int Action);
 	int m_CurrentLine;
 
 	enum
@@ -185,6 +203,7 @@ public:
 	void OnRelease() override;
 	void OnMessage(int MsgType, void *pRawMsg) override;
 	bool OnInput(const IInput::CEvent &Event) override;
+	bool OnCursorMove(float x, float y, IInput::ECursorType CursorType) override;
 	void OnInit() override;
 
 	void RebuildChat();
