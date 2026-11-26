@@ -740,6 +740,7 @@ void CMenus::RenderSettingsCClient(CUIRect MainView)
 			static CButtonContainer s_aSmooth[4];
 			const char *apSmooth[] = {Localize("Off"), "2x", "4x", "8x"};
 			C.Choice(&Choice, Localize("Smooth edges (after restart)"), apSmooth, 4, s_aSmooth);
+			C.Note(Localize("Smooth edges look nicer but cost a lot of FPS. For the highest FPS keep it off."));
 			if(Choice != Old)
 				g_Config.m_GfxFsaaSamples = s_aSamples[Choice];
 		}

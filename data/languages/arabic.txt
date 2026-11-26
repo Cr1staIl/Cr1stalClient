@@ -3025,6 +3025,9 @@ Optimization
 Smooth edges (after restart)
 == 
 
+Smooth edges look nicer but cost a lot of FPS. For the highest FPS keep it off.
+== 
+
 Maximum smoothness
 == 
 

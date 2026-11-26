@@ -2127,13 +2127,13 @@ int CGraphics_Threaded::IssueInit()
 		Flags |= IGraphicsBackend::INITFLAG_VSYNC;
 	}
 
-	// C-Client: smooth edges on all buttons, switches and circles. Turned on once for old
-	// configs too; if the graphics card can't, the code below lowers it again.
-	if(!g_Config.m_CcSmoothEdgesSet)
+	// C-Client: 8x anti-aliasing was forced on in older test builds and costs a lot of FPS.
+	// Once: take that back (set to 0), it can be turned on again in the settings.
+	if(g_Config.m_CcSmoothEdgesSet < 2)
 	{
-		if(g_Config.m_GfxFsaaSamples < 8)
-			g_Config.m_GfxFsaaSamples = 8;
-		g_Config.m_CcSmoothEdgesSet = 1;
+		if(g_Config.m_CcSmoothEdgesSet == 1)
+			g_Config.m_GfxFsaaSamples = 0;
+		g_Config.m_CcSmoothEdgesSet = 2;
 	}
 
 	const int Result = m_pBackend->Init("Cr\xe2\x99\xb1stal Client", &g_Config.m_GfxScreen, &g_Config.m_GfxScreenWidth, &g_Config.m_GfxScreenHeight, &g_Config.m_GfxScreenRefreshRate, &g_Config.m_GfxFsaaSamples, Flags, &m_DesktopSize.x, &m_DesktopSize.y, &m_ScreenWidth, &m_ScreenHeight, m_pStorage);

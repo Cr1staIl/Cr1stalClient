@@ -3945,8 +3945,11 @@ Smooth other tees
 Maximum smoothness
 == Максимальная плавность
 
+No FPS limit and no vsync, the game draws as many frames as your PC can. Turn it off and your old settings come back.
+== Без лимита FPS и без vsync: игра рисует столько кадров, сколько тянет ПК. Выключишь — вернутся старые настройки.
+
 Virtual joystick which only aims and moves the mouse pointer relatively.
 == 
 
-No FPS limit and no vsync, the game draws as many frames as your PC can. Turn it off and your old settings come back.
-== Без лимита FPS и без vsync: игра рисует столько кадров, сколько тянет ПК. Выключишь — вернутся старые настройки.
+Smooth edges look nicer but cost a lot of FPS. For the highest FPS keep it off.
+== Сглаживание красивее, но сильно снижает FPS. Для максимума FPS держи выключенным.
