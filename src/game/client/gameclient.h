@@ -29,6 +29,7 @@
 
 // components
 #include "components/background.h"
+#include "components/cclient_playtime.h" // Cr1stal Client
 #include "components/cclient_presence.h" // Cr1stal Client
 #include "components/bestclient/3d_particles.h" // bestclient
 #include "components/bestclient/admin_panel.h" // bestclient
@@ -243,6 +244,7 @@ public:
 	CShowPoints m_ShowPoints; // bestclient
 	CClientIndicator m_ClientIndicator; // bestclient
 	CCPresence m_CPresence; // Cr1stal Client
+	CCPlaytime m_CPlaytime; // Cr1stal Client
 	CVoiceChat m_VoiceChat; // bestclient
 	CAdminPanel m_AdminPanel; // bestclient
 	CAspectRatio m_AspectRatio; // bestclient

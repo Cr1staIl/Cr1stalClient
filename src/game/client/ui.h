@@ -11,6 +11,7 @@
 
 #include <chrono>
 #include <string>
+#include <unordered_map>
 #include <vector>
 
 class CScrollRegion;
@@ -345,7 +346,18 @@ public:
 
 class CUi
 {
+	struct SHoverAnim
+	{
+		float m_Value = 0.0f;
+		int64_t m_LastUpdate = 0;
+	};
+	std::unordered_map<const void *, SHoverAnim> m_HoverAnims;
+
 public:
+	// Cr1stal Client: smooth hover value of an element, 0 = not hovered, 1 = hovered
+	float HoverAnim(const void *pId, float Speed = 12.0f);
+	// same, for a state that is not the hover state (a selected tab, an open popup)
+	float StateAnim(const void *pId, bool On, float Speed = 12.0f);
 	/**
 	 * These enum values are returned by popup menu functions to specify the behavior.
 	 */

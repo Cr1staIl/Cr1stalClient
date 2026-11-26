@@ -206,6 +206,7 @@ void CGameClient::OnConsoleInit()
 					      &m_ShowPoints, // bestclient
 					      &m_ClientIndicator, // bestclient
 					      &m_CPresence, // Cr1stal Client
+					      &m_CPlaytime, // Cr1stal Client
 					      &m_VoiceChat, // bestclient
 					      &m_Hud,
 					      &m_BestClient, // bestclient

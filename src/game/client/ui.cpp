@@ -2056,3 +2056,38 @@ void CUi::RenderBackButton()
 	TextRender()->SetRenderFlags(0);
 	TextRender()->SetFontPreset(EFontPreset::DEFAULT_FONT);
 }
+
+float CUi::StateAnim(const void *pId, bool On, float Speed)
+{
+	const int64_t Now = time_get();
+	auto It = m_HoverAnims.find(pId);
+	if(It == m_HoverAnims.end())
+	{
+		// elements that were never on need no entry, so long lists stay cheap
+		if(!On)
+			return 0.0f;
+		// starts dark and fades in
+		It = m_HoverAnims.emplace(pId, SHoverAnim{0.0f, Now}).first;
+	}
+	SHoverAnim &Anim = It->second;
+	const float Delta = (float)((double)(Now - Anim.m_LastUpdate) / (double)time_freq());
+	Anim.m_LastUpdate = Now;
+	const float Target = On ? 1.0f : 0.0f;
+	if(Delta > 0.5f)
+		Anim.m_Value = Target; // not shown for a while: no old animation
+	else
+		Anim.m_Value += (Target - Anim.m_Value) * (1.0f - std::exp(-Speed * Delta));
+	if(std::abs(Anim.m_Value - Target) < 0.001f)
+		Anim.m_Value = Target;
+	if(Anim.m_Value == 0.0f && !On)
+	{
+		m_HoverAnims.erase(It); // faded out completely, forget it
+		return 0.0f;
+	}
+	return Anim.m_Value;
+}
+
+float CUi::HoverAnim(const void *pId, float Speed)
+{
+	return StateAnim(pId, HotItem() == pId || CheckActiveItem(pId), Speed);
+}

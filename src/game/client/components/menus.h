@@ -804,9 +804,33 @@ public:
 		PAGE_NETWORK,
 		PAGE_GHOST,
 		PAGE_CHANGELOG, // bestclient
+		PAGE_CC_STATS, // Cr1stal Client: statistics of all Cr1stal Client players
 
 		PAGE_LENGTH,
 	};
+
+	// Cr1stal Client: statistics page
+	void RenderCcStats(CUIRect MainView);
+	struct SCcStatsEntry
+	{
+		std::string m_Name;
+		std::string m_Clan;
+		int64_t m_Seconds = 0;
+		int m_Finished = 0;
+		int m_Played = 0;
+		int m_Points = 0;
+		int64_t m_aCategories[9] = {};
+		std::string m_TopMaps;
+		bool m_Me = false;
+	};
+	std::vector<SCcStatsEntry> m_vCcStats;
+	std::shared_ptr<class IHttpRequest> m_pCcStatsRequest;
+	int64_t m_CcStatsFetched = 0;
+	int m_CcStatsSort = 0;
+	std::string m_CcStatsSelected;
+	char m_aCcStatsSearch[64] = "";
+	void CcStatsFetch();
+	void CcStatsRead();
 
 	// bestclient
 	int Popup() const { return m_Popup; }

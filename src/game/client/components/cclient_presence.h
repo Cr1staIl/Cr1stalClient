@@ -79,6 +79,8 @@ private:
 
 	void Send(const char *pPath, const char *pMethod, const char *pBody);
 	IGraphics::CTextureHandle m_Badge;
+	void UploadStats();
+	int64_t m_NextStats = 0;
 	void Publish();
 	void Unpublish();
 	void Poll();

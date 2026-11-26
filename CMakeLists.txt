@@ -3031,8 +3031,12 @@ if(CLIENT)
     components/bestclient/clientindicator/client_indicator.cpp
     components/bestclient/clientindicator/client_indicator.h
     components/bestclient/clientindicator/client_indicator_sync.h
+    components/cclient_playtime.cpp
+    components/cclient_playtime.h
     components/cclient_presence.cpp
     components/cclient_presence.h
+    components/cclient_style.h
+    components/menus_cc_stats.cpp
     components/bestclient/clientindicator/presence_cache.cpp
     components/bestclient/clientindicator/presence_cache.h
     components/bestclient/clientindicator/protocol.h

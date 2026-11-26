@@ -53,15 +53,9 @@ void CMenusStart::RenderStartMenu(CUIRect MainView)
 	ExtMenu.HSplitBottom(ExtMenuBottomOffset, &ExtMenu, nullptr);
 
 	ExtMenu.HSplitBottom(20.0f, &ExtMenu, &Button);
-	static CButtonContainer s_DiscordButton;
-	if(GameClient()->m_Menus.DoButton_Menu(&s_DiscordButton, BcLocalize("Discord"), 0, &Button, BUTTONFLAG_LEFT, nullptr, IGraphics::CORNER_ALL, 5.0f, 0.0f, ColorRGBA(0.0f, 0.0f, 0.0f, 0.25f))) // bestclient
-		Client()->ViewLink("https://discord.gg/bestclient");
-
-	ExtMenu.HSplitBottom(5.0f, &ExtMenu, nullptr);
-	ExtMenu.HSplitBottom(20.0f, &ExtMenu, &Button);
-	static CButtonContainer s_TelegramButton;
-	if(GameClient()->m_Menus.DoButton_Menu(&s_TelegramButton, BcLocalize("Telegram"), 0, &Button, BUTTONFLAG_LEFT, nullptr, IGraphics::CORNER_ALL, 5.0f, 0.0f, ColorRGBA(0.0f, 0.0f, 0.0f, 0.25f))) // bestclient
-		Client()->ViewLink("https://t.me/bestddnet");
+	static CButtonContainer s_StatsButton;
+	if(GameClient()->m_Menus.DoButton_Menu(&s_StatsButton, Localize("Statistics"), 0, &Button, BUTTONFLAG_LEFT, nullptr, IGraphics::CORNER_ALL, 5.0f, 0.0f, ColorRGBA(0.0f, 0.0f, 0.0f, 0.25f))) // Cr1stal Client
+		NewPage = CMenus::PAGE_CC_STATS;
 
 	ExtMenu.HSplitBottom(5.0f, &ExtMenu, nullptr);
 	ExtMenu.HSplitBottom(20.0f, &ExtMenu, &Button);
@@ -72,25 +66,6 @@ void CMenusStart::RenderStartMenu(CUIRect MainView)
 		Updater()->CheckForUpdate();
 #endif
 	}
-
-	// bestclient
-	ExtMenu.HSplitBottom(5.0f, &ExtMenu, nullptr);
-	ExtMenu.HSplitBottom(20.0f, &ExtMenu, &Button);
-	static CButtonContainer s_TryLightButton;
-	if(GameClient()->m_Menus.DoButton_Menu(&s_TryLightButton, BcLocalize("Try Light"), 0, &Button, BUTTONFLAG_LEFT, nullptr, IGraphics::CORNER_ALL, 5.0f, 0.0f, ColorRGBA(0.0f, 0.0f, 0.0f, 0.25f)))
-		Client()->ViewLink("https://github.com/BestProjectTeam/BestClient-Light");
-	{
-		BcMenuBadges::SBadge CornerNew = BcMenuBadges::New;
-		CornerNew.m_FontSize = 8.0f;
-		CornerNew.m_Rounding = 3.0f;
-		CUIRect NewBadge;
-		NewBadge.h = 11.0f;
-		NewBadge.w = TextRender()->TextWidth(CornerNew.m_FontSize, CornerNew.m_pText) + 8.0f;
-		NewBadge.x = Button.x + Button.w - NewBadge.w + 2.0f;
-		NewBadge.y = Button.y - 4.0f;
-		BcMenuBadges::DrawAt(Graphics(), Ui(), TextRender(), NewBadge, CornerNew);
-	}
-	// bestclient
 
 	constexpr float LogoW = 360.0f;
 	constexpr float LogoH = 103.0f;
