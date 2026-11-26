@@ -145,6 +145,9 @@ bool CMenus::RenderCcMenuBackgroundImage()
 	const IGraphics::CQuadItem Shade(0, 0, ScreenWidth, ScreenHeight);
 	Graphics()->QuadsDrawTL(&Shade, 1);
 	Graphics()->QuadsEnd();
+
+	// back to the scale of the menus, or they are drawn twice as big
+	Ui()->MapScreen();
 	return true;
 }
 

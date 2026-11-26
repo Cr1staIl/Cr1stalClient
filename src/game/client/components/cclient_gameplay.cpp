@@ -341,6 +341,7 @@ void CCGameplay::OnRender()
 		return;
 	if(GameClient()->m_Menus.IsActive() && Client()->State() != IClient::STATE_DEMOPLAYBACK)
 		return;
+	const CScreenRect OldScreen = Graphics()->GetScreen();
 	const float Height = 300.0f;
 	const float Width = Height * Graphics()->ScreenAspect();
 	Graphics()->MapScreenToSize(Width, Height);
@@ -359,4 +360,5 @@ void CCGameplay::OnRender()
 		Graphics()->QuadsDrawTL(aCross, 2);
 		Graphics()->QuadsEnd();
 	}
+	Graphics()->MapScreen(OldScreen);
 }
