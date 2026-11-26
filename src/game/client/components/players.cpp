@@ -534,7 +534,7 @@ void CPlayers::RenderHook(
 	float d = distance(Pos, HookPos);
 	vec2 Dir = normalize(Pos - HookPos);
 
-	Graphics()->TextureSet(GameClient()->GameSkinOf(ClientId).m_SpriteHookHead);
+	Graphics()->TextureSet(GameClient()->HookSkinOf(ClientId).m_SpriteHookHead);
 	Graphics()->QuadsSetRotation(angle(Dir) + pi);
 	// render head
 	int QuadOffset = NUM_WEAPONS * 2 + 2;
@@ -556,7 +556,7 @@ void CPlayers::RenderHook(
 		s_aHookChainRenderInfo[HookChainCount].m_Scale = 1;
 		s_aHookChainRenderInfo[HookChainCount].m_Rotation = angle(Dir) + pi;
 	}
-	Graphics()->TextureSet(GameClient()->GameSkinOf(ClientId).m_SpriteHookChain);
+	Graphics()->TextureSet(GameClient()->HookSkinOf(ClientId).m_SpriteHookChain);
 	Graphics()->RenderQuadContainerAsSpriteMultiple(m_WeaponEmoteQuadContainerIndex, QuadOffset, HookChainCount, s_aHookChainRenderInfo);
 
 	Graphics()->QuadsSetRotation(0);

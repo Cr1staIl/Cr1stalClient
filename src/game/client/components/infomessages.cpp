@@ -467,14 +467,23 @@ void CInfoMessages::OnRender()
 
 		CreateTextContainersIfNotCreated(InfoMsg);
 
+		// C-Client: new kill and finish messages slide in from the right
+		float X = StartX;
+		if(g_Config.m_CcAnimKillfeed)
+		{
+			const float Age = (Client()->GameTick(g_Config.m_ClDummy) - InfoMsg.m_Tick + Client()->IntraGameTick(g_Config.m_ClDummy)) / (float)Client()->GameTickSpeed();
+			const float Appear = std::clamp(Age / 0.3f, 0.0f, 1.0f);
+			X += (1.0f - (1.0f - (1.0f - Appear) * (1.0f - Appear) * (1.0f - Appear))) * 120.0f;
+		}
+
 		if(InfoMsg.m_Type == EType::TYPE_KILL && g_Config.m_ClShowKillMessages)
 		{
-			RenderKillMsg(InfoMsg, StartX, y);
+			RenderKillMsg(InfoMsg, X, y);
 			y += ROW_HEIGHT;
 		}
 		else if(InfoMsg.m_Type == EType::TYPE_FINISH && g_Config.m_ClShowFinishMessages)
 		{
-			RenderFinishMsg(InfoMsg, StartX, y);
+			RenderFinishMsg(InfoMsg, X, y);
 			y += ROW_HEIGHT;
 		}
 	}

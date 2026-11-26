@@ -130,9 +130,36 @@ void CCClient::ConPing(IConsole::IResult *pResult, void *pUserData)
 	static_cast<CCClient *>(pUserData)->SendPing();
 }
 
+void CCClient::ConSaveWheel(IConsole::IResult *pResult, void *pUserData)
+{
+	CCClient *pSelf = static_cast<CCClient *>(pUserData);
+	if(pResult->GetInteger(0) != 0)
+	{
+		if(pSelf->Client()->State() != IClient::STATE_ONLINE || pSelf->GameClient()->m_Chat.IsActive() || pSelf->GameClient()->m_Menus.IsActive())
+			return;
+		pSelf->m_WheelActive = true;
+		pSelf->m_WheelFromBind = true;
+		pSelf->m_SelectorMouse = vec2(0.0f, 0.0f);
+		pSelf->m_SelectedSave = -1;
+	}
+	else if(pSelf->m_WheelActive && pSelf->m_WheelFromBind)
+	{
+		pSelf->SendSave(pSelf->m_SelectedSave);
+		pSelf->OnRelease();
+	}
+}
+
+void CCClient::ConSave(IConsole::IResult *pResult, void *pUserData)
+{
+	static_cast<CCClient *>(pUserData)->SendSave(pResult->GetInteger(0));
+}
+
 void CCClient::OnConsoleInit()
 {
 	Console()->Register("cc_ping", "", CFGFLAG_CLIENT, ConPing, this, "C-Client: put a marker for your team where your cursor is");
+	// C-Client: any key can open the save wheel or send one save marker
+	Console()->Register("+cc_save_wheel", "", CFGFLAG_CLIENT, ConSaveWheel, this, "C-Client: hold to open the save wheel, let go to send the chosen marker");
+	Console()->Register("cc_save", "i[marker]", CFGFLAG_CLIENT, ConSave, this, "C-Client: send one save marker to your team (0 hook up, 1 hook right, 2 hammer, 3 stand under, 4 pull down, 5 hook left, 6 wait, 7 thanks)");
 }
 
 void CCClient::OnInit()
@@ -174,6 +201,7 @@ void CCClient::OnReset()
 void CCClient::OnRelease()
 {
 	m_WheelActive = false;
+	m_WheelFromBind = false;
 	m_SelectedSave = -1;
 }
 
@@ -744,14 +772,22 @@ void CCOutlines::OnRender()
 				if(OutlineKind(pCollision, y * Width + x) != Kind)
 					continue;
 				const float X = x * 32.0f, Y = y * 32.0f;
-				// draw the edges that border a different kind of tile, on the inside of this tile
-				if(x == 0 || OutlineKind(pCollision, y * Width + x - 1) != Kind)
+				// draw the edges that border a different kind of tile, on the inside of this tile;
+				// freeze and the like only on their open side, not where they touch solid walls
+				const bool OnlyOpen = Kind != OUTLINE_SOLID && g_Config.m_CcOutlineOuterOnly;
+				auto Edge = [&](bool Border, int Neighbour) {
+					if(Border)
+						return !OnlyOpen;
+					const int Other = OutlineKind(pCollision, Neighbour);
+					return Other != Kind && !(OnlyOpen && Other == OUTLINE_SOLID);
+				};
+				if(Edge(x == 0, y * Width + x - 1))
 					Push(X, Y, W, 32.0f);
-				if(x == Width - 1 || OutlineKind(pCollision, y * Width + x + 1) != Kind)
+				if(Edge(x == Width - 1, y * Width + x + 1))
 					Push(X + 32.0f - W, Y, W, 32.0f);
-				if(y == 0 || OutlineKind(pCollision, (y - 1) * Width + x) != Kind)
+				if(Edge(y == 0, (y - 1) * Width + x))
 					Push(X, Y, 32.0f, W);
-				if(y == Height - 1 || OutlineKind(pCollision, (y + 1) * Width + x) != Kind)
+				if(Edge(y == Height - 1, (y + 1) * Width + x))
 					Push(X, Y + 32.0f - W, 32.0f, W);
 			}
 		}

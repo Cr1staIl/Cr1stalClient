@@ -49,10 +49,35 @@ private:
 
 	float m_aKeyAnim[5] = {};
 
+	struct SShape
+	{
+		vec2 m_Pos;
+		vec2 m_Drift;
+		float m_Size;
+		vec3 m_Rot;
+		vec3 m_Spin;
+	};
+	std::vector<SShape> m_vShapes;
+	void RenderShapes(float Dt, vec2 Center, vec2 Half);
+
 	void RenderCursorTrail(float Dt);
 	void RenderBubbles(float Dt);
 	void RenderBalls(float Dt);
 	void RenderKeystrokes(float Dt);
+};
+
+// a picture from assets/backgrounds instead of the background layers of the map
+class CCGameBackground : public CComponent
+{
+public:
+	int Sizeof() const override { return sizeof(*this); }
+	void OnRender() override;
+	void OnShutdown() override;
+
+private:
+	IGraphics::CTextureHandle m_Texture;
+	char m_aLoaded[64] = "";
+	float m_Aspect = 16.0f / 9.0f;
 };
 
 #endif

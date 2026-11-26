@@ -139,6 +139,7 @@ void CGameClient::OnConsoleInit()
 					      &m_Censor,
 					      &m_Background, // render instead of m_MapLayersBackground when g_Config.m_ClOverlayEntities == 100
 					      &m_MapLayersBackground, // first to render
+					      &m_CGameBackground, // C-Client: picture instead of the map background
 					      &m_CBgDraw,
 					      &m_Particles.m_RenderTrail,
 					      &m_Particles.m_RenderTrailExtra,
@@ -784,6 +785,12 @@ void CGameClient::UpdatePositions()
 void CGameClient::OnRender()
 {
 	CCStyle::ApplyTheme(g_Config.m_CcTheme); // C-Client: the color theme of the interface
+	// C-Client: stretched world (4:3, 5:4, 16:10) while playing
+	{
+		static const float s_aAspects[] = {0.0f, 4.0f / 3.0f, 5.0f / 4.0f, 16.0f / 10.0f};
+		const bool InGame = Client()->State() == IClient::STATE_ONLINE || Client()->State() == IClient::STATE_DEMOPLAYBACK;
+		Graphics()->m_WorldAspectOverride = InGame ? s_aAspects[std::clamp(g_Config.m_CcAspectRatio, 0, 3)] : 0.0f;
+	}
 	const ColorRGBA ClearColor = color_cast<ColorRGBA>(ColorHSLA(g_Config.m_ClOverlayEntities ? g_Config.m_ClBackgroundEntitiesColor : g_Config.m_ClBackgroundColor));
 	Graphics()->Clear(ClearColor.r, ClearColor.g, ClearColor.b);
 
@@ -4830,4 +4837,25 @@ const CGameClient::CGameSkin &CGameClient::GameSkinOf(int ClientId)
 		It = m_CcPackSkins.find(pPack);
 	}
 	return It->second.m_Loaded ? It->second : m_GameSkin;
+}
+
+const CGameClient::CGameSkin &CGameClient::HookSkinOf(int ClientId)
+{
+	if(g_Config.m_CcCustomHook[0] == '\0')
+		return GameSkinOf(ClientId);
+	const bool Local = ClientId == m_aLocalIds[0] || (Client()->DummyConnected() && ClientId == m_aLocalIds[1]);
+	if(!Local && !g_Config.m_CcCustomHookOthers)
+		return GameSkinOf(ClientId);
+	if(str_comp(m_aCcHookSkinLoaded, g_Config.m_CcCustomHook) != 0)
+	{
+		// the hook of another game pack from assets/game (a file or a folder with game.png)
+		str_copy(m_aCcHookSkinLoaded, g_Config.m_CcCustomHook);
+		char aFile[IO_MAX_PATH_LENGTH];
+		str_format(aFile, sizeof(aFile), "assets/game/%s.png", g_Config.m_CcCustomHook);
+		if(!Storage()->FileExists(aFile, IStorage::TYPE_ALL))
+			str_format(aFile, sizeof(aFile), "assets/game/%s/game.png", g_Config.m_CcCustomHook);
+		if(!LoadGameSkinFile(m_CcHookSkin, aFile, IStorage::TYPE_ALL) && m_CcHookSkin.m_Loaded)
+			UnloadGameSkin(m_CcHookSkin);
+	}
+	return m_CcHookSkin.m_Loaded ? m_CcHookSkin : GameSkinOf(ClientId);
 }

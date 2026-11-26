@@ -285,7 +285,21 @@ void CMenus::RenderCcAssetsTab(CUIRect MainView, int Tab)
 		return;
 	}
 
-	// backgrounds
+	// backgrounds: also show the chosen picture behind the map in game
+	{
+		static CButtonContainer s_InGameButton;
+		Buttons.VSplitLeft(8.0f, nullptr, &Buttons);
+		Buttons.VSplitLeft(260.0f, &Button, &Buttons);
+		const bool InGame = g_Config.m_CcGameBackground[0] != '\0';
+		if(DoButton_CheckBox(&s_InGameButton, Localize("Also behind the map in game"), InGame, &Button))
+		{
+			if(InGame)
+				g_Config.m_CcGameBackground[0] = '\0';
+			else if(g_Config.m_CcMenuBackground[0])
+				str_copy(g_Config.m_CcGameBackground, g_Config.m_CcMenuBackground);
+		}
+	}
+
 	if(!m_CcBackgroundsScanned)
 	{
 		ClearCcBackgrounds();
@@ -346,6 +360,11 @@ void CMenus::RenderCcAssetsTab(CUIRect MainView, int Tab)
 		}
 	}
 	const int NewSelected = s_ListBox.DoEnd();
+	const bool InGame = g_Config.m_CcGameBackground[0] != '\0';
 	if(NewSelected != OldSelected && NewSelected >= 0 && NewSelected < (int)m_vCcBackgrounds.size())
+	{
 		str_copy(g_Config.m_CcMenuBackground, m_vCcBackgrounds[NewSelected].m_aName);
+		if(InGame)
+			str_copy(g_Config.m_CcGameBackground, m_vCcBackgrounds[NewSelected].m_aName);
+	}
 }

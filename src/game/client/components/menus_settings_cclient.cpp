@@ -611,6 +611,7 @@ void CMenus::RenderSettingsCClient(CUIRect MainView)
 			if(g_Config.m_CcOutlineTele)
 				C.Color(Localize("Teleporter color"), &g_Config.m_CcOutlineColorTele, 0xFFBFFFAA);
 			C.Check(&g_Config.m_CcOutlineEntities, Localize("Only in entities view"));
+			C.Check(&g_Config.m_CcOutlineOuterOnly, Localize("Freeze line only on the open side, not along walls"));
 		}
 		C.EndCard();
 	}
@@ -635,6 +636,22 @@ void CMenus::RenderSettingsCClient(CUIRect MainView)
 	{
 		CCcColumn &C = Col(CARD_PERF);
 		C.BeginCard(CARD_PERF, Localize("Optimization"));
+		{
+			// smooth edges (anti-aliasing): off, 2x, 4x, 8x; works after a restart
+			static const int s_aSamples[] = {0, 2, 4, 8};
+			static int s_Choice = 0;
+			int &Choice = s_Choice;
+			Choice = 0;
+			for(int i = 0; i < 4; i++)
+				if(g_Config.m_GfxFsaaSamples >= s_aSamples[i])
+					Choice = i;
+			const int Old = Choice;
+			static CButtonContainer s_aSmooth[4];
+			const char *apSmooth[] = {Localize("Off"), "2x", "4x", "8x"};
+			C.Choice(&Choice, Localize("Smooth edges (after restart)"), apSmooth, 4, s_aSmooth);
+			if(Choice != Old)
+				g_Config.m_GfxFsaaSamples = s_aSamples[Choice];
+		}
 		C.Check(&g_Config.m_CcOptimize, Localize("Optimize the game for my PC"), Localize("Turns off heavy effects; a weaker PC also hides the map decoration. Turn it off and your old settings come back."));
 		char aBuf[64];
 		str_format(aBuf, sizeof(aBuf), "%s: %d", Localize("FPS right now"), GameClient()->m_CClient.Fps());
@@ -751,6 +768,10 @@ void CMenus::RenderSettingsCClient(CUIRect MainView)
 		C.Check(&g_Config.m_CcHookLasso, Localize("Lasso on the hooked tee"));
 		C.Check(&g_Config.m_CcHookBox, Localize("Box on the hooked tee"));
 		C.Check(&g_Config.m_CcHookHold, Localize("Light along the hook while holding"));
+		static CLineInput s_HookInput(g_Config.m_CcCustomHook, sizeof(g_Config.m_CcCustomHook));
+		C.Edit(&s_HookInput, Localize("Hook from game pack (name in assets/game)"));
+		if(g_Config.m_CcCustomHook[0])
+			C.Check(&g_Config.m_CcCustomHookOthers, Localize("Others get this hook too"));
 		C.Gap(4.0f);
 		C.Caption(Localize("Freeze"));
 		C.Check(&g_Config.m_CcFreezeFrost, Localize("Ice around frozen tees"));
@@ -768,6 +789,15 @@ void CMenus::RenderSettingsCClient(CUIRect MainView)
 		C.Check(&g_Config.m_CcMotionBlur, Localize("Motion blur"));
 		if(g_Config.m_CcMotionBlur)
 			C.Slider(&g_Config.m_CcMotionBlurStrength, Localize("Blur strength"), 1, 100, "%");
+		C.Check(&g_Config.m_CcAnimChat, Localize("Chat messages slide in"));
+		C.Check(&g_Config.m_CcAnimKillfeed, Localize("Kill messages slide in"));
+		C.Check(&g_Config.m_CcNameGradient, Localize("Names in a gradient"));
+		if(g_Config.m_CcNameGradient)
+		{
+			C.Color(Localize("First color"), &g_Config.m_CcNameGradientA, 0xF8FF9A);
+			C.Color(Localize("Second color"), &g_Config.m_CcNameGradientB, 0xFFFFFF);
+			C.Check(&g_Config.m_CcNameGradientMove, Localize("Moving gradient"));
+		}
 		C.Check(&g_Config.m_CcFlyingNamePlates, Localize("Flying name plates"));
 		if(g_Config.m_CcFlyingNamePlates)
 			C.Slider(&g_Config.m_CcFlyingNamePlatesSpeed, Localize("How fast they follow"), 1, 100, "%");
@@ -783,6 +813,14 @@ void CMenus::RenderSettingsCClient(CUIRect MainView)
 			C.Slider(&g_Config.m_CcKeystrokesX, Localize("Keys position X"), 0, 100, "%");
 			C.Slider(&g_Config.m_CcKeystrokesY, Localize("Keys position Y"), 0, 100, "%");
 		}
+		C.Check(&g_Config.m_Cc3dParticles, Localize("3D particles"));
+		if(g_Config.m_Cc3dParticles)
+			C.Slider(&g_Config.m_Cc3dParticlesCount, Localize("Number of particles"), 5, 100);
+		{
+			static CButtonContainer s_aAspect[4];
+			const char *apAspect[] = {Localize("Native"), "4:3", "5:4", "16:10"};
+			C.Choice(&g_Config.m_CcAspectRatio, Localize("Stretched resolution"), apAspect, 4, s_aAspect);
+		}
 		C.Check(&g_Config.m_CcPhysBalls, Localize("Physics balls"));
 		if(g_Config.m_CcPhysBalls)
 			C.Slider(&g_Config.m_CcPhysBallsCount, Localize("Number of balls"), 1, 30);
@@ -796,9 +834,55 @@ void CMenus::RenderSettingsCClient(CUIRect MainView)
 		C.Note(Localize("Hold Shift and press Q or E: save wheel"), CCStyle::TEXT);
 		C.Note(Localize("Middle mouse button: marker for your team"), CCStyle::TEXT);
 		C.Note(Localize("Others with Cr1stal Client see pictures and markers"));
-		static CButtonContainer s_BindMarkerButton;
-		if(C.Button(&s_BindMarkerButton, Localize("Put markers on the middle mouse button")))
-			Console()->ExecuteLine("bind mouse3 cc_ping", IConsole::CLIENT_ID_UNSPECIFIED);
+		C.Gap(4.0f);
+		C.Caption(Localize("Keys"));
+		{
+			// any key for the wheel, the marker and each save picture
+			struct SMarkerBind
+			{
+				const char *m_pLabel;
+				const char *m_pCommand;
+			};
+			const SMarkerBind aBinds[] = {
+				{Localize("Save wheel (hold)"), "+cc_save_wheel"},
+				{Localize("Marker where you aim"), "cc_ping"},
+				{Localize("Hook me up"), "cc_save 0"},
+				{Localize("Hook me to the right"), "cc_save 1"},
+				{Localize("Hammer me"), "cc_save 2"},
+				{Localize("Stand under me"), "cc_save 3"},
+				{Localize("Pull me down"), "cc_save 4"},
+				{Localize("Hook me to the left"), "cc_save 5"},
+				{Localize("Wait, don't touch me"), "cc_save 6"},
+				{Localize("Thanks!"), "cc_save 7"},
+			};
+			static CButtonContainer s_aReaders[std::size(aBinds)];
+			static CButtonContainer s_aClears[std::size(aBinds)];
+			for(size_t i = 0; i < std::size(aBinds); i++)
+			{
+				CBindSlot Current = EMPTY_BIND_SLOT;
+				for(int Mod = 0; Mod < KeyModifier::COMBINATION_COUNT && Current == EMPTY_BIND_SLOT; Mod++)
+					for(int Key = KEY_FIRST; Key < KEY_LAST; Key++)
+					{
+						const char *pBind = GameClient()->m_Binds.Get(Key, Mod);
+						if(pBind[0] && str_comp(pBind, aBinds[i].m_pCommand) == 0)
+						{
+							Current = CBindSlot(Key, Mod);
+							break;
+						}
+					}
+				CUIRect Row = C.Line(20.0f), Label, Reader;
+				Row.VSplitRight(110.0f, &Label, &Reader);
+				Ui()->DoLabel(&Label, aBinds[i].m_pLabel, 12.0f, TEXTALIGN_ML);
+				const CKeyBinder::CKeyReaderResult Result = GameClient()->m_KeyBinder.DoKeyReader(&s_aReaders[i], &s_aClears[i], &Reader, Current, false);
+				if(!Result.m_Aborted && Result.m_Bind != Current)
+				{
+					if(Current.m_Key != KEY_UNKNOWN)
+						GameClient()->m_Binds.Bind(Current.m_Key, "", false, Current.m_ModifierMask);
+					if(Result.m_Bind.m_Key != KEY_UNKNOWN)
+						GameClient()->m_Binds.Bind(Result.m_Bind.m_Key, aBinds[i].m_pCommand, false, Result.m_Bind.m_ModifierMask);
+				}
+			}
+		}
 		C.EndCard();
 	}
 

@@ -1316,6 +1316,16 @@ void CChat::OnRender()
 
 		float Blend = Now > Line.m_Time + 14 * time_freq() && !m_PrevShowChat ? 1.0f - (Now - Line.m_Time - 14 * time_freq()) / (2.0f * time_freq()) : 1.0f;
 
+		// C-Client: new messages slide in from the left
+		float SlideX = 0.0f;
+		if(g_Config.m_CcAnimChat)
+		{
+			const float Appear = std::clamp((Now - Line.m_Time) / (0.25f * time_freq()), 0.0f, 1.0f);
+			const float Ease = 1.0f - (1.0f - Appear) * (1.0f - Appear) * (1.0f - Appear);
+			SlideX = -(1.0f - Ease) * 40.0f;
+			Blend *= Ease;
+		}
+
 		// Draw backgrounds for messages in one batch
 		if(!g_Config.m_ClChatOld)
 		{
@@ -1323,7 +1333,7 @@ void CChat::OnRender()
 			if(Line.m_QuadContainerIndex != -1)
 			{
 				Graphics()->SetColor(color_cast<ColorRGBA>(ColorHSLA(g_Config.m_ClChatBackgroundColor, true)).WithMultipliedAlpha(Blend));
-				Graphics()->RenderQuadContainerEx(Line.m_QuadContainerIndex, 0, -1, 0, ((y + RealMsgPaddingY / 2.0f) - Line.m_TextYOffset));
+				Graphics()->RenderQuadContainerEx(Line.m_QuadContainerIndex, 0, -1, SlideX, ((y + RealMsgPaddingY / 2.0f) - Line.m_TextYOffset));
 			}
 		}
 
@@ -1339,12 +1349,12 @@ void CChat::OnRender()
 				float OffsetTeeY = TeeSize / 2.0f;
 				float FullHeightMinusTee = RowHeight - TeeSize;
 
-				RenderTools()->RenderIdleTeeAtCenter(&TeeRenderInfo, vec2(x + (RealMsgPaddingX + TeeSize) / 2.0f, y + OffsetTeeY + FullHeightMinusTee / 2.0f), EMOTE_NORMAL, vec2(1, 0.1f), Blend);
+				RenderTools()->RenderIdleTeeAtCenter(&TeeRenderInfo, vec2(x + SlideX + (RealMsgPaddingX + TeeSize) / 2.0f, y + OffsetTeeY + FullHeightMinusTee / 2.0f), EMOTE_NORMAL, vec2(1, 0.1f), Blend);
 			}
 
 			const ColorRGBA TextColor = TextRender()->DefaultTextColor().WithMultipliedAlpha(Blend);
 			const ColorRGBA TextOutlineColor = TextRender()->DefaultTextOutlineColor().WithMultipliedAlpha(Blend);
-			TextRender()->RenderTextContainer(Line.m_TextContainerIndex, TextColor, TextOutlineColor, 0, (y + RealMsgPaddingY / 2.0f) - Line.m_TextYOffset);
+			TextRender()->RenderTextContainer(Line.m_TextContainerIndex, TextColor, TextOutlineColor, SlideX, (y + RealMsgPaddingY / 2.0f) - Line.m_TextYOffset);
 		}
 	}
 }

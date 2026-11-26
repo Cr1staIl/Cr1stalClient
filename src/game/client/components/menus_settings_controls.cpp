@@ -108,6 +108,17 @@ void CMenusSettingsControls::OnInterfacesInit(CGameClient *pClient)
 		{EBindOptionGroup::MISCELLANEOUS, Localizable("Lock team"), "say /lock"},
 		{EBindOptionGroup::MISCELLANEOUS, Localizable("Show entities"), "toggle cl_overlay_entities 0 100"},
 		{EBindOptionGroup::MISCELLANEOUS, Localizable("Show HUD"), "toggle cl_showhud 0 1"},
+		// C-Client: markers for your team
+		{EBindOptionGroup::MISCELLANEOUS, Localizable("Save wheel (hold)"), "+cc_save_wheel"},
+		{EBindOptionGroup::MISCELLANEOUS, Localizable("Marker where you aim"), "cc_ping"},
+		{EBindOptionGroup::MISCELLANEOUS, Localizable("Hook me up"), "cc_save 0"},
+		{EBindOptionGroup::MISCELLANEOUS, Localizable("Hook me to the right"), "cc_save 1"},
+		{EBindOptionGroup::MISCELLANEOUS, Localizable("Hammer me"), "cc_save 2"},
+		{EBindOptionGroup::MISCELLANEOUS, Localizable("Stand under me"), "cc_save 3"},
+		{EBindOptionGroup::MISCELLANEOUS, Localizable("Pull me down"), "cc_save 4"},
+		{EBindOptionGroup::MISCELLANEOUS, Localizable("Hook me to the left"), "cc_save 5"},
+		{EBindOptionGroup::MISCELLANEOUS, Localizable("Wait, don't touch me"), "cc_save 6"},
+		{EBindOptionGroup::MISCELLANEOUS, Localizable("Thanks!"), "cc_save 7"},
 	};
 	m_NumPredefinedBindOptions = m_vBindOptions.size();
 

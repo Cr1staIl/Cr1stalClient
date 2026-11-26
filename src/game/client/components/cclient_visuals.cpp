@@ -6,7 +6,9 @@
 #include <base/math.h>
 #include <base/str.h>
 
+#include <engine/image.h>
 #include <engine/shared/config.h>
+#include <engine/storage.h>
 #include <engine/textrender.h>
 
 #include <game/client/gameclient.h>
@@ -276,6 +278,86 @@ void CCVisuals::RenderKeystrokes(float Dt)
 	TextRender()->TextColor(TextRender()->DefaultTextColor());
 }
 
+void CCVisuals::RenderShapes(float Dt, vec2 Center, vec2 Half)
+{
+	if(!g_Config.m_Cc3dParticles)
+	{
+		m_vShapes.clear();
+		return;
+	}
+	const vec2 Area = Half + vec2(60.0f, 60.0f);
+	const int Wanted = g_Config.m_Cc3dParticlesCount;
+	while((int)m_vShapes.size() < Wanted)
+	{
+		SShape Shape;
+		Shape.m_Pos = Center + vec2(random_float(-Area.x, Area.x), random_float(-Area.y, Area.y));
+		Shape.m_Drift = vec2(random_float(-15.0f, 15.0f), random_float(-25.0f, -5.0f));
+		Shape.m_Size = random_float(5.0f, 13.0f);
+		Shape.m_Rot = vec3(random_float(0.0f, 6.28f), random_float(0.0f, 6.28f), random_float(0.0f, 6.28f));
+		Shape.m_Spin = vec3(random_float(-1.2f, 1.2f), random_float(-1.2f, 1.2f), random_float(-0.6f, 0.6f));
+		m_vShapes.push_back(Shape);
+	}
+	if((int)m_vShapes.size() > Wanted)
+		m_vShapes.resize(Wanted);
+
+	// a cube: 8 corners and 12 edges, turned in 3D and seen from the front
+	static const vec3 s_aCorners[8] = {
+		vec3(-1, -1, -1), vec3(1, -1, -1), vec3(1, 1, -1), vec3(-1, 1, -1),
+		vec3(-1, -1, 1), vec3(1, -1, 1), vec3(1, 1, 1), vec3(-1, 1, 1)};
+	static const int s_aEdges[12][2] = {{0, 1}, {1, 2}, {2, 3}, {3, 0}, {4, 5}, {5, 6}, {6, 7}, {7, 4}, {0, 4}, {1, 5}, {2, 6}, {3, 7}};
+
+	Graphics()->TextureClear();
+	Graphics()->BlendAdditive();
+	Graphics()->QuadsBegin();
+	const ColorRGBA Color = CCStyle::ACCENT_TEXT;
+	for(SShape &Shape : m_vShapes)
+	{
+		Shape.m_Pos += Shape.m_Drift * Dt;
+		Shape.m_Rot += Shape.m_Spin * Dt;
+		vec2 Rel = Shape.m_Pos - Center;
+		if(Rel.x < -Area.x)
+			Rel.x += Area.x * 2.0f;
+		if(Rel.x > Area.x)
+			Rel.x -= Area.x * 2.0f;
+		if(Rel.y < -Area.y)
+			Rel.y += Area.y * 2.0f;
+		if(Rel.y > Area.y)
+			Rel.y -= Area.y * 2.0f;
+		Shape.m_Pos = Center + Rel;
+
+		const float cx = std::cos(Shape.m_Rot.x), sx = std::sin(Shape.m_Rot.x);
+		const float cy = std::cos(Shape.m_Rot.y), sy = std::sin(Shape.m_Rot.y);
+		const float cz = std::cos(Shape.m_Rot.z), sz = std::sin(Shape.m_Rot.z);
+		vec2 aPoints[8];
+		float aDepth[8];
+		for(int c = 0; c < 8; c++)
+		{
+			vec3 p = s_aCorners[c];
+			p = vec3(p.x, p.y * cx - p.z * sx, p.y * sx + p.z * cx);
+			p = vec3(p.x * cy + p.z * sy, p.y, -p.x * sy + p.z * cy);
+			p = vec3(p.x * cz - p.y * sz, p.x * sz + p.y * cz, p.z);
+			const float Persp = 1.0f / (1.0f + p.z * 0.18f);
+			aPoints[c] = Shape.m_Pos + vec2(p.x, p.y) * Shape.m_Size * Persp;
+			aDepth[c] = p.z;
+		}
+		for(const auto &Edge : s_aEdges)
+		{
+			const vec2 A = aPoints[Edge[0]], B = aPoints[Edge[1]];
+			const float Near = 0.5f - (aDepth[Edge[0]] + aDepth[Edge[1]]) * 0.15f;
+			const float Len = distance(A, B);
+			if(Len <= 0.0f)
+				continue;
+			const vec2 Dir = (B - A) / Len;
+			const vec2 Out = vec2(Dir.y, -Dir.x) * 0.7f;
+			Graphics()->SetColor(Color.WithAlpha(std::clamp(Near, 0.15f, 0.85f) * 0.55f));
+			const IGraphics::CFreeformItem Item(A - Out, A + Out, B - Out, B + Out);
+			Graphics()->QuadsDrawFreeform(&Item, 1);
+		}
+	}
+	Graphics()->QuadsEnd();
+	Graphics()->BlendNormal();
+}
+
 void CCVisuals::OnRender()
 {
 	if(Client()->State() != IClient::STATE_ONLINE && Client()->State() != IClient::STATE_DEMOPLAYBACK)
@@ -285,10 +367,64 @@ void CCVisuals::OnRender()
 	const vec2 Center = GameClient()->m_Camera.m_Center;
 	const CScreenRect ScreenRect = Graphics()->MapScreenToWorld(Center.x, Center.y, 100.0f, 100.0f, 100.0f, 0, 0, Graphics()->ScreenAspect(), GameClient()->m_Camera.m_Zoom);
 	Graphics()->MapScreen(ScreenRect);
+	RenderShapes(Dt, (ScreenRect.m_TopLeft + ScreenRect.m_BottomRight) / 2.0f, (ScreenRect.m_BottomRight - ScreenRect.m_TopLeft) / 2.0f);
 	RenderBalls(Dt);
 	RenderCursorTrail(Dt);
 	RenderBubbles(Dt);
 	RenderKeystrokes(Dt);
 	// leave the world mapping for the components after this one
+	Graphics()->MapScreen(ScreenRect);
+}
+
+void CCGameBackground::OnShutdown()
+{
+	Graphics()->UnloadTexture(&m_Texture);
+	m_aLoaded[0] = '\0';
+}
+
+void CCGameBackground::OnRender()
+{
+	if(g_Config.m_CcGameBackground[0] == '\0' || (Client()->State() != IClient::STATE_ONLINE && Client()->State() != IClient::STATE_DEMOPLAYBACK))
+		return;
+	if(str_comp(m_aLoaded, g_Config.m_CcGameBackground) != 0)
+	{
+		Graphics()->UnloadTexture(&m_Texture);
+		str_copy(m_aLoaded, g_Config.m_CcGameBackground);
+		char aPath[IO_MAX_PATH_LENGTH];
+		str_format(aPath, sizeof(aPath), "assets/backgrounds/%s.png", g_Config.m_CcGameBackground);
+		CImageInfo Image;
+		if(Graphics()->LoadPng(Image, aPath, IStorage::TYPE_ALL))
+		{
+			m_Aspect = Image.m_Width / (float)std::max<size_t>(1, Image.m_Height);
+			m_Texture = Graphics()->LoadTextureRawMove(Image, 0, aPath);
+		}
+	}
+	if(!m_Texture.IsValid() || m_Texture.IsNullTexture())
+		return;
+
+	// fixed to the screen, a little movement with the camera
+	const float Height = 300.0f;
+	const float Width = Height * Graphics()->ScreenAspect();
+	Graphics()->MapScreenToSize(Width, Height);
+	float DrawW = Width * 1.08f, DrawH = DrawW / m_Aspect;
+	if(DrawH < Height * 1.08f)
+	{
+		DrawH = Height * 1.08f;
+		DrawW = DrawH * m_Aspect;
+	}
+	const vec2 Camera = GameClient()->m_Camera.m_Center;
+	const float Px = std::sin(Camera.x * 0.0004f) * (DrawW - Width) * 0.45f;
+	const float Py = std::sin(Camera.y * 0.0004f) * (DrawH - Height) * 0.45f;
+	Graphics()->WrapClamp();
+	Graphics()->TextureSet(m_Texture);
+	Graphics()->QuadsBegin();
+	Graphics()->SetColor(1.0f, 1.0f, 1.0f, g_Config.m_CcGameBackgroundAlpha / 100.0f);
+	const IGraphics::CQuadItem Quad((Width - DrawW) / 2.0f + Px, (Height - DrawH) / 2.0f + Py, DrawW, DrawH);
+	Graphics()->QuadsDrawTL(&Quad, 1);
+	Graphics()->QuadsEnd();
+	Graphics()->WrapNormal();
+
+	// back to the world for the map layers after this
+	const CScreenRect ScreenRect = Graphics()->MapScreenToWorld(Camera.x, Camera.y, 100.0f, 100.0f, 100.0f, 0, 0, Graphics()->ScreenAspect(), GameClient()->m_Camera.m_Zoom);
 	Graphics()->MapScreen(ScreenRect);
 }

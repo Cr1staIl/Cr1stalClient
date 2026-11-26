@@ -131,6 +131,7 @@ private:
 	void UpdateOptimize();
 
 	bool m_WheelActive = false;
+	bool m_WheelFromBind = false; // opened with +cc_save_wheel, closes when that key is released
 	vec2 m_SelectorMouse = vec2(0.0f, 0.0f);
 	int m_SelectedSave = -1;
 	float m_aWheelAnim[NUM_SAVES] = {};
@@ -160,6 +161,8 @@ private:
 
 	void RenderWorld();
 	void RenderWheel();
+	static void ConSaveWheel(IConsole::IResult *pResult, void *pUserData);
+	static void ConSave(IConsole::IResult *pResult, void *pUserData);
 };
 
 // Outlines around freeze, wall, unfreeze and death tiles (drawn above the map, below the tees)

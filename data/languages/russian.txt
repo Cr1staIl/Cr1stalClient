@@ -2922,9 +2922,6 @@ Middle mouse button: marker for your team
 Others with Cr1stal Client see pictures and markers
 == Игроки с Cr1stal Client видят картинки и метки
 
-Put markers on the middle mouse button
-== Метки на среднюю кнопку мыши
-
 Updates
 == Обновления
 
@@ -3690,9 +3687,6 @@ Dust
 Weather
 == Погода
 
-Virtual joystick which only aims and moves the mouse pointer relatively.
-== 
-
 Crimson
 == Малиновая
 
@@ -3749,3 +3743,60 @@ Physics balls
 
 Number of balls
 == Количество мячиков
+
+Virtual joystick which only aims and moves the mouse pointer relatively.
+== 
+
+Also behind the map in game
+== Также за картой в игре
+
+Freeze line only on the open side, not along walls
+== Линия фриза только снаружи, не вдоль стен
+
+Smooth edges (after restart)
+== Сглаживание краёв (после перезапуска)
+
+Hook from game pack (name in assets/game)
+== Хук из game-пака (имя в assets/game)
+
+Others get this hook too
+== У других тоже этот хук
+
+Chat messages slide in
+== Сообщения чата выезжают
+
+Kill messages slide in
+== Килфид выезжает
+
+Names in a gradient
+== Ники градиентом
+
+First color
+== Первый цвет
+
+Second color
+== Второй цвет
+
+Moving gradient
+== Движущийся градиент
+
+3D particles
+== 3D-частицы
+
+Number of particles
+== Количество частиц
+
+Native
+== Родное
+
+Stretched resolution
+== Растянутое разрешение
+
+Keys
+== Клавиши
+
+Save wheel (hold)
+== Колесо сейвов (держать)
+
+Marker where you aim
+== Метка туда, куда целишься

@@ -327,6 +327,10 @@ public:
 
 	virtual void MapScreen(const CScreenRect &ScreenRect) = 0;
 
+	// C-Client: when above 0 the game world is drawn with this aspect ratio and stretched to the
+	// screen (like stretched 4:3); the interface keeps the real one
+	float m_WorldAspectOverride = 0.0f;
+
 	// helper functions
 	void CalcScreenParams(float Aspect, float Zoom, float *pWidth, float *pHeight) const;
 	CScreenRect MapScreenToWorld(float CenterX, float CenterY, float ParallaxX, float ParallaxY,

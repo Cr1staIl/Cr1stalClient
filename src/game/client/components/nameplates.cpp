@@ -143,10 +143,40 @@ public:
 		ColorRGBA OutlineColor, Color;
 		Color = m_Color;
 		OutlineColor = ColorRGBA(0.0f, 0.0f, 0.0f, 0.5f * m_Color.a);
+		if(m_Gradient && g_Config.m_CcNameGradient)
+		{
+			// C-Client: a soft color gradient over the text, drawn in thin clipped slices
+			const ColorRGBA A = color_cast<ColorRGBA>(ColorHSLA(g_Config.m_CcNameGradientA));
+			const ColorRGBA B = color_cast<ColorRGBA>(ColorHSLA(g_Config.m_CcNameGradientB));
+			const CScreenRect Screen = This.Graphics()->GetScreen();
+			const float ScaleX = This.Graphics()->ScreenWidth() / (Screen.m_BottomRight.x - Screen.m_TopLeft.x);
+			const float ScaleY = This.Graphics()->ScreenHeight() / (Screen.m_BottomRight.y - Screen.m_TopLeft.y);
+			const float Left = Pos.x - Size().x / 2.0f, Top = Pos.y - Size().y / 2.0f;
+			const float Shift = g_Config.m_CcNameGradientMove ? This.Client()->LocalTime() * 0.4f : 0.0f;
+			constexpr int Slices = 12;
+			for(int i = 0; i < Slices; i++)
+			{
+				const float x0 = Left - 2.0f + (Size().x + 4.0f) * i / Slices;
+				const float x1 = Left - 2.0f + (Size().x + 4.0f) * (i + 1) / Slices;
+				const float t = 0.5f + 0.5f * std::sin(((i + 0.5f) / Slices + Shift) * pi);
+				const int px0 = (int)std::floor((x0 - Screen.m_TopLeft.x) * ScaleX);
+				const int px1 = (int)std::ceil((x1 - Screen.m_TopLeft.x) * ScaleX);
+				const int py0 = (int)std::floor((Top - 4.0f - Screen.m_TopLeft.y) * ScaleY);
+				const int py1 = (int)std::ceil((Top + Size().y + 4.0f - Screen.m_TopLeft.y) * ScaleY);
+				if(px1 <= px0 || py1 <= py0)
+					continue;
+				This.Graphics()->ClipEnable(px0, py0, px1 - px0, py1 - py0);
+				const ColorRGBA Slice = ColorRGBA(A.r + (B.r - A.r) * t, A.g + (B.g - A.g) * t, A.b + (B.b - A.b) * t, m_Color.a);
+				This.TextRender()->RenderTextContainer(m_TextContainerIndex, Slice, OutlineColor, Left, Top);
+			}
+			This.Graphics()->ClipDisable();
+			return;
+		}
 		This.TextRender()->RenderTextContainer(m_TextContainerIndex,
 			Color, OutlineColor,
 			Pos.x - Size().x / 2.0f, Pos.y - Size().y / 2.0f);
 	}
+	bool m_Gradient = false; // C-Client
 };
 
 class CNamePlatePartIcon : public CNamePlatePart
@@ -351,6 +381,7 @@ protected:
 		if(!m_Visible)
 			return false;
 		m_Color = Data.m_Color;
+		m_Gradient = true;
 		return m_FontSize != Data.m_FontSize || str_comp(m_aText, Data.m_aName) != 0;
 	}
 	void UpdateText(CGameClient &This, const CNamePlateData &Data) override
@@ -380,6 +411,7 @@ protected:
 		if(!m_Visible && Data.m_aClan[0] != '\0')
 			return false;
 		m_Color = Data.m_Color;
+		m_Gradient = true;
 		return m_FontSize != Data.m_FontSizeClan || str_comp(m_aText, Data.m_aClan) != 0;
 	}
 	void UpdateText(CGameClient &This, const CNamePlateData &Data) override

@@ -199,6 +199,7 @@ public:
 	CCPet m_CPet;
 	CCEffects m_CEffects;
 	CCVisuals m_CVisuals;
+	CCGameBackground m_CGameBackground;
 	CCAutomation m_CAutomation;
 	CDamageInd m_DamageInd;
 	CTouchControls m_TouchControls;
@@ -877,6 +878,10 @@ public:
 	bool LoadGameSkinFile(CGameSkin &Skin, const char *pFile, int StorageType);
 	// the game skin to draw this player with (their own pack if they use Cr1stal Client)
 	const CGameSkin &GameSkinOf(int ClientId);
+	// the game skin to take the hook from (your chosen hook, else GameSkinOf)
+	const CGameSkin &HookSkinOf(int ClientId);
+	CGameSkin m_CcHookSkin;
+	char m_aCcHookSkinLoaded[64] = "";
 	// the file of the game pack you use, empty for the default one
 	char m_aCcGameSkinFile[IO_MAX_PATH_LENGTH] = "";
 	std::map<std::string, CGameSkin> m_CcPackSkins;

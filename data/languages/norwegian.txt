@@ -2530,6 +2530,9 @@ Test sound
 Default
 == 
 
+Also behind the map in game
+== 
+
 Neon
 == 
 
@@ -2923,6 +2926,9 @@ Teleporter color
 Only in entities view
 == 
 
+Freeze line only on the open side, not along walls
+== 
+
 Music island
 == 
 
@@ -2948,6 +2954,9 @@ A long title slides from side to side
 == 
 
 Optimization
+== 
+
+Smooth edges (after restart)
 == 
 
 Optimize the game for my PC
@@ -3145,6 +3154,12 @@ Box on the hooked tee
 Light along the hook while holding
 == 
 
+Hook from game pack (name in assets/game)
+== 
+
+Others get this hook too
+== 
+
 Ice around frozen tees
 == 
 
@@ -3178,6 +3193,24 @@ Motion blur
 Blur strength
 == 
 
+Chat messages slide in
+== 
+
+Kill messages slide in
+== 
+
+Names in a gradient
+== 
+
+First color
+== 
+
+Second color
+== 
+
+Moving gradient
+== 
+
 Flying name plates
 == 
 
@@ -3202,6 +3235,18 @@ Keys position X
 Keys position Y
 == 
 
+3D particles
+== 
+
+Number of particles
+== 
+
+Native
+== 
+
+Stretched resolution
+== 
+
 Physics balls
 == 
 
@@ -3220,7 +3265,13 @@ Middle mouse button: marker for your team
 Others with Cr1stal Client see pictures and markers
 == 
 
-Put markers on the middle mouse button
+Keys
+== 
+
+Save wheel (hold)
+== 
+
+Marker where you aim
 == 
 
 Only show chat of friends
