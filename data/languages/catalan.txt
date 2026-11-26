@@ -2719,6 +2719,24 @@ Lines through the screen center
 Customization
 == 
 
+Crimson
+== 
+
+Ocean
+== 
+
+Violet
+== 
+
+Emerald
+== 
+
+Gold
+== 
+
+Ice
+== 
+
 Font
 == 
 
@@ -3203,6 +3221,45 @@ Dust
 == 
 
 Weather
+== 
+
+More
+== 
+
+Motion blur
+== 
+
+Blur strength
+== 
+
+Flying name plates
+== 
+
+How fast they follow
+== 
+
+Chat bubbles above tees
+== 
+
+Bubble time
+== 
+
+Cursor trail
+== 
+
+Your keys on the screen
+== 
+
+Keys position X
+== 
+
+Keys position Y
+== 
+
+Physics balls
+== 
+
+Number of balls
 == 
 
 Saves and markers

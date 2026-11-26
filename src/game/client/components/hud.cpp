@@ -2,6 +2,8 @@
 /* If you are missing that file, acquire a complete release at teeworlds.com.                */
 #include "hud.h"
 
+#include "cclient_style.h"
+
 #include <base/color.h>
 #include <base/time.h>
 
@@ -2303,7 +2305,7 @@ void CHud::RenderCClientOverlay()
 			const float X = (m_Width - W) / 2.0f;
 			const float Y = m_Height - H - 22.0f - (g_Config.m_CcStatusbar ? 9.0f : 0.0f) + (1.0f - Alpha) * 10.0f;
 			Graphics()->DrawRect(X, Y, W, H, ColorRGBA(0.0f, 0.0f, 0.0f, 0.5f * Alpha), IGraphics::CORNER_ALL, H / 2.0f);
-			TextRender()->TextColor(0.95f, 0.18f, 0.33f, Alpha);
+			TextRender()->TextColor(CCStyle::ACCENT_TEXT.WithAlpha(Alpha));
 			TextRender()->Text(X + 8.0f, Y + 3.2f, FontSize, pText, -1.0f);
 			TextRender()->TextColor(TextRender()->DefaultTextColor());
 		}

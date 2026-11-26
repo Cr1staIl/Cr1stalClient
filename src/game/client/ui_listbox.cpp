@@ -2,6 +2,8 @@
 /* If you are missing that file, acquire a complete release at teeworlds.com.                */
 #include "ui_listbox.h"
 
+#include "components/cclient_style.h"
+
 #include <base/vmath.h>
 
 #include <engine/config.h>
@@ -167,7 +169,7 @@ CListboxItem CListBox::DoNextItem(const void *pId, bool Selected, float CornerRa
 		}
 
 		// C-Client: calm blue violet for the selected row
-		Item.m_Rect.Draw(ColorRGBA(0.86f, 0.07f, 0.23f, m_Active ? 0.45f : 0.3f), IGraphics::CORNER_ALL, CornerRadius);
+		Item.m_Rect.Draw(CCStyle::ACCENT.WithAlpha(m_Active ? 0.45f : 0.3f), IGraphics::CORNER_ALL, CornerRadius);
 	}
 	// C-Client: the hover light fades in and out
 	const float HoverA = Item.m_Visible ? Ui()->StateAnim(pId, Ui()->HotItem() == pId && !m_ScrollRegion.Animating(), 14.0f) : 0.0f;

@@ -1,6 +1,8 @@
 /* Cr1stal Client: visual effects (jelly tees, weapon glow, hook effects, weather, freeze looks). Based on DDNet, see licence.txt. */
 #include "cclient_effects.h"
 
+#include "cclient_style.h"
+
 #include <base/math.h>
 
 #include <engine/graphics.h>
@@ -227,7 +229,7 @@ void CCEffects::RenderHookEffects()
 		const int Hooked = Core.HookedPlayer();
 		const vec2 From = Data.m_RenderPos;
 		const vec2 To = Hooked >= 0 && Hooked < MAX_CLIENTS ? GameClient()->m_aClients[Hooked].m_RenderPos : Core.m_HookPos;
-		const ColorRGBA Accent(0.95f, 0.18f, 0.33f, 1.0f);
+		const ColorRGBA Accent = CCStyle::ACCENT_TEXT;
 
 		Graphics()->TextureClear();
 		Graphics()->BlendAdditive();
@@ -362,7 +364,7 @@ void CCEffects::RenderEvents(float Dt)
 			const float k0 = s / (float)Segments, k1 = (s + 1) / (float)Segments;
 			const float A0 = Start + Sweep * k0 * Slash.m_Dir, A1 = Start + Sweep * k1 * Slash.m_Dir;
 			const float W = 7.0f * std::sin(k0 * pi) * (1.0f - t);
-			Line(Slash.m_Pos + direction(A0) * Radius, Slash.m_Pos + direction(A1) * Radius, W + 0.5f, ColorRGBA(0.95f, 0.18f, 0.33f, 0.9f * (1.0f - t)));
+			Line(Slash.m_Pos + direction(A0) * Radius, Slash.m_Pos + direction(A1) * Radius, W + 0.5f, CCStyle::ACCENT_TEXT.WithAlpha(0.9f * (1.0f - t)));
 		}
 	}
 

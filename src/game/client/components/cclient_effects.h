@@ -20,6 +20,8 @@ public:
 
 	// squash and stretch of the tee body, (1, 1) when off
 	vec2 JellyScale(int ClientId) const;
+	// how fast the tee moves on the screen, in units per second
+	vec2 Velocity(int ClientId) const { return ClientId >= 0 && ClientId < MAX_CLIENTS ? m_aPlayers[ClientId].m_Vel : vec2(0.0f, 0.0f); }
 	// called by the items while they draw lasers and projectiles
 	void LaserGlow(vec2 From, vec2 To, int LaserType, float Fade) const;
 	void ProjectileGlow(vec2 Pos, int Weapon, float Alpha) const;

@@ -428,7 +428,7 @@ void CCClient::RenderWheel()
 	Graphics()->QuadsBegin();
 	Graphics()->SetColor(0.05f, 0.045f, 0.055f, 0.82f);
 	Graphics()->DrawCircle(ScreenCenter.x, ScreenCenter.y, 200.0f, 64);
-	Graphics()->SetColor(0.86f, 0.07f, 0.23f, 0.22f);
+	Graphics()->SetColor(CCStyle::ACCENT.WithAlpha(0.22f));
 	Graphics()->DrawCircle(ScreenCenter.x, ScreenCenter.y, 60.0f, 48);
 	Graphics()->QuadsEnd();
 
@@ -448,7 +448,7 @@ void CCClient::RenderWheel()
 		{
 			Graphics()->TextureClear();
 			Graphics()->QuadsBegin();
-			Graphics()->SetColor(0.86f, 0.07f, 0.23f, 0.3f * Anim);
+			Graphics()->SetColor(CCStyle::ACCENT.WithAlpha(0.3f * Anim));
 			Graphics()->DrawCircle(Pos.x, Pos.y, Size * 0.62f, 32);
 			Graphics()->QuadsEnd();
 		}

@@ -2,6 +2,8 @@
 /* If you are missing that file, acquire a complete release at teeworlds.com.                */
 #include "scoreboard.h"
 
+#include "cclient_style.h"
+
 #include <base/dbg.h>
 #include <base/time.h>
 
@@ -719,7 +721,7 @@ void CScoreboard::RenderScoreboard(CUIRect Scoreboard, int Team, int CountStart,
 				(GameClient()->m_Snap.m_SpecInfo.m_SpectatorId == SPEC_FREEVIEW && pInfo->m_Local) ||
 				(GameClient()->m_Snap.m_SpecInfo.m_Active && pInfo->m_ClientId == GameClient()->m_Snap.m_SpecInfo.m_SpectatorId))
 			{
-				Row.Draw(ColorRGBA(0.86f, 0.07f, 0.23f, 0.32f), IGraphics::CORNER_ALL, RoundRadius);
+				Row.Draw(CCStyle::ACCENT.WithAlpha(0.32f), IGraphics::CORNER_ALL, RoundRadius);
 			}
 
 			const CGameClient::CClientData &ClientData = GameClient()->m_aClients[pInfo->m_ClientId];
@@ -866,7 +868,7 @@ void CScoreboard::RenderScoreboard(CUIRect Scoreboard, int Team, int CountStart,
 				if(g_Config.m_CcScoreboardFriend && ClientData.m_Friend)
 				{
 					TextRender()->SetFontPreset(EFontPreset::ICON_FONT);
-					TextRender()->TextColor(ColorRGBA(0.95f, 0.18f, 0.33f, TextColor.a));
+					TextRender()->TextColor(CCStyle::ACCENT_TEXT.WithAlpha(TextColor.a));
 					TextRender()->Text(NameOffset + BadgeWidth + Player.m_Name.Width() + 3.0f, TextY + FontSize * 0.15f, FontSize * 0.7f, FontIcon::HEART, -1.0f);
 					TextRender()->TextColor(TextRender()->DefaultTextColor());
 					TextRender()->SetFontPreset(EFontPreset::DEFAULT_FONT);
@@ -1380,7 +1382,7 @@ CUi::EPopupMenuFunctionResult CScoreboard::CScoreboardPopupContext::Render(void 
 
 	auto SoftColor = [pUi](const CButtonContainer *pButton, bool Checked = false) {
 		if(Checked)
-			return pUi->HotItem() == pButton ? ColorRGBA(0.86f, 0.07f, 0.23f, 0.65f) : ColorRGBA(0.86f, 0.07f, 0.23f, 0.45f);
+			return pUi->HotItem() == pButton ? CCStyle::ACCENT.WithAlpha(0.65f) : CCStyle::ACCENT.WithAlpha(0.45f);
 		return pUi->HotItem() == pButton ? ColorRGBA(1.0f, 1.0f, 1.0f, 0.16f) : ColorRGBA(1.0f, 1.0f, 1.0f, 0.07f);
 	};
 	auto SoftButton = [pUi, &SoftColor](CButtonContainer *pButton, const char *pText, const CUIRect *pRect, float Size, bool Checked = false, bool Danger = false) {

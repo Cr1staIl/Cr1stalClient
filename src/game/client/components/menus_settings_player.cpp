@@ -139,7 +139,7 @@ void CMenus::RenderSettingsPlayer(CUIRect MainView)
 		Graphics()->QuadsBegin();
 		for(int Ring = 6; Ring >= 1; Ring--)
 		{
-			Graphics()->SetColor(0.86f, 0.07f, 0.23f, 0.03f * Intro);
+			Graphics()->SetColor(CCStyle::ACCENT.WithAlpha(0.03f * Intro));
 			Graphics()->DrawCircle(TeePos.x, TeePos.y, 38.0f * Ring / 6.0f, 32);
 		}
 		Graphics()->QuadsEnd();

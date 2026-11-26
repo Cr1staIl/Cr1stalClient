@@ -40,6 +40,7 @@
 #include "components/cclient_presence.h"
 #include "components/cclient_tc.h"
 #include "components/cclient_trails.h"
+#include "components/cclient_visuals.h"
 #include "components/censor.h"
 #include "components/chat.h"
 #include "components/console.h"
@@ -197,6 +198,7 @@ public:
 	CCBgDraw m_CBgDraw;
 	CCPet m_CPet;
 	CCEffects m_CEffects;
+	CCVisuals m_CVisuals;
 	CCAutomation m_CAutomation;
 	CDamageInd m_DamageInd;
 	CTouchControls m_TouchControls;

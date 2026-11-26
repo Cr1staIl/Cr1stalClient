@@ -977,6 +977,22 @@ void CPlayers::RenderPlayer(
 		RenderTools()->RenderTee(&State, &RenderInfo, Player.m_Emote, Direction, ShadowPosition, g_Config.m_ClUnpredictedShadowAlpha / 100.f, Local); // render ghost
 	}
 
+	// C-Client: motion blur, a few faint copies behind a fast tee
+	if(g_Config.m_CcMotionBlur)
+	{
+		const vec2 Vel = GameClient()->m_CEffects.Velocity(ClientId);
+		const float Speed = length(Vel);
+		if(Speed > 300.0f && Speed < 20000.0f)
+		{
+			const float Strength = g_Config.m_CcMotionBlurStrength / 100.0f;
+			const float Amount = std::min(1.0f, (Speed - 300.0f) / 1200.0f);
+			for(int k = 4; k >= 1; k--)
+			{
+				const vec2 Back = Position - Vel * (0.006f * k * Strength);
+				RenderTools()->RenderTee(&State, &RenderInfo, Player.m_Emote, Direction, Back, Alpha * 0.16f * Amount * (5 - k) / 4.0f, Local);
+			}
+		}
+	}
 	RenderTools()->m_JellyScale = GameClient()->m_CEffects.JellyScale(ClientId); // C-Client
 	RenderTools()->RenderTee(&State, &RenderInfo, Player.m_Emote, Direction, Position, Alpha, Local);
 	RenderTools()->m_JellyScale = vec2(1.0f, 1.0f);

@@ -7,8 +7,6 @@
 extern "C" {
 #endif
 
-
-
 typedef struct
 {
 	float r, g, b, a;

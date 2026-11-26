@@ -697,6 +697,8 @@ void CChat::AddLine(int ClientId, int Team, const char *pLine)
 					  (GameClient()->m_Snap.m_LocalClientId != ClientId && GameClient()->m_aClients[ClientId].m_Foe))))
 		return;
 
+	GameClient()->m_CVisuals.OnChatMessage(ClientId, pLine); // C-Client: chat bubbles
+
 	// trim right and set maximum length to 256 utf8-characters
 	int Length = 0;
 	const char *pStr = pLine;

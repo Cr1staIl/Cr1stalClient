@@ -89,4 +89,22 @@ namespace CCStyle
 		pGraphics->QuadsEnd();
 	}
 
+	void ApplyTheme(int Theme)
+	{
+		// the main color of each theme, the other shades are made from it
+		static const ColorRGBA s_aBase[NUM_THEMES] = {
+			ColorRGBA(0.86f, 0.07f, 0.23f, 1.0f), // crimson
+			ColorRGBA(0.10f, 0.45f, 0.95f, 1.0f), // ocean
+			ColorRGBA(0.58f, 0.20f, 0.95f, 1.0f), // violet
+			ColorRGBA(0.10f, 0.78f, 0.45f, 1.0f), // emerald
+			ColorRGBA(0.95f, 0.66f, 0.10f, 1.0f), // gold
+			ColorRGBA(0.45f, 0.85f, 1.0f, 1.0f), // ice
+		};
+		const ColorRGBA Base = s_aBase[std::clamp(Theme, 0, NUM_THEMES - 1)];
+		ACCENT = Base.WithAlpha(0.92f);
+		ACCENT_SOFT = Base.WithAlpha(0.22f);
+		ACCENT_TEXT = Mix(Base, ColorRGBA(1.0f, 1.0f, 1.0f, 1.0f), 0.15f);
+		ACCENT_DEEP = ColorRGBA(Base.r * 0.92f, Base.g * 0.6f, Base.b * 0.65f, 1.0f);
+	}
+
 } // namespace CCStyle

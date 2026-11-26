@@ -21,11 +21,20 @@ namespace CCStyle
 	// rounded rectangle for one group of settings
 	inline constexpr ColorRGBA CARD = ColorRGBA(0.085f, 0.08f, 0.09f, 0.95f);
 	inline constexpr ColorRGBA CARD_EDGE = ColorRGBA(1.0f, 1.0f, 1.0f, 0.06f);
-	// crimson red for the selected thing
-	inline constexpr ColorRGBA ACCENT = ColorRGBA(0.86f, 0.07f, 0.23f, 0.92f);
-	inline constexpr ColorRGBA ACCENT_SOFT = ColorRGBA(0.86f, 0.07f, 0.23f, 0.22f);
-	// crimson text for titles
-	inline constexpr ColorRGBA ACCENT_TEXT = ColorRGBA(0.95f, 0.18f, 0.33f, 1.0f);
+	// the theme color (crimson by default) for the selected thing, see ApplyTheme
+	inline ColorRGBA ACCENT = ColorRGBA(0.86f, 0.07f, 0.23f, 0.92f);
+	inline ColorRGBA ACCENT_SOFT = ColorRGBA(0.86f, 0.07f, 0.23f, 0.22f);
+	// lighter theme color for titles
+	inline ColorRGBA ACCENT_TEXT = ColorRGBA(0.95f, 0.18f, 0.33f, 1.0f);
+	// darker theme color for the neon background
+	inline ColorRGBA ACCENT_DEEP = ColorRGBA(0.80f, 0.04f, 0.15f, 1.0f);
+
+	// 0 crimson, 1 ocean, 2 violet, 3 emerald, 4 gold, 5 ice
+	enum
+	{
+		NUM_THEMES = 6
+	};
+	void ApplyTheme(int Theme);
 	inline constexpr ColorRGBA HOVER = ColorRGBA(1.0f, 1.0f, 1.0f, 0.07f);
 	inline constexpr ColorRGBA BUTTON = ColorRGBA(1.0f, 1.0f, 1.0f, 0.06f);
 	inline constexpr ColorRGBA TEXT = ColorRGBA(0.95f, 0.94f, 0.96f, 1.0f);

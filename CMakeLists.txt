@@ -2707,6 +2707,8 @@ if(CLIENT)
     components/cclient_tc.h
     components/cclient_trails.cpp
     components/cclient_trails.h
+    components/cclient_visuals.cpp
+    components/cclient_visuals.h
     components/censor.cpp
     components/censor.h
     components/chat.cpp

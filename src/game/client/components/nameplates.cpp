@@ -1084,9 +1084,26 @@ void CNamePlates::OnRender()
 		// Only render name plates for active characters
 		if(GameClient()->m_Snap.m_aCharacters[i].m_Active)
 		{
-			const vec2 RenderPos = GameClient()->m_aClients[i].m_RenderPos;
+			vec2 RenderPos = GameClient()->m_aClients[i].m_RenderPos;
+			// C-Client: flying name plates follow the tee on a soft spring
+			if(g_Config.m_CcFlyingNamePlates)
+			{
+				const float Dt = std::clamp(Client()->RenderFrameTime(), 0.0f, 0.05f);
+				if(!m_aFlyInit[i] || distance(m_aFlyPos[i], RenderPos) > 400.0f)
+				{
+					m_aFlyPos[i] = RenderPos;
+					m_aFlyVel[i] = vec2(0.0f, 0.0f);
+					m_aFlyInit[i] = true;
+				}
+				const float Stiffness = 60.0f + g_Config.m_CcFlyingNamePlatesSpeed * 2.4f;
+				m_aFlyVel[i] += ((RenderPos - m_aFlyPos[i]) * Stiffness - m_aFlyVel[i] * 2.0f * std::sqrt(Stiffness) * 0.8f) * Dt;
+				m_aFlyPos[i] += m_aFlyVel[i] * Dt;
+				RenderPos = m_aFlyPos[i];
+			}
 			RenderNamePlateGame(RenderPos, pInfo, 1.0f);
 		}
+		else
+			m_aFlyInit[i] = false;
 	}
 }
 

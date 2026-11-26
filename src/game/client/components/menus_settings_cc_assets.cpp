@@ -331,7 +331,7 @@ void CMenus::RenderCcAssetsTab(CUIRect MainView, int Tab)
 			Preview.Draw(ColorRGBA(0.03f, 0.027f, 0.031f, 1.0f), IGraphics::CORNER_ALL, 6.0f);
 			CUIRect Glow;
 			Preview.HSplitBottom(Preview.h * 0.45f, nullptr, &Glow);
-			Glow.Draw(ColorRGBA(0.8f, 0.04f, 0.15f, 0.45f), IGraphics::CORNER_B, 6.0f);
+			Glow.Draw(CCStyle::ACCENT_DEEP.WithAlpha(0.45f), IGraphics::CORNER_B, 6.0f);
 		}
 		else if(Background.m_Texture.IsValid() && !Background.m_Texture.IsNullTexture())
 		{

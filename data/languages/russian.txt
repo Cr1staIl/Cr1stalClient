@@ -3582,9 +3582,6 @@ Checkpoint:
 Player below you
 == Под тобой игрок
 
-Virtual joystick which only aims and moves the mouse pointer relatively.
-== 
-
 Show your checkpoint
 == Показывать чекпоинт
 
@@ -3692,3 +3689,63 @@ Dust
 
 Weather
 == Погода
+
+Virtual joystick which only aims and moves the mouse pointer relatively.
+== 
+
+Crimson
+== Малиновая
+
+Ocean
+== Океан
+
+Violet
+== Фиолетовая
+
+Emerald
+== Изумруд
+
+Gold
+== Золото
+
+Ice
+== Лёд
+
+More
+== Ещё
+
+Motion blur
+== Размытие движения
+
+Blur strength
+== Сила размытия
+
+Flying name plates
+== Летающие ники
+
+How fast they follow
+== Как быстро догоняют
+
+Chat bubbles above tees
+== Сообщения чата над ти
+
+Bubble time
+== Время пузыря
+
+Cursor trail
+== След курсора
+
+Your keys on the screen
+== Твои клавиши на экране
+
+Keys position X
+== Позиция клавиш X
+
+Keys position Y
+== Позиция клавиш Y
+
+Physics balls
+== Физические мячики
+
+Number of balls
+== Количество мячиков

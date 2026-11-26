@@ -3,6 +3,8 @@
 
 #include "menus.h"
 
+#include "cclient_style.h"
+
 #include <base/color.h>
 #include <base/dbg.h>
 #include <base/fs.h>
@@ -2524,7 +2526,7 @@ void CMenus::RenderNeonBackground()
 			// slow waves along the bottom so the light breathes a little
 			const float Wave = 0.82f + 0.12f * std::sin(X * 0.021f + Time * 0.45f) + 0.08f * std::sin(X * 0.0075f - Time * 0.28f);
 			const float A = std::clamp(Ease * Ease * Wave, 0.0f, 1.0f);
-			return ColorRGBA(0.80f, 0.04f, 0.15f, 0.62f * A);
+			return CCStyle::ACCENT_DEEP.WithAlpha(0.62f * A);
 		};
 		for(int y = 0; y < Rows; y++)
 		{
@@ -2538,7 +2540,7 @@ void CMenus::RenderNeonBackground()
 			}
 		}
 		// thin brighter glow right at the bottom edge
-		const ColorRGBA Edge(1.0f, 0.12f, 0.28f, 0.0f);
+		const ColorRGBA Edge = CCStyle::Mix(CCStyle::ACCENT_DEEP, ColorRGBA(1.0f, 1.0f, 1.0f, 1.0f), 0.2f).WithAlpha(0.0f);
 		Graphics()->SetColor4(Edge, Edge, Edge.WithAlpha(0.22f), Edge.WithAlpha(0.22f));
 		const IGraphics::CQuadItem BottomGlow(0, ScreenHeight - 18.0f, ScreenWidth, 18.0f);
 		Graphics()->QuadsDrawTL(&BottomGlow, 1);
@@ -2553,7 +2555,7 @@ void CMenus::RenderNeonBackground()
 		const float Py = ScreenHeight + 5.0f - std::fmod(NeonHash(i, 22) * (ScreenHeight * 0.75f) + Time * Speed, ScreenHeight * 0.75f);
 		const float Px = NeonHash(i, 23) * ScreenWidth + 6.0f * std::sin(Time * 0.3f + i);
 		const float Fade = std::clamp((Py - ScreenHeight * 0.3f) / (ScreenHeight * 0.4f), 0.0f, 1.0f);
-		Graphics()->SetColor(1.0f, 0.4f, 0.5f, 0.35f * Fade);
+		Graphics()->SetColor(CCStyle::Mix(CCStyle::ACCENT_TEXT, ColorRGBA(1.0f, 1.0f, 1.0f, 1.0f), 0.35f).WithAlpha(0.35f * Fade));
 		Graphics()->DrawCircle(Px, Py, 0.35f + 0.3f * NeonHash(i, 25), 6);
 	}
 	Graphics()->QuadsEnd();

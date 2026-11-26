@@ -442,6 +442,11 @@ void CMenus::RenderSettingsCClient(CUIRect MainView)
 		CCcColumn &C = Col(CARD_CUSTOMIZATION);
 		C.BeginCard(CARD_CUSTOMIZATION, Localize("Customization"));
 		{
+			static CButtonContainer s_aThemes[CCStyle::NUM_THEMES];
+			const char *apThemes[] = {Localize("Crimson"), Localize("Ocean"), Localize("Violet"), Localize("Emerald"), Localize("Gold"), Localize("Ice")};
+			C.Choice(&g_Config.m_CcTheme, Localize("Theme"), apThemes, CCStyle::NUM_THEMES, s_aThemes);
+		}
+		{
 			// font for all text in the game: < name >
 			C.Gap(2.0f);
 			C.Caption(Localize("Font"));
@@ -758,6 +763,29 @@ void CMenus::RenderSettingsCClient(CUIRect MainView)
 		C.Choice(&g_Config.m_CcWeather, Localize("Weather"), apWeather, 5, s_aWeather);
 		if(g_Config.m_CcWeather)
 			C.Slider(&g_Config.m_CcWeatherAmount, Localize("Amount"), 25, 300, "%");
+		C.Gap(4.0f);
+		C.Caption(Localize("More"));
+		C.Check(&g_Config.m_CcMotionBlur, Localize("Motion blur"));
+		if(g_Config.m_CcMotionBlur)
+			C.Slider(&g_Config.m_CcMotionBlurStrength, Localize("Blur strength"), 1, 100, "%");
+		C.Check(&g_Config.m_CcFlyingNamePlates, Localize("Flying name plates"));
+		if(g_Config.m_CcFlyingNamePlates)
+			C.Slider(&g_Config.m_CcFlyingNamePlatesSpeed, Localize("How fast they follow"), 1, 100, "%");
+		C.Check(&g_Config.m_CcChatBubbles, Localize("Chat bubbles above tees"));
+		if(g_Config.m_CcChatBubbles)
+			C.Slider(&g_Config.m_CcChatBubbleTime, Localize("Bubble time"), 2, 15, "s");
+		C.Check(&g_Config.m_CcCursorTrail, Localize("Cursor trail"));
+		if(g_Config.m_CcCursorTrail)
+			C.Slider(&g_Config.m_CcCursorTrailLength, Localize("Trail length"), 4, 60);
+		C.Check(&g_Config.m_CcKeystrokes, Localize("Your keys on the screen"));
+		if(g_Config.m_CcKeystrokes)
+		{
+			C.Slider(&g_Config.m_CcKeystrokesX, Localize("Keys position X"), 0, 100, "%");
+			C.Slider(&g_Config.m_CcKeystrokesY, Localize("Keys position Y"), 0, 100, "%");
+		}
+		C.Check(&g_Config.m_CcPhysBalls, Localize("Physics balls"));
+		if(g_Config.m_CcPhysBalls)
+			C.Slider(&g_Config.m_CcPhysBallsCount, Localize("Number of balls"), 1, 30);
 		C.EndCard();
 	}
 

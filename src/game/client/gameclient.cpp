@@ -7,6 +7,7 @@
 #include "components/binds.h"
 #include "components/broadcast.h"
 #include "components/camera.h"
+#include "components/cclient_style.h"
 #include "components/chat.h"
 #include "components/console.h"
 #include "components/controls.h"
@@ -151,6 +152,7 @@ void CGameClient::OnConsoleInit()
 					      &m_COutlines,
 					      &m_CPet,
 					      &m_CEffects,
+					      &m_CVisuals,
 					      &m_Particles.m_RenderExplosions,
 					      &m_NamePlates,
 					      &m_Particles.m_RenderExtra,
@@ -781,6 +783,7 @@ void CGameClient::UpdatePositions()
 
 void CGameClient::OnRender()
 {
+	CCStyle::ApplyTheme(g_Config.m_CcTheme); // C-Client: the color theme of the interface
 	const ColorRGBA ClearColor = color_cast<ColorRGBA>(ColorHSLA(g_Config.m_ClOverlayEntities ? g_Config.m_ClBackgroundEntitiesColor : g_Config.m_ClBackgroundColor));
 	Graphics()->Clear(ClearColor.r, ClearColor.g, ClearColor.b);
 
