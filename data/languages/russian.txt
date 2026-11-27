@@ -2732,3 +2732,33 @@ Update downloaded! Restart to apply.
 
 Voice chat is not available in this client.
 == Голосовой чат в этом клиенте недоступен.
+
+Downloading update
+== Загрузка обновления
+
+Update failed, try again
+== Не удалось обновить, повторить
+
+Update Cr1stal Client
+== Обновить Cr♱stal Client
+
+Check for updates when the game starts
+== Проверять обновления при запуске
+
+Your version
+== Твоя версия
+
+Updates: local build, no updates
+== Обновления: локальная сборка, без обновлений
+
+Check for updates
+== Проверить обновления
+
+Checking...
+== Проверка...
+
+You have the newest version
+== У тебя последняя версия
+
+Update is ready: see the main menu
+== Обновление готово: смотри главное меню

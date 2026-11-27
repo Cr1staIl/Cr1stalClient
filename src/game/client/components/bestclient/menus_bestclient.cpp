@@ -4146,7 +4146,7 @@ void CMenus::RenderSettingsBestClientOthers(CUIRect MainView)
 
 	// Cr1stal Client
 	{
-		const float CrystalBlockHeight = LineSize + MarginSmall + 3.0f * LineSize;
+		const float CrystalBlockHeight = LineSize + MarginSmall + 5.0f * LineSize;
 		CUIRect CrystalBlock;
 		Column.HSplitTop(CrystalBlockHeight, &CrystalBlock, &Column);
 		CUIRect CrystalBlockBg = CrystalBlock;
@@ -4163,6 +4163,35 @@ void CMenus::RenderSettingsBestClientOthers(CUIRect MainView)
 		DoButton_CheckBoxAutoVMarginAndSet(&g_Config.m_CcClientBadge, Localize("Show the client avatar next to Cr1stal Client players"), &g_Config.m_CcClientBadge, &CrystalBlock, LineSize);
 		DoButton_CheckBoxAutoVMarginAndSet(&g_Config.m_CcOthersPacks, Localize("Show their game texture packs"), &g_Config.m_CcOthersPacks, &CrystalBlock, LineSize);
 		DoButton_CheckBoxAutoVMarginAndSet(&g_Config.m_CcSharePresence, Localize("Let others see that I use Cr1stal Client"), &g_Config.m_CcSharePresence, &CrystalBlock, LineSize);
+		DoButton_CheckBoxAutoVMarginAndSet(&g_Config.m_CcUpdateCheck, Localize("Check for updates when the game starts"), &g_Config.m_CcUpdateCheck, &CrystalBlock, LineSize);
+		{
+			CCUpdate &Update = GameClient()->m_CUpdate;
+			CUIRect UpdateRow;
+			CrystalBlock.HSplitTop(LineSize, &UpdateRow, &CrystalBlock);
+			if(!Update.CanSelfUpdate())
+			{
+				Ui()->DoLabel(&UpdateRow, Localize("Updates: local build, no updates"), 12.0f, TEXTALIGN_ML);
+			}
+			else
+			{
+				const CCUpdate::EState State = Update.State();
+				char aText[128];
+				str_format(aText, sizeof(aText), "%s: #%d", Localize("Your version"), CCUpdate::CurrentBuild());
+				CUIRect VersionLabel, CheckButton;
+				UpdateRow.VSplitMid(&VersionLabel, &CheckButton, MarginSmall);
+				Ui()->DoLabel(&VersionLabel, aText, 12.0f, TEXTALIGN_ML);
+				const char *pLabel = Localize("Check for updates");
+				if(State == CCUpdate::EState::CHECKING)
+					pLabel = Localize("Checking...");
+				else if(State == CCUpdate::EState::UP_TO_DATE)
+					pLabel = Localize("You have the newest version");
+				else if(State == CCUpdate::EState::AVAILABLE)
+					pLabel = Localize("Update is ready: see the main menu");
+				static CButtonContainer s_CheckUpdateButton;
+				if(DoButton_Menu(&s_CheckUpdateButton, pLabel, 0, &CheckButton))
+					Update.Check();
+			}
+		}
 		Column.HSplitTop(MarginBetweenViews, nullptr, &Column);
 	}
 

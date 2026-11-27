@@ -32,6 +32,38 @@ void CMenusStart::RenderStartMenu(CUIRect MainView)
 {
 	GameClient()->m_MenuBackground.ChangePosition(CMenuBackground::POS_START);
 
+	// Cr1stal Client: small update button in the top right corner
+	{
+		CCUpdate &Update = GameClient()->m_CUpdate;
+		const CCUpdate::EState State = Update.State();
+		if(State == CCUpdate::EState::AVAILABLE || State == CCUpdate::EState::FAILED ||
+			State == CCUpdate::EState::DOWNLOADING || State == CCUpdate::EState::INSTALLING)
+		{
+			CUIRect UpdateButton;
+			UpdateButton.w = 170.0f;
+			UpdateButton.h = 20.0f;
+			UpdateButton.x = MainView.x + MainView.w - UpdateButton.w - 12.0f;
+			UpdateButton.y = MainView.y + 10.0f;
+			char aLabel[128];
+			if(State == CCUpdate::EState::DOWNLOADING || State == CCUpdate::EState::INSTALLING)
+			{
+				Ui()->RenderProgressBar(UpdateButton, Update.Progress());
+				str_format(aLabel, sizeof(aLabel), "%s %d%%", Localize("Downloading update"), round_to_int(Update.Progress() * 100.0f));
+				Ui()->DoLabel(&UpdateButton, aLabel, 10.0f, TEXTALIGN_MC);
+			}
+			else
+			{
+				if(State == CCUpdate::EState::FAILED)
+					str_copy(aLabel, Localize("Update failed, try again"));
+				else
+					str_format(aLabel, sizeof(aLabel), "%s (#%d)", Localize("Update Cr1stal Client"), Update.LatestBuild());
+				static CButtonContainer s_UpdateButton;
+				if(GameClient()->m_Menus.DoButton_Menu(&s_UpdateButton, aLabel, 0, &UpdateButton, BUTTONFLAG_LEFT, nullptr, IGraphics::CORNER_ALL, 5.0f, 0.0f, ColorRGBA(0.2f, 0.6f, 0.3f, 0.35f)))
+					Update.Start();
+			}
+		}
+	}
+
 	const float Rounding = 10.0f;
 	const float VMargin = MainView.w / 2 - 190.0f;
 	const float ExtMenuBottomOffset = 40.0f;
