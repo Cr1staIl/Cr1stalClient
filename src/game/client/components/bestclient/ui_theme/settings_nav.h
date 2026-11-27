@@ -14,8 +14,7 @@ namespace BestClientUiTheme
 enum ESettingsNavGroup
 {
 	SETTINGS_NAV_GROUP_DDNET = 0,
-	SETTINGS_NAV_GROUP_TCLIENT,
-	SETTINGS_NAV_GROUP_BESTCLIENT,
+	SETTINGS_NAV_GROUP_CRYSTAL,
 	SETTINGS_NAV_GROUP_COUNT,
 };
 
@@ -57,6 +56,10 @@ SSettingsLeafTarget LeafTarget(int Leaf);
 int LeafFromState(int SettingsPage, int TClientTab, int BestClientTab);
 int GroupForLeaf(int Leaf);
 bool IsLeafVisible(int Leaf, int TcTabFlags, int BcTabFlags);
+// true for leaves of the Cr♱stal Client group that are rendered by the BestClient pages (they use the BestClient translation table)
+bool IsBestLeaf(int Leaf);
+// display name of a leaf of the Cr♱stal Client group
+const char *CrystalLeafLabel(int Leaf);
 
 void ApplyLeaf(CMenus *pMenus, int Leaf);
 

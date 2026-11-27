@@ -43,34 +43,30 @@ static const int s_aDdnetLeaves[] = {
 	SETTINGS_NAV_LEAF_ASSETS,
 	SETTINGS_NAV_LEAF_CREDITS,
 };
-static const int s_aTclientLeaves[] = {
+// One merged group. The order is what the player sees in the settings.
+static const int s_aCrystalLeaves[] = {
 	SETTINGS_NAV_LEAF_TC_SETTINGS,
-	SETTINGS_NAV_LEAF_TC_BIND_WHEEL,
-	SETTINGS_NAV_LEAF_TC_WAR_LIST,
-	SETTINGS_NAV_LEAF_TC_CHAT_BINDS,
-	SETTINGS_NAV_LEAF_TC_STATUS_BAR,
-	SETTINGS_NAV_LEAF_TC_PROFILE,
-	SETTINGS_NAV_LEAF_TC_CONFIGS,
-	SETTINGS_NAV_LEAF_TC_INFO,
-};
-static const int s_aBestclientLeaves[] = {
 	SETTINGS_NAV_LEAF_BC_VISUALS,
 	SETTINGS_NAV_LEAF_BC_GAMEPLAY,
 	SETTINGS_NAV_LEAF_BC_OTHERS,
+	SETTINGS_NAV_LEAF_TC_BIND_WHEEL,
+	SETTINGS_NAV_LEAF_TC_CHAT_BINDS,
+	SETTINGS_NAV_LEAF_TC_STATUS_BAR,
+	SETTINGS_NAV_LEAF_TC_PROFILE,
 	SETTINGS_NAV_LEAF_BC_CONFIGS,
+	SETTINGS_NAV_LEAF_TC_CONFIGS,
 	SETTINGS_NAV_LEAF_BC_INFO,
 };
 
 static int LeafVisualRank(int Leaf)
 {
-	const int *apLists[] = {s_aDdnetLeaves, s_aTclientLeaves, s_aBestclientLeaves};
+	const int *apLists[] = {s_aDdnetLeaves, s_aCrystalLeaves};
 	const int aCounts[] = {
 		(int)(sizeof(s_aDdnetLeaves) / sizeof(s_aDdnetLeaves[0])),
-		(int)(sizeof(s_aTclientLeaves) / sizeof(s_aTclientLeaves[0])),
-		(int)(sizeof(s_aBestclientLeaves) / sizeof(s_aBestclientLeaves[0])),
+		(int)(sizeof(s_aCrystalLeaves) / sizeof(s_aCrystalLeaves[0])),
 	};
 	int Rank = 0;
-	for(int List = 0; List < 3; ++List)
+	for(int List = 0; List < 2; ++List)
 	{
 		for(int i = 0; i < aCounts[List]; ++i, ++Rank)
 		{
@@ -177,16 +173,43 @@ SSettingsLeafTarget LeafTarget(int Leaf)
 
 int GroupForLeaf(int Leaf)
 {
-	if(Leaf >= SETTINGS_NAV_LEAF_TC_SETTINGS && Leaf <= SETTINGS_NAV_LEAF_TC_CONFIGS)
-		return SETTINGS_NAV_GROUP_TCLIENT;
-	if(Leaf >= SETTINGS_NAV_LEAF_BC_VISUALS && Leaf <= SETTINGS_NAV_LEAF_BC_INFO)
-		return SETTINGS_NAV_GROUP_BESTCLIENT;
+	if(Leaf >= SETTINGS_NAV_LEAF_TC_SETTINGS && Leaf <= SETTINGS_NAV_LEAF_BC_INFO)
+		return SETTINGS_NAV_GROUP_CRYSTAL;
 	return SETTINGS_NAV_GROUP_DDNET;
+}
+
+bool IsBestLeaf(int Leaf)
+{
+	return Leaf >= SETTINGS_NAV_LEAF_BC_VISUALS && Leaf <= SETTINGS_NAV_LEAF_BC_INFO;
+}
+
+const char *CrystalLeafLabel(int Leaf)
+{
+	switch(Leaf)
+	{
+	case SETTINGS_NAV_LEAF_TC_SETTINGS: return Localize("Main");
+	case SETTINGS_NAV_LEAF_TC_BIND_WHEEL: return TCLocalize("Bind Wheel");
+	case SETTINGS_NAV_LEAF_TC_WAR_LIST: return TCLocalize("War List");
+	case SETTINGS_NAV_LEAF_TC_CHAT_BINDS: return TCLocalize("Chat Binds");
+	case SETTINGS_NAV_LEAF_TC_STATUS_BAR: return TCLocalize("Status Bar");
+	case SETTINGS_NAV_LEAF_TC_INFO: return Localize("About");
+	case SETTINGS_NAV_LEAF_TC_PROFILE: return Localize("Profiles");
+	case SETTINGS_NAV_LEAF_TC_CONFIGS: return Localize("Advanced");
+	case SETTINGS_NAV_LEAF_BC_VISUALS: return BcLocalize("Visuals");
+	case SETTINGS_NAV_LEAF_BC_GAMEPLAY: return BcLocalize("Gameplay");
+	case SETTINGS_NAV_LEAF_BC_OTHERS: return Localize("Extras");
+	case SETTINGS_NAV_LEAF_BC_CONFIGS: return Localize("Presets");
+	case SETTINGS_NAV_LEAF_BC_INFO: return Localize("About");
+	default: return "";
+	}
 }
 
 bool IsLeafVisible(int Leaf, int TcTabFlags, int BcTabFlags)
 {
-	if(Leaf >= SETTINGS_NAV_LEAF_TC_SETTINGS && Leaf <= SETTINGS_NAV_LEAF_TC_INFO)
+	// the war list and the TClient info page are not part of Cr♱stal Client
+	if(Leaf == SETTINGS_NAV_LEAF_TC_WAR_LIST || Leaf == SETTINGS_NAV_LEAF_TC_INFO)
+		return false;
+	if(Leaf >= SETTINGS_NAV_LEAF_TC_SETTINGS && Leaf <= SETTINGS_NAV_LEAF_TC_STATUS_BAR)
 	{
 		const int Tab = Leaf - SETTINGS_NAV_LEAF_TC_SETTINGS;
 		return !IsFlagSet(TcTabFlags, Tab);
@@ -371,13 +394,11 @@ void CMenus::RenderSettingsNavNewStyle(CUIRect &TabBar)
 	const int NavCorners = NavOnLeft ? IGraphics::CORNER_L : IGraphics::CORNER_R;
 
 	constexpr int DdnetLeafCount = (int)(sizeof(s_aDdnetLeaves) / sizeof(s_aDdnetLeaves[0]));
-	constexpr int TclientLeafCount = (int)(sizeof(s_aTclientLeaves) / sizeof(s_aTclientLeaves[0]));
-	constexpr int BestclientLeafCount = (int)(sizeof(s_aBestclientLeaves) / sizeof(s_aBestclientLeaves[0]));
+	constexpr int CrystalLeafCount = (int)(sizeof(s_aCrystalLeaves) / sizeof(s_aCrystalLeaves[0]));
 
 	const char *apGroupNames[SETTINGS_NAV_GROUP_COUNT] = {
 		Localize("DDNet"),
-		TCLocalize("TClient"),
-		Localize("BestClient"),
+		"Cr\xe2\x99\xb1stal Client",
 	};
 
 	auto LeafName = [&](int Leaf) -> const char * {
@@ -392,20 +413,7 @@ void CMenus::RenderSettingsNavNewStyle(CUIRect &TabBar)
 		case SETTINGS_NAV_LEAF_DDNET: return Localize("DDNet");
 		case SETTINGS_NAV_LEAF_ASSETS: return Localize("Assets");
 		case SETTINGS_NAV_LEAF_CREDITS: return Localize("Credits");
-		case SETTINGS_NAV_LEAF_TC_SETTINGS: return TCLocalize("Settings");
-		case SETTINGS_NAV_LEAF_TC_BIND_WHEEL: return TCLocalize("Bind Wheel");
-		case SETTINGS_NAV_LEAF_TC_WAR_LIST: return TCLocalize("War List");
-		case SETTINGS_NAV_LEAF_TC_CHAT_BINDS: return TCLocalize("Chat Binds");
-		case SETTINGS_NAV_LEAF_TC_STATUS_BAR: return TCLocalize("Status Bar");
-		case SETTINGS_NAV_LEAF_TC_INFO: return TCLocalize("Info");
-		case SETTINGS_NAV_LEAF_TC_PROFILE: return Localize("Profiles");
-		case SETTINGS_NAV_LEAF_TC_CONFIGS: return Localize("Configs");
-		case SETTINGS_NAV_LEAF_BC_VISUALS: return BcLocalize("Visuals");
-		case SETTINGS_NAV_LEAF_BC_GAMEPLAY: return BcLocalize("Gameplay");
-		case SETTINGS_NAV_LEAF_BC_OTHERS: return BcLocalize("Others");
-		case SETTINGS_NAV_LEAF_BC_CONFIGS: return BcLocalize("Configs");
-		case SETTINGS_NAV_LEAF_BC_INFO: return BcLocalize("Info");
-		default: return "";
+		default: return CrystalLeafLabel(Leaf);
 		}
 	};
 
@@ -440,19 +448,18 @@ void CMenus::RenderSettingsNavNewStyle(CUIRect &TabBar)
 			s_aExpandedGroup[Group] = !s_aExpandedGroup[Group];
 			if(s_aExpandedGroup[Group])
 			{
-				if(Group == SETTINGS_NAV_GROUP_DDNET)
-					s_aExpandedGroup[SETTINGS_NAV_GROUP_TCLIENT] = false;
-				else if(Group == SETTINGS_NAV_GROUP_TCLIENT)
-					s_aExpandedGroup[SETTINGS_NAV_GROUP_DDNET] = false;
+				for(int Other = 0; Other < SETTINGS_NAV_GROUP_COUNT; ++Other)
+				{
+					if(Other != Group)
+						s_aExpandedGroup[Other] = false;
+				}
 
 				int aFirstLeaves[SETTINGS_NAV_LEAF_COUNT];
 				int FirstCount = 0;
 				if(Group == SETTINGS_NAV_GROUP_DDNET)
 					CollectVisibleLeaves(s_aDdnetLeaves, DdnetLeafCount, aFirstLeaves, FirstCount);
-				else if(Group == SETTINGS_NAV_GROUP_TCLIENT)
-					CollectVisibleLeaves(s_aTclientLeaves, TclientLeafCount, aFirstLeaves, FirstCount);
 				else
-					CollectVisibleLeaves(s_aBestclientLeaves, BestclientLeafCount, aFirstLeaves, FirstCount);
+					CollectVisibleLeaves(s_aCrystalLeaves, CrystalLeafCount, aFirstLeaves, FirstCount);
 				if(FirstCount > 0 && GroupForLeaf(CurLeaf) != Group)
 					ApplyLeaf(this, aFirstLeaves[0]);
 			}
@@ -461,10 +468,8 @@ void CMenus::RenderSettingsNavNewStyle(CUIRect &TabBar)
 
 		if(Group == SETTINGS_NAV_GROUP_DDNET)
 			CollectVisibleLeaves(s_aDdnetLeaves, DdnetLeafCount, aVisibleLeaves, VisibleCount);
-		else if(Group == SETTINGS_NAV_GROUP_TCLIENT)
-			CollectVisibleLeaves(s_aTclientLeaves, TclientLeafCount, aVisibleLeaves, VisibleCount);
 		else
-			CollectVisibleLeaves(s_aBestclientLeaves, BestclientLeafCount, aVisibleLeaves, VisibleCount);
+			CollectVisibleLeaves(s_aCrystalLeaves, CrystalLeafCount, aVisibleLeaves, VisibleCount);
 
 		const float TargetHeight = VisibleCount > 0 ? VisibleCount * (LeafH + LeafGap) : 0.0f;
 		const float RevealH = BCUiAnimations::ModuleReveal(s_aGroupPhase[Group], Expanded, TargetHeight, Dt);

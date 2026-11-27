@@ -3711,7 +3711,7 @@ void CVoiceChat::NotifyUnofficialTalkAttempt()
 	if(m_LastUnofficialNoticeTick != 0 && Now - m_LastUnofficialNoticeTick < time_freq())
 		return;
 	m_LastUnofficialNoticeTick = Now;
-	GameClient()->m_Chat.Echo(Localize("Voice chat is only for the original BestClient. Your client was detected as fake."));
+	GameClient()->m_Chat.Echo(Localize("Voice chat is not available in this client."));
 }
 
 bool CVoiceChat::ShouldTransmit() const
@@ -3833,7 +3833,7 @@ std::string CVoiceChat::EffectiveServerAddress() const
 
 const char *CVoiceChat::EffectiveServerLabel() const
 {
-	return IsManagedServerConfig() ? "BestClient Voice" : g_Config.m_BcVoiceChatServerAddress;
+	return IsManagedServerConfig() ? "Voice" : g_Config.m_BcVoiceChatServerAddress;
 }
 
 bool CVoiceChat::IsManagedServerConfig() const

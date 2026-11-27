@@ -52,16 +52,6 @@ static CUIRect CenterSquareIcon(const CUIRect &Rect, float Margin)
 	return Icon;
 }
 
-static void RenderCenteredBestClientTabIcon(IGraphics *pGraphics, const CUIRect &Rect, ColorRGBA Color = ColorRGBA(1.0f, 1.0f, 1.0f, 1.0f))
-{
-	CUIRect Icon = Rect;
-	const float Size = std::min(Rect.w, Rect.h) - 6.0f;
-	Icon.w = Size;
-	Icon.h = Size;
-	Icon.x += (Rect.w - Size) / 2.0f;
-	Icon.y += (Rect.h - Size) / 2.0f;
-	BestClientRenderIndicatorIcon(pGraphics, Icon, false, false, false, Color);
-}
 // bestclient
 
 static ColorRGBA PlayerBackgroundColor(bool Friend, bool Clan, bool Afk, bool InSelectedServer, bool Inside)
@@ -177,10 +167,6 @@ void CMenus::RenderServerbrowserServerList(CUIRect View, bool &WasListboxItemAct
 		{COL_NAME, IServerBrowser::SORT_NAME, Localizable("Name"), 0, 50.0f, {0}},
 		{COL_GAMETYPE, IServerBrowser::SORT_GAMETYPE, Localizable("Type"), 1, 50.0f, {0}},
 		{COL_MAP, IServerBrowser::SORT_MAP, Localizable("Map"), 1, 120.0f + (Headers.w - 480) / 8, {0}},
-		// bestclient
-		{COL_BESTCLIENT_DEV, -1, "", 1, ClickableIconSpace, {0}},
-		{COL_BESTCLIENT, IServerBrowser::SORT_NUMBESTCLIENT, "", 1, ClickableIconSpace, {0}},
-		// bestclient
 		{COL_FRIENDS, IServerBrowser::SORT_NUMFRIENDS, "", 1, ClickableIconSpace, {0}},
 		{COL_PLAYERS, IServerBrowser::SORT_NUMPLAYERS, Localizable("Players"), 1, 60.0f, {0}},
 		{-1, -1, "", 1, 4.0f, {0}},
@@ -247,13 +233,6 @@ void CMenus::RenderServerbrowserServerList(CUIRect View, bool &WasListboxItemAct
 			TextRender()->SetRenderFlags(0);
 			TextRender()->SetFontPreset(EFontPreset::DEFAULT_FONT);
 		}
-		// bestclient
-		else if(Col.m_Id == COL_BESTCLIENT)
-		{
-			const CUIRect Icon = CenterSquareIcon(Col.m_Rect, 2.0f);
-			BestClientRenderIndicatorIcon(Graphics(), Icon, false, false, false, ColorRGBA(1.0f, 1.0f, 1.0f, 0.9f));
-		}
-		// bestclient
 		else if(Col.m_Id == COL_FLAG_FAV)
 		{
 			TextRender()->SetFontPreset(EFontPreset::ICON_FONT);
@@ -528,45 +507,6 @@ void CMenus::RenderServerbrowserServerList(CUIRect View, bool &WasListboxItemAct
 					});
 				if(!Printed)
 					Ui()->DoLabelStreamed(*pUiElement->Rect(UI_ELEM_MAP_1), &Button, pItem->m_aMap, FontSize, TEXTALIGN_ML, Props);
-			}
-			// bestclient
-			else if(Id == COL_BESTCLIENT_DEV)
-			{
-				const bool HasRegularBestClientPlayers = pItem->m_NumBestClientPlayers > pItem->m_NumBestClientDeveloperPlayers;
-				if(pItem->m_HasBestClientDeveloperPlayers && HasRegularBestClientPlayers)
-				{
-					const CUIRect Icon = CenterSquareIcon(Button, 2.0f);
-					BestClientRenderIndicatorIcon(Graphics(), Icon, true, false, false, ColorRGBA(1.0f, 1.0f, 1.0f, 1.0f));
-
-					if(pItem->m_NumBestClientDeveloperPlayers > 1)
-					{
-						str_format(aTemp, sizeof(aTemp), "%d", pItem->m_NumBestClientDeveloperPlayers);
-						TextRender()->TextColor(1.0f, 0.9f, 0.55f, 1.0f);
-						Ui()->DoLabel(&Button, aTemp, 9.0f, TEXTALIGN_MC);
-						TextRender()->TextColor(TextRender()->DefaultTextColor());
-					}
-				}
-			}
-			else if(Id == COL_BESTCLIENT)
-			{
-				if(pItem->m_HasBestClientPlayers)
-				{
-					const bool HasDeveloperPlayers = pItem->m_HasBestClientDeveloperPlayers;
-					const int NumRegularBestClientPlayers = std::max(0, pItem->m_NumBestClientPlayers - pItem->m_NumBestClientDeveloperPlayers);
-					const bool OnlyDevelopers = HasDeveloperPlayers && NumRegularBestClientPlayers == 0;
-					const bool AllLight = pItem->m_NumBestClientPlayers > 0 && pItem->m_NumBestClientLightPlayers == pItem->m_NumBestClientPlayers;
-					const CUIRect Icon = CenterSquareIcon(Button, 2.0f);
-					BestClientRenderIndicatorIcon(Graphics(), Icon, OnlyDevelopers, false, !OnlyDevelopers && AllLight, ColorRGBA(1.0f, 1.0f, 1.0f, 1.0f));
-
-					const int CounterValue = OnlyDevelopers ? pItem->m_NumBestClientDeveloperPlayers : NumRegularBestClientPlayers;
-					if(CounterValue > 1)
-					{
-						str_format(aTemp, sizeof(aTemp), "%d", CounterValue);
-						TextRender()->TextColor(1.0f, 0.9f, 0.55f, 1.0f);
-						Ui()->DoLabel(&Button, aTemp, 9.0f, TEXTALIGN_MC);
-						TextRender()->TextColor(TextRender()->DefaultTextColor());
-					}
-				}
 			}
 			// bestclient
 			else if(Id == COL_FRIENDS)
@@ -904,12 +844,6 @@ void CMenus::RenderServerbrowserFilters(CUIRect View)
 	View.HSplitTop(RowHeight, &Button, &View);
 	if(DoButton_CheckBox(&g_Config.m_BrFilterFriends, Localize("Show friends only"), g_Config.m_BrFilterFriends, &Button))
 		g_Config.m_BrFilterFriends ^= 1;
-
-	// bestclient
-	View.HSplitTop(RowHeight, &Button, &View);
-	if(DoButton_CheckBox(&g_Config.m_BrFilterBestclient, Localize("Show BestClient only"), g_Config.m_BrFilterBestclient, &Button))
-		ToggleBestClientServerFilter();
-	// bestclient
 
 	View.HSplitTop(RowHeight, &Button, &View);
 	if(DoButton_CheckBox(&g_Config.m_BrFilterPw, Localize("No password"), g_Config.m_BrFilterPw, &Button))
@@ -1637,268 +1571,6 @@ void CMenus::RenderServerbrowserInfoScoreboard(CUIRect View, const CServerInfo *
 }
 
 // bestclient
-void CMenus::RenderServerbrowserBestClient(CUIRect View)
-{
-	const CServerInfo *pSelectedServer = ServerBrowser()->SortedGet(m_SelectedIndex);
-	const float RowHeight = 18.0f;
-	const float FontSize = (RowHeight - 4.0f) * CUi::ms_FontmodHeight;
-
-	View.Margin(5.0f, &View);
-
-	static bool s_ShowVersions = false;
-
-	CUIRect Button, RefreshButton, VersionsButton;
-	View.HSplitTop(RowHeight, &Button, &View);
-	Button.VSplitRight(RowHeight, &Button, &RefreshButton);
-	if(g_Config.m_BcClientIndicatorVersions)
-	{
-		Button.VSplitRight(5.0f, &Button, nullptr);
-		Button.VSplitRight(80.0f, &Button, &VersionsButton);
-	}
-	if(DoButton_CheckBox(&g_Config.m_BrFilterBestclient, Localize("Show BestClient only"), g_Config.m_BrFilterBestclient, &Button))
-		ToggleBestClientServerFilter();
-
-	if(g_Config.m_BcClientIndicatorVersions)
-	{
-		static CButtonContainer s_VersionsButtonId;
-		VersionsButton.Draw(s_ShowVersions ? ColorRGBA(0.3f, 0.5f, 0.3f, 0.5f) : ColorRGBA(0.3f, 0.3f, 0.3f, 0.5f), IGraphics::CORNER_ALL, 3.0f);
-		if(DoButton_Menu(&s_VersionsButtonId, Localize("Versions"), 0, &VersionsButton))
-			s_ShowVersions = !s_ShowVersions;
-	}
-	else
-	{
-		s_ShowVersions = false;
-	}
-
-	{
-		static CButtonContainer s_RefreshBestClientButtonId;
-		const bool Refreshing = GameClient()->m_ClientIndicator.IsBrowserCacheRefreshing();
-		const char *pIcon = Refreshing ? FontIcon::ELLIPSIS : FontIcon::ARROW_ROTATE_RIGHT;
-		if(Ui()->DoButton_FontIcon(&s_RefreshBestClientButtonId, pIcon, 0, &RefreshButton, BUTTONFLAG_LEFT) && !Refreshing)
-			GameClient()->m_ClientIndicator.RefreshBrowserCache(true);
-		GameClient()->m_Tooltips.DoToolTip(&s_RefreshBestClientButtonId, &RefreshButton, Localize("Refresh BestClient list"));
-	}
-
-	View.HSplitTop(6.0f, nullptr, &View);
-
-	int AllBestClientPlayers = 0;
-	for(int i = 0; i < ServerBrowser()->NumSortedServers(); ++i)
-		AllBestClientPlayers += ServerBrowser()->SortedGet(i)->m_NumBestClientPlayers;
-
-	char aLabel[128];
-	str_format(aLabel, sizeof(aLabel), Localize("All BestClient players: %d"), AllBestClientPlayers);
-	View.HSplitTop(RowHeight, &Button, &View);
-	Ui()->DoLabel(&Button, aLabel, FontSize, TEXTALIGN_ML);
-
-	View.HSplitTop(4.0f, nullptr, &View);
-
-	if(s_ShowVersions)
-	{
-		const auto &AllVersions = GameClient()->m_ClientIndicator.AllPlayerVersions();
-
-		struct SVersionEntry
-		{
-			std::string m_Name;
-			std::string m_Server;
-		};
-		std::unordered_map<std::string, std::vector<SVersionEntry>> Grouped;
-
-		for(int ServerIndex = 0; ServerIndex < ServerBrowser()->NumSortedServers(); ++ServerIndex)
-		{
-			const CServerInfo *pServer = ServerBrowser()->SortedGet(ServerIndex);
-			if(!pServer)
-				continue;
-
-			std::unordered_map<std::string, std::string> PlayersOnServer;
-			for(int AddressIndex = 0; AddressIndex < pServer->m_NumAddresses; ++AddressIndex)
-			{
-				char aAddress[NETADDR_MAXSTRSIZE];
-				net_addr_str(&pServer->m_aAddresses[AddressIndex], aAddress, sizeof(aAddress), true);
-				const auto ServerIt = AllVersions.find(aAddress);
-				if(ServerIt == AllVersions.end())
-					continue;
-				for(const auto &PlayerEntry : ServerIt->second)
-					PlayersOnServer.emplace(PlayerEntry.first, PlayerEntry.second);
-			}
-
-			for(const auto &PlayerEntry : PlayersOnServer)
-			{
-				Grouped[BestClientStripVersionProofStr(PlayerEntry.second)].push_back({PlayerEntry.first, pServer->m_aAddress});
-			}
-		}
-
-		std::vector<std::pair<std::string, std::vector<SVersionEntry>>> vGrouped;
-		vGrouped.reserve(Grouped.size());
-		for(auto &Group : Grouped)
-			vGrouped.emplace_back(std::move(Group.first), std::move(Group.second));
-
-		std::sort(vGrouped.begin(), vGrouped.end(), [](const auto &A, const auto &B) {
-			if(A.first == "under" || B.first == "under")
-				return B.first == "under";
-			return A.first > B.first;
-		});
-
-		int TotalEntries = 0;
-		for(const auto &Group : vGrouped)
-			TotalEntries += 1 + (int)Group.second.size();
-
-		if(TotalEntries <= 0)
-		{
-			View.HSplitTop(RowHeight, &Button, &View);
-			Ui()->DoLabel(&Button, Localize("No BestClient users in the current server list"), FontSize, TEXTALIGN_MC);
-			return;
-		}
-
-		static std::vector<int> s_vItemIds;
-		s_vItemIds.resize(std::max((size_t)TotalEntries, s_vItemIds.size()));
-
-		static CListBox s_VersionsListBox;
-		s_VersionsListBox.DoAutoSpacing(1.0f);
-		s_VersionsListBox.SetScrollbarWidth(16.0f);
-		s_VersionsListBox.SetScrollbarMargin(5.0f);
-		s_VersionsListBox.DoStart(RowHeight, TotalEntries, 1, 1, -1, &View, false, IGraphics::CORNER_NONE, true);
-
-		std::vector<const SVersionEntry *> vpItemEntries(TotalEntries, nullptr);
-
-		int ItemIndex = 0;
-		for(const auto &Group : vGrouped)
-		{
-			const CListboxItem HeaderItem = s_VersionsListBox.DoNextItem(&s_vItemIds[ItemIndex], false);
-			ItemIndex++;
-			if(HeaderItem.m_Visible)
-			{
-				HeaderItem.m_Rect.Draw(ColorRGBA(0.2f, 0.4f, 0.6f, 0.5f), IGraphics::CORNER_ALL, 3.0f);
-				char aVersionHeader[128];
-				str_format(aVersionHeader, sizeof(aVersionHeader), "%s (%d)", Group.first.c_str(), (int)Group.second.size());
-				CUIRect HeaderLabel = HeaderItem.m_Rect;
-				HeaderLabel.VMargin(4.0f, &HeaderLabel);
-				Ui()->DoLabel(&HeaderLabel, aVersionHeader, FontSize, TEXTALIGN_ML);
-			}
-
-			for(const auto &Entry : Group.second)
-			{
-				vpItemEntries[ItemIndex] = &Entry;
-				const bool Selected = str_comp(Entry.m_Server.c_str(), g_Config.m_UiServerAddress) == 0;
-				const CListboxItem PlayerItem = s_VersionsListBox.DoNextItem(&s_vItemIds[ItemIndex], Selected);
-				ItemIndex++;
-				if(!PlayerItem.m_Visible)
-					continue;
-
-				PlayerItem.m_Rect.Draw(Selected ? ColorRGBA(0.25f, 0.35f, 0.25f, 0.5f) : ColorRGBA(0.15f, 0.15f, 0.15f, 0.3f), IGraphics::CORNER_ALL, 2.0f);
-				CUIRect PlayerLabel = PlayerItem.m_Rect;
-				PlayerLabel.VMargin(12.0f, &PlayerLabel);
-				Ui()->DoLabel(&PlayerLabel, Entry.m_Name.c_str(), FontSize, TEXTALIGN_ML);
-			}
-		}
-
-		const int SelectedItemIndex = s_VersionsListBox.DoEnd();
-		if(SelectedItemIndex >= 0 && SelectedItemIndex < TotalEntries && vpItemEntries[SelectedItemIndex])
-		{
-			if(s_VersionsListBox.WasItemSelected())
-			{
-				str_copy(g_Config.m_UiServerAddress, vpItemEntries[SelectedItemIndex]->m_Server.c_str());
-				m_ServerBrowserShouldRevealSelection = true;
-			}
-			if(s_VersionsListBox.WasItemActivated())
-				Connect(vpItemEntries[SelectedItemIndex]->m_Server.c_str());
-		}
-		return;
-	}
-
-	if(!pSelectedServer)
-	{
-		View.HSplitTop(RowHeight, &Button, &View);
-		Ui()->DoLabel(&Button, Localize("No server selected"), FontSize, TEXTALIGN_MC);
-		return;
-	}
-
-	str_format(aLabel, sizeof(aLabel), Localize("BestClient players: %d"), pSelectedServer->m_NumBestClientPlayers);
-	View.HSplitTop(RowHeight, &Button, &View);
-	Ui()->DoLabel(&Button, aLabel, FontSize, TEXTALIGN_ML);
-
-	View.HSplitTop(4.0f, nullptr, &View);
-	if(!pSelectedServer->m_HasBestClientPlayers)
-	{
-		View.HSplitTop(RowHeight, &Button, &View);
-		Ui()->DoLabel(&Button, Localize("No BestClient users on the selected server"), FontSize, TEXTALIGN_MC);
-		return;
-	}
-
-	std::vector<int> vBestClientIndexes;
-	vBestClientIndexes.reserve(pSelectedServer->m_vClients.size());
-	for(size_t i = 0; i < pSelectedServer->m_vClients.size(); ++i)
-	{
-		if(pSelectedServer->m_vClients[i].m_BestClient)
-			vBestClientIndexes.push_back((int)i);
-	}
-
-	static CListBox s_ListBox;
-	s_ListBox.DoAutoSpacing(2.0f);
-	s_ListBox.SetScrollbarWidth(16.0f);
-	s_ListBox.SetScrollbarMargin(5.0f);
-	s_ListBox.DoStart(26.0f, (int)vBestClientIndexes.size(), 1, 1, -1, &View, false, IGraphics::CORNER_NONE, true);
-
-	for(size_t i = 0; i < vBestClientIndexes.size(); ++i)
-	{
-		const CServerInfo::CClient &Client = pSelectedServer->m_vClients[vBestClientIndexes[i]];
-		const CListboxItem Item = s_ListBox.DoNextItem(&Client);
-		if(!Item.m_Visible)
-			continue;
-
-		CUIRect Skin, Name, Clan;
-		Item.m_Rect.Draw(PlayerBackgroundColor(false, false, Client.m_Afk, false, false), IGraphics::CORNER_ALL, 4.0f);
-		Item.m_Rect.Margin(3.0f, &Name);
-		Name.VSplitLeft(Name.h, &Skin, &Name);
-		Name.VSplitLeft(4.0f, nullptr, &Name);
-		Name.HSplitTop(Name.h / 2.0f, &Name, &Clan);
-
-		if(Client.m_aSkin[0] != '\0')
-		{
-			const CTeeRenderInfo TeeInfo = GetTeeRenderInfo(vec2(Skin.w, Skin.h), Client.m_aSkin, Client.m_CustomSkinColors, Client.m_CustomSkinColorBody, Client.m_CustomSkinColorFeet);
-			const CAnimState *pIdleState = CAnimState::GetIdle();
-			vec2 OffsetToMid;
-			CRenderTools::GetRenderTeeOffsetToRenderedTee(pIdleState, &TeeInfo, OffsetToMid);
-			const vec2 TeeRenderPos = vec2(Skin.x + TeeInfo.m_Size / 2.0f, Skin.y + Skin.h / 2.0f + OffsetToMid.y);
-			RenderTools()->RenderTee(pIdleState, &TeeInfo, Client.m_Afk ? EMOTE_BLINK : EMOTE_NORMAL, vec2(1.0f, 0.0f), TeeRenderPos);
-		}
-		else if(Client.m_aaSkin7[protocol7::SKINPART_BODY][0] != '\0')
-		{
-			CTeeRenderInfo TeeInfo;
-			TeeInfo.m_Size = std::min(Skin.w, Skin.h);
-			for(int Part = 0; Part < protocol7::NUM_SKINPARTS; Part++)
-			{
-				GameClient()->m_Skins7.FindSkinPart(Part, Client.m_aaSkin7[Part], true)->ApplyTo(TeeInfo.m_aSixup[g_Config.m_ClDummy]);
-				GameClient()->m_Skins7.ApplyColorTo(TeeInfo.m_aSixup[g_Config.m_ClDummy], Client.m_aUseCustomSkinColor7[Part], Client.m_aCustomSkinColor7[Part], Part);
-			}
-			const CAnimState *pIdleState = CAnimState::GetIdle();
-			vec2 OffsetToMid;
-			CRenderTools::GetRenderTeeOffsetToRenderedTee(pIdleState, &TeeInfo, OffsetToMid);
-			const vec2 TeeRenderPos = vec2(Skin.x + TeeInfo.m_Size / 2.0f, Skin.y + Skin.h / 2.0f + OffsetToMid.y);
-			RenderTools()->RenderTee(pIdleState, &TeeInfo, Client.m_Afk ? EMOTE_BLINK : EMOTE_NORMAL, vec2(1.0f, 0.0f), TeeRenderPos);
-		}
-
-		CUIRect NameText = Name;
-		const float BestClientIconSize = FontSize;
-		const float BestClientIconSpacing = 2.0f;
-		NameText.VSplitRight(BestClientIconSize + BestClientIconSpacing, &NameText, nullptr);
-		CTextCursor NameCursor;
-		NameCursor.SetPosition(vec2(NameText.x, NameText.y));
-		NameCursor.m_FontSize = FontSize;
-		NameCursor.m_Flags |= TEXTFLAG_STOP_AT_END;
-		NameCursor.m_LineWidth = NameText.w;
-		TextRender()->TextEx(&NameCursor, Client.m_aName, -1);
-
-		CUIRect BestClientIcon;
-		BestClientIcon.w = BestClientIconSize;
-		BestClientIcon.h = BestClientIconSize;
-		BestClientIcon.x = std::min(NameCursor.m_X + BestClientIconSpacing, Name.x + Name.w - BestClientIcon.w);
-		BestClientIcon.y = Name.y + (Name.h - BestClientIcon.h) / 2.0f;
-		BestClientRenderIndicatorIcon(Graphics(), BestClientIcon, Client.m_BestClientDeveloper, Client.m_BestClientFake, Client.m_BestClientLight, ColorRGBA(1.0f, 1.0f, 1.0f, 1.0f));
-		Ui()->DoLabel(&Clan, Client.m_aClan, FontSize - 2.0f, TEXTALIGN_ML);
-	}
-
-	s_ListBox.DoEnd();
-}
 // bestclient
 
 void CMenus::RenderServerbrowserFriends(CUIRect View)
@@ -2442,21 +2114,17 @@ enum
 {
 	UI_TOOLBOX_PAGE_FILTERS = 0,
 	UI_TOOLBOX_PAGE_INFO,
-	// bestclient
-	UI_TOOLBOX_PAGE_BESTCLIENT,
-	// bestclient
 	UI_TOOLBOX_PAGE_FRIENDS,
 	NUM_UI_TOOLBOX_PAGES,
 };
 
 void CMenus::RenderServerbrowserTabBar(CUIRect TabBar)
 {
-	// bestclient
-	CUIRect FilterTabButton, InfoTabButton, BestClientTabButton, FriendsTabButton;
-	TabBar.VSplitLeft(TabBar.w / 4.0f, &FilterTabButton, &TabBar);
-	TabBar.VSplitLeft(TabBar.w / 3.0f, &InfoTabButton, &TabBar);
-	TabBar.VSplitLeft(TabBar.w / 2.0f, &BestClientTabButton, &FriendsTabButton);
-	// bestclient
+	CUIRect FilterTabButton, InfoTabButton, FriendsTabButton;
+	TabBar.VSplitLeft(TabBar.w / 3.0f, &FilterTabButton, &TabBar);
+	TabBar.VSplitLeft(TabBar.w / 2.0f, &InfoTabButton, &FriendsTabButton);
+	if(g_Config.m_UiToolboxPage < 0 || g_Config.m_UiToolboxPage >= NUM_UI_TOOLBOX_PAGES)
+		g_Config.m_UiToolboxPage = UI_TOOLBOX_PAGE_FILTERS;
 
 	const ColorRGBA ColorActive = ColorRGBA(0.0f, 0.0f, 0.0f, 0.3f);
 	const ColorRGBA ColorInactive = ColorRGBA(0.0f, 0.0f, 0.0f, 0.15f);
@@ -2484,16 +2152,6 @@ void CMenus::RenderServerbrowserTabBar(CUIRect TabBar)
 	}
 	GameClient()->m_Tooltips.DoToolTip(&s_InfoTabButton, &InfoTabButton, Localize("Server info"));
 
-	// bestclient
-	static CButtonContainer s_BestClientTabButton;
-	if(DoButton_MenuTab(&s_BestClientTabButton, "", g_Config.m_UiToolboxPage == UI_TOOLBOX_PAGE_BESTCLIENT, &BestClientTabButton, IGraphics::CORNER_T, &m_aAnimatorsSmallPage[SMALL_TAB_BROWSER_BESTCLIENT], &ColorInactive, &ColorActive))
-	{
-		g_Config.m_UiToolboxPage = UI_TOOLBOX_PAGE_BESTCLIENT;
-	}
-	RenderCenteredBestClientTabIcon(Graphics(), BestClientTabButton, ColorRGBA(1.0f, 1.0f, 1.0f, 0.95f));
-	GameClient()->m_Tooltips.DoToolTip(&s_BestClientTabButton, &BestClientTabButton, Localize("BestClient"));
-	// bestclient
-
 	static CButtonContainer s_FriendsTabButton;
 	if(DoButton_MenuTab(&s_FriendsTabButton, FontIcon::HEART, g_Config.m_UiToolboxPage == UI_TOOLBOX_PAGE_FRIENDS, &FriendsTabButton, IGraphics::CORNER_T, &m_aAnimatorsSmallPage[SMALL_TAB_BROWSER_FRIENDS], &ColorInactive, &ColorActive))
 	{
@@ -2517,11 +2175,6 @@ void CMenus::RenderServerbrowserToolBox(CUIRect ToolBox)
 	case UI_TOOLBOX_PAGE_INFO:
 		RenderServerbrowserInfo(ToolBox);
 		return;
-	// bestclient
-	case UI_TOOLBOX_PAGE_BESTCLIENT:
-		RenderServerbrowserBestClient(ToolBox);
-		return;
-	// bestclient
 	case UI_TOOLBOX_PAGE_FRIENDS:
 		RenderServerbrowserFriends(ToolBox);
 		return;

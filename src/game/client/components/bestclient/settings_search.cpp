@@ -54,37 +54,21 @@ static std::vector<int> gs_vFiltered;
 
 static const char *CatalogText(const SEntry &Entry, const char *pText)
 {
-	if(pText && GroupForLeaf(Entry.m_Leaf) == SETTINGS_NAV_GROUP_BESTCLIENT)
+	if(pText && IsBestLeaf(Entry.m_Leaf))
 		return BcLocalize(pText);
 	return Localize(pText);
 }
 
 static const char *LeafLabel(int Leaf)
 {
-	switch(Leaf)
-	{
-	case SETTINGS_NAV_LEAF_TC_SETTINGS: return TCLocalize("Settings");
-	case SETTINGS_NAV_LEAF_TC_BIND_WHEEL: return TCLocalize("Bind Wheel");
-	case SETTINGS_NAV_LEAF_TC_WAR_LIST: return TCLocalize("War List");
-	case SETTINGS_NAV_LEAF_TC_CHAT_BINDS: return TCLocalize("Chat Binds");
-	case SETTINGS_NAV_LEAF_TC_STATUS_BAR: return TCLocalize("Status Bar");
-	case SETTINGS_NAV_LEAF_TC_INFO: return TCLocalize("Info");
-	case SETTINGS_NAV_LEAF_TC_PROFILE: return TCLocalize("Profiles");
-	case SETTINGS_NAV_LEAF_TC_CONFIGS: return TCLocalize("Configs");
-	case SETTINGS_NAV_LEAF_BC_VISUALS: return BcLocalize("Visuals");
-	case SETTINGS_NAV_LEAF_BC_GAMEPLAY: return BcLocalize("Gameplay");
-	case SETTINGS_NAV_LEAF_BC_OTHERS: return BcLocalize("Others");
-	case SETTINGS_NAV_LEAF_BC_CONFIGS: return BcLocalize("Configs");
-	case SETTINGS_NAV_LEAF_BC_INFO: return BcLocalize("Info");
-	default: return Localize("Settings");
-	}
+	const char *pLabel = CrystalLeafLabel(Leaf);
+	return pLabel[0] ? pLabel : Localize("Settings");
 }
 
 static const char *GroupLabel(int Leaf)
 {
-	if(GroupForLeaf(Leaf) == SETTINGS_NAV_GROUP_TCLIENT)
-		return TCLocalize("TClient");
-	return Localize("BestClient");
+	(void)Leaf;
+	return "Cr\xe2\x99\xb1stal Client";
 }
 
 static void FormatPath(const SEntry &Entry, char *pBuf, size_t BufSize)
@@ -113,6 +97,8 @@ static void RebuildFilter()
 		return;
 	for(int i = 0; i < (int)std::size(gs_aCatalog); ++i)
 	{
+		if(!IsLeafVisible(gs_aCatalog[i].m_Leaf, g_Config.m_TcTClientSettingsTabs, g_Config.m_BcBestClientSettingsTabs))
+			continue;
 		if(EntryMatches(gs_aCatalog[i], pQuery))
 			gs_vFiltered.push_back(i);
 	}

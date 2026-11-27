@@ -148,8 +148,8 @@ void CMenus::RenderSettings(CUIRect MainView)
 			Localize("Sound"),
 			Localize("DDNet"),
 			Localize("Assets"),
-			TCLocalize("TClient"), // TClient
-			Localize("BestClient"), // bestclient
+			Localize("Main"), // Cr1stal
+			Localize("Extras"), // Cr1stal
 			Localize("Profiles"), // TClient
 			Localize("Configs"), // TClient
 			Localize("Credits")};
@@ -194,7 +194,7 @@ void CMenus::RenderSettings(CUIRect MainView)
 		if(UpdateReady)
 		{
 			TextRender()->TextColor(0.7f, 1.0f, 0.7f, 1.0f);
-			Ui()->DoLabel(&RestartBar, Localize("BestClient update downloaded! Restart to apply."), 14.0f, TEXTALIGN_ML);
+			Ui()->DoLabel(&RestartBar, Localize("Update downloaded! Restart to apply."), 14.0f, TEXTALIGN_ML);
 			TextRender()->TextColor(1.0f, 1.0f, 1.0f, 1.0f);
 		}
 		else

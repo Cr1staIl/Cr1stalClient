@@ -2708,3 +2708,27 @@ Join
 
 Press '%s' to show cursor.
 == Нажмите '%s', чтобы показать курсор.
+
+Main
+== Основное
+
+Presets
+== Пресеты
+
+About
+== О клиенте
+
+Advanced
+== Расширенные
+
+Update %s is available!
+== Доступно обновление %s!
+
+Client updated!
+== Клиент обновлён!
+
+Update downloaded! Restart to apply.
+== Обновление загружено! Перезапустите игру.
+
+Voice chat is not available in this client.
+== Голосовой чат в этом клиенте недоступен.

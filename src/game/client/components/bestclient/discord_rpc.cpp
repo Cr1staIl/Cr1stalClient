@@ -187,7 +187,7 @@ public:
 		}
 		else
 		{
-			str_copy(m_Activity.assets.small_text, "BestClient player");
+			str_copy(m_Activity.assets.small_text, "Cr1stal Client player");
 		}
 
 		str_copy(m_Activity.details, "");

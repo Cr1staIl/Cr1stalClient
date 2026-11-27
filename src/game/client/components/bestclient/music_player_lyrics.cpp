@@ -405,7 +405,7 @@ void CMusicPlayerLyrics::StartRequest(IHttp *pHttp, const char *pTitle, const ch
 	m_pRequest->Timeout(CTimeout{10000, 0, 500, 10});
 	m_pRequest->LogProgress(HTTPLOG::FAILURE);
 	m_pRequest->FailOnErrorStatus(false);
-	m_pRequest->HeaderString("Lrclib-Client", "BestClient/" BESTCLIENT_VERSION " (https://github.com/BestProjectTeam/BestClient)");
+	m_pRequest->HeaderString("Lrclib-Client", "Cr1stalClient/" BESTCLIENT_VERSION " (https://github.com/Cr1staIl/Cr1stalClient)");
 	m_RequestKey = m_ActiveKey;
 	m_DisplayState = EDisplayState::Loading;
 	pHttp->Run(m_pRequest);
@@ -624,7 +624,7 @@ const char *CMusicPlayerLyrics::FallbackText(int Index) const
 	if(Index == FALLBACK_NOT_FOUND)
 		return "Lyrics not found";
 	if(Index == FALLBACK_BRAND)
-		return "BestClient";
+		return "Cr\xe2\x99\xb1stal Client";
 	if(Index == FALLBACK_TITLE)
 		return m_TrackTitle.empty() ? "Unknown title" : m_TrackTitle.c_str();
 	return "";

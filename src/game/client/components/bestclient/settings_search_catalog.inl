@@ -254,7 +254,6 @@
 	{"Browser Utils", SETTINGS_NAV_LEAF_BC_OTHERS, "Others", &g_Config.m_BcAutoServerListRefresh, nullptr},
 	{"Short EGO/KoG server name", SETTINGS_NAV_LEAF_BC_OTHERS, "Browser Utils", &g_Config.m_BcUseShortKogServerName, nullptr},
 	{"Show finished map on EGO", SETTINGS_NAV_LEAF_BC_OTHERS, "Browser Utils", &g_Config.m_BcShowFinishedMapOnEgo, nullptr},
-	{"Use BestClient MasterServer", SETTINGS_NAV_LEAF_BC_OTHERS, "Browser Utils", &g_Config.m_BcMastersrv, nullptr},
 
 	{"Show ping colored circle in nameplates", SETTINGS_NAV_LEAF_TC_SETTINGS, "Visual", &g_Config.m_TcNameplatePingCircle, nullptr},
 	{"Show country flags in nameplates", SETTINGS_NAV_LEAF_TC_SETTINGS, "Visual", &g_Config.m_TcNameplateCountry, nullptr},
@@ -306,6 +305,6 @@
 	{"Show when you are the last alive", SETTINGS_NAV_LEAF_TC_SETTINGS, "HUD", &g_Config.m_TcNotifyWhenLast, nullptr},
 	{"Show screen center lines", SETTINGS_NAV_LEAF_TC_SETTINGS, "HUD", &g_Config.m_TcShowCenter, nullptr},
 
-	{"Status Bar", SETTINGS_NAV_LEAF_TC_STATUS_BAR, "TClient", &g_Config.m_TcStatusBar, nullptr},
+	{"Status Bar", SETTINGS_NAV_LEAF_TC_STATUS_BAR, "Status Bar", &g_Config.m_TcStatusBar, nullptr},
 	{"Status bar height", SETTINGS_NAV_LEAF_TC_STATUS_BAR, "Status Bar", &g_Config.m_TcStatusBarHeight, nullptr},
 	{"Status bar alpha", SETTINGS_NAV_LEAF_TC_STATUS_BAR, "Status Bar", &g_Config.m_TcStatusBarAlpha, nullptr},

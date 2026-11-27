@@ -619,7 +619,6 @@ protected:
 	void RenderServerbrowserInfo(CUIRect View);
 	void RenderServerbrowserInfoScoreboard(CUIRect View, const CServerInfo *pSelectedServer);
 	// bestclient
-	void RenderServerbrowserBestClient(CUIRect View);
 	// bestclient
 	void RenderServerbrowserFriends(CUIRect View);
 	void FriendlistOnUpdate();

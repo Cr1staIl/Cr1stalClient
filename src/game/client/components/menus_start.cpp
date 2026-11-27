@@ -18,6 +18,7 @@
 #include <game/client/bc_menu_badges.h>
 #include <game/client/components/bestclient/version.h>
 // bestclient
+#include <game/client/cclient_version.h>
 #include <game/client/gameclient.h>
 #include <game/client/ui.h>
 #include <game/localization.h>
@@ -219,7 +220,7 @@ void CMenusStart::RenderStartMenu(CUIRect MainView)
 
 			if(ShowDownloadButton)
 			{
-				str_format(aUpdateBuf, sizeof(aUpdateBuf), Localize("BestClient %s is out!"), Updater()->GetLatestVersionString());
+				str_format(aUpdateBuf, sizeof(aUpdateBuf), Localize("Update %s is available!"), Updater()->GetLatestVersionString());
 				TextRender()->TextColor(1.0f, 0.4f, 0.4f, 1.0f);
 			}
 			else if(ShowUpdateProgress)
@@ -306,14 +307,12 @@ void CMenusStart::RenderStartMenu(CUIRect MainView)
 		CurVersion.HSplitTop(16.0f, &VersionLine3, &CurVersion);
 
 		char aDDNetBuf[64];
-		char aTClientBuf[64];
-		char aBestClientBuf[64];
+		char aCrystalBuf[64];
 		str_format(aDDNetBuf, sizeof(aDDNetBuf), "DDNet %s", GAME_RELEASE_VERSION);
-		str_format(aTClientBuf, sizeof(aTClientBuf), "TClient %s", TCLIENT_VERSION);
-		str_format(aBestClientBuf, sizeof(aBestClientBuf), "BestClient %s", BESTCLIENT_VERSION);
-		Ui()->DoLabel(&VersionLine1, aDDNetBuf, 14.0f, TEXTALIGN_MR);
-		Ui()->DoLabel(&VersionLine2, aTClientBuf, 14.0f, TEXTALIGN_MR);
-		Ui()->DoLabel(&VersionLine3, aBestClientBuf, 14.0f, TEXTALIGN_MR);
+		str_format(aCrystalBuf, sizeof(aCrystalBuf), "Cr\xe2\x99\xb1stal Client %d", (int)CCLIENT_BUILD);
+		(void)VersionLine1;
+		Ui()->DoLabel(&VersionLine2, aDDNetBuf, 14.0f, TEXTALIGN_MR);
+		Ui()->DoLabel(&VersionLine3, aCrystalBuf, 14.0f, TEXTALIGN_MR);
 
 		static CButtonContainer s_ConsoleButton;
 		SetIconMode();

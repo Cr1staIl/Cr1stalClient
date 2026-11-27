@@ -120,10 +120,9 @@ void CMenus::RenderPopupStylePicker(CUIRect Box)
 	static CButtonContainer s_LegacyTabTee;
 	static CButtonContainer s_LegacyTabBestClient;
 	static CButtonContainer s_NewTabDdnet;
-	static CButtonContainer s_NewTabTclient;
-	static CButtonContainer s_NewTabBestClient;
+	static CButtonContainer s_NewTabCrystal;
 	static int s_LegacyTab = 0;
-	static int s_NewTab = 2;
+	static int s_NewTab = 1;
 
 	const auto ApplyPreviewStyle = [&](bool BetterSide) {
 		g_Config.m_BcMenuUiStyle = BetterSide ? 1 : 0;
@@ -159,12 +158,8 @@ void CMenus::RenderPopupStylePicker(CUIRect Box)
 				s_NewTab = 0;
 			Tabs.HSplitTop(8.0f, nullptr, &Tabs);
 			Tabs.HSplitTop(26.0f, &Row, &Tabs);
-			if(DoButton_MenuTab(&s_NewTabTclient, "TClient", s_NewTab == 1, &Row, IGraphics::CORNER_R, nullptr, nullptr, nullptr, nullptr, 10.0f))
+			if(DoButton_MenuTab(&s_NewTabCrystal, "Cr\xe2\x99\xb1stal", s_NewTab == 1, &Row, IGraphics::CORNER_R, nullptr, nullptr, nullptr, nullptr, 10.0f))
 				s_NewTab = 1;
-			Tabs.HSplitTop(8.0f, nullptr, &Tabs);
-			Tabs.HSplitTop(26.0f, &Row, &Tabs);
-			if(DoButton_MenuTab(&s_NewTabBestClient, BcLocalize("BestClient"), s_NewTab == 2, &Row, IGraphics::CORNER_R, nullptr, nullptr, nullptr, nullptr, 10.0f))
-				s_NewTab = 2;
 		}
 		else
 		{
@@ -181,7 +176,7 @@ void CMenus::RenderPopupStylePicker(CUIRect Box)
 				s_LegacyTab = 2;
 			Tabs.HSplitTop(4.0f, nullptr, &Tabs);
 			Tabs.HSplitTop(22.0f, &Row, &Tabs);
-			if(DoButton_MenuTab(&s_LegacyTabBestClient, BcLocalize("BestClient"), s_LegacyTab == 3, &Row, IGraphics::CORNER_R, nullptr, nullptr, nullptr, nullptr, 4.0f))
+			if(DoButton_MenuTab(&s_LegacyTabBestClient, "Cr\xe2\x99\xb1stal", s_LegacyTab == 3, &Row, IGraphics::CORNER_R, nullptr, nullptr, nullptr, nullptr, 4.0f))
 				s_LegacyTab = 3;
 		}
 
@@ -751,9 +746,9 @@ void CMenus::RenderSettingsBestClient(CUIRect MainView)
 	const char *apTabNames[NUM_BESTCLIENT_TABS] = {
 		BcLocalize("Visuals"),
 		BcLocalize("Gameplay"),
-		BcLocalize("Others"),
-		BcLocalize("Configs"),
-		BcLocalize("Info"),
+		Localize("Extras"),
+		Localize("Presets"),
+		Localize("About"),
 	};
 	const int aTabOrder[NUM_BESTCLIENT_TABS] = {
 		BESTCLIENT_TAB_VISUALS,
@@ -4220,7 +4215,7 @@ void CMenus::RenderSettingsBestClientOthers(CUIRect MainView)
 
 	Column.HSplitTop(MarginBetweenViews, nullptr, &Column);
 
-	const float BrowserUtilsBlockHeight = 7.0f * LineSize + 6.0f * MarginSmall;
+	const float BrowserUtilsBlockHeight = 6.0f * LineSize + 5.0f * MarginSmall;
 
 	CUIRect BrowserUtilsBlock;
 	Column.HSplitTop(BrowserUtilsBlockHeight, &BrowserUtilsBlock, &Column);
@@ -4257,9 +4252,6 @@ void CMenus::RenderSettingsBestClientOthers(CUIRect MainView)
 	BcMenuBadges::DrawNew(Graphics(), Ui(), TextRender(), &Content, MarginSmall);
 	DoButton_CheckBoxAutoVMarginAndSet(&g_Config.m_BcShowFinishedMapOnLegit, BcLocalize("Show finished map on Legit Network"), &g_Config.m_BcShowFinishedMapOnLegit, &Content, LineSize);
 
-	BrowserUtilsBlock.HSplitTop(MarginSmall, nullptr, &BrowserUtilsBlock);
-	BrowserUtilsBlock.HSplitTop(LineSize, &Content, &BrowserUtilsBlock);
-	DoButton_CheckBoxAutoVMarginAndSet(&g_Config.m_BcMastersrv, BcLocalize("Use BestClient MasterServer"), &g_Config.m_BcMastersrv, &Content, LineSize);
 
 	Column.HSplitTop(MarginBetweenViews, nullptr, &Column);
 
@@ -4742,9 +4734,9 @@ void CMenus::RenderSettingsBestClientInfo(CUIRect MainView)
 	const char *apTabNames[] = {
 		BcLocalize("Visuals"),
 		BcLocalize("Gameplay"),
-		BcLocalize("Others"),
-		BcLocalize("Configs"),
-		BcLocalize("Info"),
+		Localize("Extras"),
+		Localize("Presets"),
+		Localize("About"),
 	};
 	const int aTabOrder[NUM_BESTCLIENT_TABS] = {
 		BESTCLIENT_TAB_VISUALS,

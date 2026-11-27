@@ -1119,7 +1119,7 @@ bool BestClientProfilerDump(IStorage *pStorage)
 	str_timestamp_ex(s_aHistory[aIndex[Num - 1]].m_Unix, aTo, sizeof(aTo), "%H:%M:%S");
 
 	char aLine[256];
-	WriteLine(File, "BestClient profiler dump");
+	WriteLine(File, "Profiler dump");
 	str_format(aLine, sizeof(aLine), "Samples: %d", Num);
 	WriteLine(File, aLine);
 	str_format(aLine, sizeof(aLine), "From: %s", aFrom);

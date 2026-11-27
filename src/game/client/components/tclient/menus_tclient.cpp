@@ -354,19 +354,20 @@ void CMenus::RenderSettingsTClient(CUIRect MainView)
 	// bestclient
 	static CButtonContainer s_aPageTabs[NUMBER_OF_TCLIENT_TABS] = {};
 	const char *apTabNames[NUMBER_OF_TCLIENT_TABS] = {
-		TCLocalize("Settings"),
+		Localize("Main"),
 		TCLocalize("Bind Wheel"),
 		TCLocalize("War List"),
 		TCLocalize("Chat Binds"),
 		TCLocalize("Status Bar"),
-		TCLocalize("Info")};
+		Localize("About")};
 
 	int aVisibleValues[NUMBER_OF_TCLIENT_TABS];
 	int VisibleCount = 0;
 	int FirstVisibleTab = -1;
 	for(int Tab = 0; Tab < NUMBER_OF_TCLIENT_TABS; ++Tab)
 	{
-		if(IsFlagSet(g_Config.m_TcTClientSettingsTabs, Tab))
+		// the war list and the info page are not part of Cr1stal Client
+		if(IsFlagSet(g_Config.m_TcTClientSettingsTabs, Tab) || Tab == TCLIENT_TAB_WARLIST || Tab == TCLIENT_TAB_INFO)
 			continue;
 		if(FirstVisibleTab == -1)
 			FirstVisibleTab = Tab;
@@ -375,10 +376,10 @@ void CMenus::RenderSettingsTClient(CUIRect MainView)
 
 	if(FirstVisibleTab == -1)
 	{
-		s_CurTClientSettingsTab = TCLIENT_TAB_INFO;
-		FirstVisibleTab = TCLIENT_TAB_INFO;
+		s_CurTClientSettingsTab = TCLIENT_TAB_SETTINGS;
+		FirstVisibleTab = TCLIENT_TAB_SETTINGS;
 		VisibleCount = 1;
-		aVisibleValues[0] = TCLIENT_TAB_INFO;
+		aVisibleValues[0] = TCLIENT_TAB_SETTINGS;
 	}
 	else if(IsFlagSet(g_Config.m_TcTClientSettingsTabs, s_CurTClientSettingsTab) ||
 		s_CurTClientSettingsTab < TCLIENT_TAB_SETTINGS || s_CurTClientSettingsTab >= NUMBER_OF_TCLIENT_TABS)
@@ -2292,17 +2293,21 @@ void CMenus::RenderSettingsTClientInfo(CUIRect MainView)
 	RightView.HSplitTop(LineSize * 3.5f, nullptr, &RightView);
 
 	const char *apTabNames[] = {
-		TCLocalize("Settings"),
+		Localize("Main"),
 		TCLocalize("Bind Wheel"),
 		TCLocalize("War List"),
 		TCLocalize("Chat Binds"),
 		TCLocalize("Status Bar"),
-		TCLocalize("Info")};
+		Localize("About")};
 	static int s_aShowTabs[NUMBER_OF_TCLIENT_TABS] = {};
+	int ShownTabs = 0;
 	for(int i = 0; i < NUMBER_OF_TCLIENT_TABS - 1; ++i)
 	{
-		DoButton_CheckBoxAutoVMarginAndSet(&s_aShowTabs[i], apTabNames[i], &s_aShowTabs[i], i % 2 == 0 ? &LeftSettings : &RightSettings, LineSize);
+		if(i == TCLIENT_TAB_WARLIST)
+			continue;
+		DoButton_CheckBoxAutoVMarginAndSet(&s_aShowTabs[i], apTabNames[i], &s_aShowTabs[i], ShownTabs % 2 == 0 ? &LeftSettings : &RightSettings, LineSize);
 		SetFlag(g_Config.m_TcTClientSettingsTabs, i, s_aShowTabs[i]);
+		++ShownTabs;
 	}
 
 	// RightView.HSplitTop(HeadlineHeight, &Label, &RightView);
@@ -2740,11 +2745,11 @@ void CMenus::RenderSettingsTClientConfigs(CUIRect MainView)
 		CUIRect TopCol1, TopCol23, TopCol2, TopCol3; // bestclient
 		RightRow.VSplitLeft(RightRow.w / 3.0f, &TopCol1, &TopCol23);
 		TopCol23.VSplitMid(&TopCol2, &TopCol3, 0.0f);
-		if(DoButton_CheckBox(&g_Config.m_TcUiShowTClient, Localize("TClient"), g_Config.m_TcUiShowTClient, &TopCol1))
+		if(DoButton_CheckBox(&g_Config.m_TcUiShowTClient, Localize("Main"), g_Config.m_TcUiShowTClient, &TopCol1))
 			g_Config.m_TcUiShowTClient ^= 1;
 		if(DoButton_CheckBox(&g_Config.m_TcUiShowDDNet, Localize("DDNet"), g_Config.m_TcUiShowDDNet, &TopCol2))
 			g_Config.m_TcUiShowDDNet ^= 1;
-		if(DoButton_CheckBox(&g_Config.m_TcUiShowBestClient, Localize("BestClient"), g_Config.m_TcUiShowBestClient, &TopCol3))
+		if(DoButton_CheckBox(&g_Config.m_TcUiShowBestClient, Localize("Extras"), g_Config.m_TcUiShowBestClient, &TopCol3))
 			g_Config.m_TcUiShowBestClient ^= 1; // bestclient
 	}
 
@@ -2863,8 +2868,8 @@ void CMenus::RenderSettingsTClientConfigs(CUIRect MainView)
 		switch(Domain)
 		{
 		case ConfigDomain::DDNET: return "DDNet";
-		case ConfigDomain::TCLIENT: return "TClient";
-		case ConfigDomain::BESTCLIENT: return "BestClient"; // bestclient
+		case ConfigDomain::TCLIENT: return "Main";
+		case ConfigDomain::BESTCLIENT: return "Extras"; // bestclient
 		default: return "Other";
 		}
 	};
