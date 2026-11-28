@@ -641,6 +641,22 @@ protected:
 
 	// found in menus_settings_assets.cpp
 	void RenderSettingsAssets(CUIRect MainView);
+	// Cr1stal Client: skins, sound packs and menu backgrounds on the textures page (menus_settings_cc_assets.cpp)
+	void RenderCcAssetsTab(CUIRect MainView, int Tab);
+	struct SCcBackground
+	{
+		char m_aName[64];
+		IGraphics::CTextureHandle m_Texture;
+	};
+	std::vector<SCcBackground> m_vCcBackgrounds;
+	bool m_CcBackgroundsScanned = false;
+	std::vector<std::string> m_vCcSoundPacks;
+	bool m_CcSoundPacksScanned = false;
+	IGraphics::CTextureHandle m_CcMenuBgTexture;
+	char m_aCcMenuBgLoaded[64] = "";
+	float m_CcMenuBgAspect = 16.0f / 9.0f;
+	bool RenderCcMenuBackgroundImage();
+	void ClearCcBackgrounds();
 
 	// found in menus_settings_appearance.cpp
 	void RenderSettingsAppearance(CUIRect MainView);

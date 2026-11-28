@@ -2833,3 +2833,51 @@ Mods
 [Playtime category]
 Other
 == Другие
+
+Skins
+== Скины
+
+Sounds
+== Звуки
+
+Backgrounds
+== Фоны
+
+Open folder
+== Открыть папку
+
+Reload
+== Обновить
+
+Choose skin
+== Выбрать скин
+
+Test sound
+== Проверить звук
+
+Default
+== Стандартный
+
+Neon
+== Неон
+
+Also behind the map in game
+== Также за картой в игре
+
+Put .png skins into the skins folder.
+== Кидай .png скины в папку skins.
+
+They appear in the skin list of the Tee settings right after a reload.
+== Они появятся в списке скинов (настройки Ти) сразу после обновления.
+
+Make a folder for your pack in the sounds folder and put .wv sounds in it.
+== Создай папку для своего пака в папке звуков и положи туда .wv звуки.
+
+The names are in sound_names.txt there. A sound you leave out is silent.
+== Названия звуков лежат в sound_names.txt рядом. Пропущенный звук в паке не играет.
+
+Put .png pictures into the backgrounds folder.
+== Кидай .png картинки в папку backgrounds.
+
+The chosen picture is shown behind the menus.
+== Выбранная картинка будет фоном меню.

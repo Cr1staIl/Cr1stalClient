@@ -1266,7 +1266,7 @@ void CMenus::Render()
 		MediaBackground.SyncFromConfig(g_Config.m_BcMenuMediaBackground, g_Config.m_BcMenuMediaBackgroundPath);
 		MediaBackground.Update();
 		// Cr1stal Client: the new design has its own dark background instead of the map
-		if(!MediaBackground.Render(MediaScreenWidth, MediaScreenHeight) && (g_Config.m_CcStyle || !GameClient()->m_MenuBackground.Render()))
+		if(!RenderCcMenuBackgroundImage() && !MediaBackground.Render(MediaScreenWidth, MediaScreenHeight) && (g_Config.m_CcStyle || !GameClient()->m_MenuBackground.Render()))
 		{
 			RenderBackground();
 		}

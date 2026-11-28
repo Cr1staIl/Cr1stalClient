@@ -18,3 +18,6 @@ MACRO_CONFIG_INT(CcClientBadge, cc_client_badge, 1, 0, 1, CFGFLAG_CLIENT | CFGFL
 MACRO_CONFIG_INT(CcOthersPacks, cc_others_packs, 1, 0, 1, CFGFLAG_CLIENT | CFGFLAG_SAVE, "Cr1stal Client: show other Cr1stal Client players with their own game texture pack")
 MACRO_CONFIG_INT(CcSharePresence, cc_share_presence, 1, 0, 1, CFGFLAG_CLIENT | CFGFLAG_SAVE, "Cr1stal Client: let other Cr1stal Client players see that you use it and see your game pack")
 MACRO_CONFIG_INT(CcStyle, cc_style, 1, 0, 1, CFGFLAG_CLIENT | CFGFLAG_SAVE, "Cr1stal Client: new menu design (dark panels, neon, round shapes)")
+MACRO_CONFIG_STR(CcMenuBackground, cc_menu_background, 64, "", CFGFLAG_CLIENT | CFGFLAG_SAVE, "Cr1stal Client: picture behind the menus, a png in assets/backgrounds (empty for the neon background)")
+MACRO_CONFIG_STR(CcGameBackground, cc_game_background, 64, "", CFGFLAG_CLIENT | CFGFLAG_SAVE, "Cr1stal Client: picture from assets/backgrounds behind the map in game (empty for none)")
+MACRO_CONFIG_INT(CcGameBackgroundAlpha, cc_game_background_alpha, 100, 10, 100, CFGFLAG_CLIENT | CFGFLAG_SAVE, "Cr1stal Client: opacity of the game background picture")

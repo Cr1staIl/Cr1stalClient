@@ -1,9 +1,16 @@
 #include "background.h"
 
+#include <base/io.h>
 #include <base/str.h>
 
+#include <engine/image.h>
 #include <engine/map.h>
 #include <engine/shared/config.h>
+
+#include <algorithm>
+#include <cmath>
+
+#include <engine/storage.h>
 
 #include <game/client/components/mapimages.h>
 #include <game/client/components/maplayers.h>
@@ -23,6 +30,52 @@ CBackground::CBackground(ERenderType MapType, bool OnlineOnly) :
 	m_pBackgroundImages = m_pImages;
 	m_Loaded = false;
 	m_aMapName[0] = '\0';
+}
+
+void CBackground::RenderCcPicture()
+{
+	if(g_Config.m_CcGameBackground[0] == '\0' || (Client()->State() != IClient::STATE_ONLINE && Client()->State() != IClient::STATE_DEMOPLAYBACK))
+		return;
+	if(str_comp(m_aCcPictureLoaded, g_Config.m_CcGameBackground) != 0)
+	{
+		Graphics()->UnloadTexture(&m_CcPicture);
+		str_copy(m_aCcPictureLoaded, g_Config.m_CcGameBackground);
+		char aPath[IO_MAX_PATH_LENGTH];
+		str_format(aPath, sizeof(aPath), "assets/backgrounds/%s.png", g_Config.m_CcGameBackground);
+		CImageInfo Image;
+		if(Graphics()->LoadPng(Image, aPath, IStorage::TYPE_ALL))
+		{
+			m_CcPictureAspect = Image.m_Width / (float)std::max<size_t>(1, Image.m_Height);
+			m_CcPicture = Graphics()->LoadTextureRawMove(Image, 0, aPath);
+		}
+	}
+	if(!m_CcPicture.IsValid() || m_CcPicture.IsNullTexture())
+		return;
+
+	// fixed to the screen, a little movement with the camera
+	const CScreenRect PreviousScreen = Graphics()->GetScreen();
+	const float Height = 300.0f;
+	const float Width = Height * Graphics()->ScreenAspect();
+	Graphics()->MapScreenToSize(Width, Height);
+	const float Aspect = std::max(0.01f, m_CcPictureAspect);
+	float DrawW = Width * 1.08f, DrawH = DrawW / Aspect;
+	if(DrawH < Height * 1.08f)
+	{
+		DrawH = Height * 1.08f;
+		DrawW = DrawH * Aspect;
+	}
+	const vec2 Camera = GetCurCamera()->m_Center;
+	const float Px = std::sin(Camera.x * 0.0004f) * (DrawW - Width) * 0.45f;
+	const float Py = std::sin(Camera.y * 0.0004f) * (DrawH - Height) * 0.45f;
+	Graphics()->WrapClamp();
+	Graphics()->TextureSet(m_CcPicture);
+	Graphics()->QuadsBegin();
+	Graphics()->SetColor(1.0f, 1.0f, 1.0f, g_Config.m_CcGameBackgroundAlpha / 100.0f);
+	const IGraphics::CQuadItem Quad((Width - DrawW) / 2.0f + Px, (Height - DrawH) / 2.0f + Py, DrawW, DrawH);
+	Graphics()->QuadsDrawTL(&Quad, 1);
+	Graphics()->QuadsEnd();
+	Graphics()->WrapNormal();
+	Graphics()->MapScreen(PreviousScreen);
 }
 
 CBackground::~CBackground()
@@ -96,6 +149,8 @@ void CBackground::OnMapLoad()
 
 void CBackground::OnRender()
 {
+	RenderCcPicture();
+
 	// bestclient
 	if(Client()->State() == IClient::STATE_ONLINE || Client()->State() == IClient::STATE_DEMOPLAYBACK)
 	{

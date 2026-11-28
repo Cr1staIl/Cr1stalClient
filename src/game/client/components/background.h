@@ -1,6 +1,7 @@
 #ifndef GAME_CLIENT_COMPONENTS_BACKGROUND_H
 #define GAME_CLIENT_COMPONENTS_BACKGROUND_H
 
+#include <engine/graphics.h>
 #include <engine/map.h>
 
 #include <game/client/components/maplayers.h>
@@ -24,6 +25,12 @@ protected:
 	std::unique_ptr<IMap> m_pBackgroundMap;
 	CLayers *m_pBackgroundLayers;
 	CMapImages *m_pBackgroundImages;
+
+	// Cr1stal Client: a picture from assets/backgrounds behind the map
+	IGraphics::CTextureHandle m_CcPicture;
+	char m_aCcPictureLoaded[64] = "";
+	float m_CcPictureAspect = 16.0f / 9.0f;
+	void RenderCcPicture();
 
 public:
 	CBackground(ERenderType MapType = ERenderType::RENDERTYPE_BACKGROUND_FORCE, bool OnlineOnly = true);

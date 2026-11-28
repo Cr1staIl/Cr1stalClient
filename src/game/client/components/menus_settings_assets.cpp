@@ -1067,6 +1067,11 @@ void CMenus::RenderSettingsAssets(CUIRect MainView)
 	};
 
 	MainView.HSplitTop(20.0f, &TabBar, &MainView);
+	// Cr1stal Client: a second row with the skins, sounds and backgrounds, -1 shows the tabs below
+	static int s_CcTab = -1;
+	CUIRect CcTabBar;
+	MainView.HSplitTop(2.0f, nullptr, &MainView);
+	MainView.HSplitTop(20.0f, &CcTabBar, &MainView);
 	// bestclient
 	const bool EditorExplore = m_AssetsEditorState.m_Open && m_AssetsEditorState.m_ExploreSide >= 0;
 	const int VisibleAssetTabs = EditorExplore ? ASSETS_TAB_AUDIO : NUMBER_OF_ASSETS_TABS;
@@ -1092,12 +1097,34 @@ void CMenus::RenderSettingsAssets(CUIRect MainView)
 		CUIRect Button;
 		TabBar.VSplitLeft(TabWidth, &Button, &TabBar);
 		const int Corners = Tab == ASSETS_TAB_ENTITIES ? IGraphics::CORNER_L : (Tab == VisibleAssetTabs - 1 ? IGraphics::CORNER_R : IGraphics::CORNER_NONE);
-		if(DoButton_MenuTab(&s_aPageTabs[Tab], apTabNames[Tab], s_CurCustomTab == Tab, &Button, Corners, nullptr, nullptr, nullptr, nullptr, 4.0f))
+		if(DoButton_MenuTab(&s_aPageTabs[Tab], apTabNames[Tab], s_CcTab < 0 && s_CurCustomTab == Tab, &Button, Corners, nullptr, nullptr, nullptr, nullptr, 4.0f))
 		{
 			s_CurCustomTab = Tab;
+			s_CcTab = -1;
 		}
 	}
 	// bestclient
+
+	// Cr1stal Client: the second row
+	if(!EditorExplore)
+	{
+		static CButtonContainer s_aCcTabs[3] = {};
+		const char *apCcTabNames[3] = {Localize("Skins"), Localize("Sounds"), Localize("Backgrounds")};
+		const float CcTabWidth = CcTabBar.w / 3.0f;
+		for(int Tab = 0; Tab < 3; ++Tab)
+		{
+			CUIRect Button;
+			CcTabBar.VSplitLeft(CcTabWidth, &Button, &CcTabBar);
+			const int Corners = Tab == 0 ? IGraphics::CORNER_L : (Tab == 2 ? IGraphics::CORNER_R : IGraphics::CORNER_NONE);
+			if(DoButton_MenuTab(&s_aCcTabs[Tab], apCcTabNames[Tab], s_CcTab == Tab, &Button, Corners, nullptr, nullptr, nullptr, nullptr, 4.0f))
+				s_CcTab = Tab;
+		}
+		if(s_CcTab >= 0)
+		{
+			RenderCcAssetsTab(MainView, s_CcTab);
+			return;
+		}
+	}
 
 	auto LoadStartTime = time_get_nanoseconds();
 	SMenuAssetScanUser User;
