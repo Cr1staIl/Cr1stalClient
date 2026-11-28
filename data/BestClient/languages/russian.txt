@@ -2526,3 +2526,39 @@ Remove from teammates
 
 Add to teammates
 == Добавить в тиммейты
+
+No such nickname on KoG
+== Такого ника нет на KoG
+
+Record
+== Запись
+
+on
+== вкл
+
+off
+== выкл
+
+Whole map
+== Вся карта
+
+Where I am
+== Где я
+
+Click again to clear
+== Нажми ещё раз, чтобы очистить
+
+Close
+== Закрыть
+
+The map has no picture
+== У карты нет картинки
+
+%d deaths, %d now
+== смертей: %d, за сейчас: %d
+
+%d deaths here
+== Смертей здесь: %d
+
+Wheel: zoom   Left button: move the map   Key or Esc: close
+== Колёсико: масштаб   Левая кнопка: двигать карту   Кнопка карты или Esc: закрыть

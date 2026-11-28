@@ -630,10 +630,13 @@ void CMenusStart::RenderStartMenuNeon(CUIRect MainView)
 			char aTime[64];
 			str_format(aTime, sizeof(aTime), Localize("%d h %d min"), (int)(Seconds / 3600), (int)((Seconds / 60) % 60));
 			char aPoints[32];
+			GameClient()->m_CKogStats.Request(false);
 			if(GameClient()->m_CKogStats.KnownForName(g_Config.m_PlayerName))
 				str_format(aPoints, sizeof(aPoints), "%d", GameClient()->m_CKogStats.Points());
-			else
+			else if(Playtime.Points() > 0)
 				str_format(aPoints, sizeof(aPoints), "~%d", Playtime.Points());
+			else
+				str_copy(aPoints, "-");
 			char aMaps[32];
 			str_format(aMaps, sizeof(aMaps), "%d", Playtime.NumFinished());
 

@@ -115,7 +115,6 @@ void CMenus::RenderSettingsPlayer(CUIRect MainView)
 	// the page is taller than the window, so it scrolls
 	constexpr float TopRowHeight = 140.0f;
 	constexpr float PlaytimeHeight = 158.0f;
-	constexpr float DeathMapHeight = 92.0f;
 	constexpr float MarkersHeight = 72.0f;
 	constexpr float CountryHeight = 190.0f;
 	constexpr float PageGap = 10.0f;
@@ -125,16 +124,14 @@ void CMenus::RenderSettingsPlayer(CUIRect MainView)
 	s_ScrollRegion.Begin(&MainView, &ScrollParams);
 	{
 		CUIRect ContentRect = MainView;
-		ContentRect.h = TopRowHeight + PageGap + PlaytimeHeight + PageGap + DeathMapHeight + PageGap + MarkersHeight + PageGap + CountryHeight;
+		ContentRect.h = TopRowHeight + PageGap + PlaytimeHeight + PageGap + MarkersHeight + PageGap + CountryHeight;
 		s_ScrollRegion.AddRect(ContentRect);
 	}
 
-	CUIRect TopRow, PlaytimeCard, DeathMapCard, MarkersCard, CountryCard;
+	CUIRect TopRow, PlaytimeCard, MarkersCard, CountryCard;
 	MainView.HSplitTop(TopRowHeight, &TopRow, &MainView);
 	MainView.HSplitTop(PageGap, nullptr, &MainView);
 	MainView.HSplitTop(PlaytimeHeight, &PlaytimeCard, &MainView);
-	MainView.HSplitTop(PageGap, nullptr, &MainView);
-	MainView.HSplitTop(DeathMapHeight, &DeathMapCard, &MainView);
 	MainView.HSplitTop(PageGap, nullptr, &MainView);
 	MainView.HSplitTop(MarkersHeight, &MarkersCard, &MainView);
 	MainView.HSplitTop(PageGap, nullptr, &MainView);
@@ -294,8 +291,10 @@ void CMenus::RenderSettingsPlayer(CUIRect MainView)
 		// the points of the KoG site, or the ones counted from your finished maps while there is no answer
 		if(KogKnown)
 			str_format(aPoints, sizeof(aPoints), "%d", Kog.Points());
-		else
+		else if(Playtime.Points() > 0)
 			str_format(aPoints, sizeof(aPoints), "~%d", Playtime.Points());
+		else
+			str_copy(aPoints, "-");
 		if(KogKnown && Kog.Rank() > 0)
 			str_format(aRank, sizeof(aRank), "#%d", Kog.Rank());
 		else
@@ -338,9 +337,11 @@ void CMenus::RenderSettingsPlayer(CUIRect MainView)
 				const char *pHint = nullptr;
 				if(Kog.Loading())
 					pHint = Localize("Loading...");
+				else if(Kog.NotFound() && !KogKnown)
+					pHint = Localize("No such nickname on KoG");
 				else if(Kog.Failed() && !KogKnown)
 					pHint = Localize("No answer, click to try again");
-				else if(i == 2 && !KogKnown)
+				else if(i == 2 && !KogKnown && Playtime.Points() > 0)
 					pHint = Localize("Counted from your finished maps");
 				else if(i == 2 && Kog.LastReply()[0] != '\0')
 					pHint = Kog.LastReply();
@@ -495,45 +496,6 @@ void CMenus::RenderSettingsPlayer(CUIRect MainView)
 				Ui()->DoLabel(&Time, aTime, 9.5f, TEXTALIGN_MR, TimeProps);
 			}
 		}
-	}
-
-	// ---- death map ----
-	{
-		CCDeathMap &DeathMap = GameClient()->m_CDeathMap;
-		CCStyle::DrawCard(DeathMapCard);
-		CUIRect Content, Line, Left, Right;
-		DeathMapCard.Margin(12.0f, &Content);
-		Content.HSplitTop(16.0f, &Label, &Content);
-		DrawSmallTitle(Ui(), &Label, Localize("Death map"), 11.0f);
-		Content.HSplitTop(6.0f, nullptr, &Content);
-
-		// the numbers of this map
-		{
-			Content.HSplitTop(14.0f, &Line, &Content);
-			char aText[160];
-			if(Client()->State() == IClient::STATE_ONLINE)
-				str_format(aText, sizeof(aText), Localize("This map: %d deaths, %d since you came"), DeathMap.Total(), DeathMap.Session());
-			else
-				str_copy(aText, Localize("Join a server to see the deaths of its map"));
-			SLabelProperties Props;
-			Props.SetColor(CCStyle::TEXT_DIM);
-			Ui()->DoLabel(&Line, aText, 10.0f, TEXTALIGN_ML, Props);
-		}
-		Content.HSplitTop(4.0f, nullptr, &Content);
-		Content.HSplitTop(20.0f, &Line, &Content);
-		Line.VSplitLeft(Line.w * 0.34f, &Left, &Line);
-		if(DoButton_CheckBox(&g_Config.m_CcDeathMap, Localize("Show on the map"), g_Config.m_CcDeathMap, &Left))
-			g_Config.m_CcDeathMap ^= 1;
-		Line.VSplitLeft(Line.w * 0.45f, &Left, &Line);
-		if(DoButton_CheckBox(&g_Config.m_CcDeathMapRecord, Localize("Remember deaths"), g_Config.m_CcDeathMapRecord, &Left))
-			g_Config.m_CcDeathMapRecord ^= 1;
-		Line.VSplitLeft(6.0f, nullptr, &Line);
-		static CButtonContainer s_ClearDeaths;
-		if(DoButton_Menu(&s_ClearDeaths, Localize("Clear this map"), 0, &Line))
-			DeathMap.Clear();
-		Content.HSplitTop(4.0f, nullptr, &Content);
-		Content.HSplitTop(20.0f, &Line, &Content);
-		Ui()->DoScrollbarOption(&g_Config.m_CcDeathMapAlpha, &g_Config.m_CcDeathMapAlpha, &Line, Localize("Death map strength"), 10, 100, &CUi::ms_LinearScrollbarScale, 0u, "%");
 	}
 
 	// ---- team markers ----

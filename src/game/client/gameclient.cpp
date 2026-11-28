@@ -148,7 +148,6 @@ void CGameClient::OnConsoleInit()
 					      &m_BgDraw, // TClient
 					      &m_Particles.m_RenderTrail,
 					      &m_Particles.m_RenderTrailExtra,
-					      &m_CDeathMap, // Cr1stal Client
 					      &m_Items,
 					      &m_Trails, // TClient
 					      &m_3DParticles, // bestclient
@@ -241,6 +240,7 @@ void CGameClient::OnConsoleInit()
 					      &m_FinishPrediction, // bestclient
 					      &m_Keystrokes, // bestclient
 					      &m_Scoreboard,
+					      &m_CDeathMap, // Cr1stal Client
 					      &m_Statboard,
 					      &m_Motd,
 					      &m_AdminPanel, // bestclient
@@ -266,6 +266,7 @@ void CGameClient::OnConsoleInit()
 						  &m_BindWheel, // TClient
 						  &m_FastActions, // bestclient
 						  &m_Emoticon,
+						  &m_CDeathMap, // Cr1stal Client
 						  &m_ImportantAlert,
 						  &m_AdminPanel, // bestclient
 						  &m_Menus,

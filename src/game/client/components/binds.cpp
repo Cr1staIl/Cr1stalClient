@@ -316,6 +316,7 @@ void CBinds::SetDefaults()
 	Bind(KEY_K, "kill");
 	Bind(KEY_Q, "say /spec");
 	Bind(KEY_P, "say /pause");
+	Bind(KEY_G, "cc_deathmap"); // Cr1stal Client
 
 	g_Config.m_ClDDRaceBindsSet = 0;
 	SetDDRaceBinds(false);

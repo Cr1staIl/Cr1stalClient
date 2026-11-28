@@ -19,8 +19,13 @@
 #include <string>
 
 static const char *const s_pKogFile = "cclient_kog.txt";
-// the page of a player on the KoG site
-static const char *const s_pKogPlayerUrl = "https://kog.tw/players/%s";
+// the page of a player on the KoG site: the new site first, then the main address
+// (the old kog.tw has no such pages, the new site is moving there)
+static const char *const s_apKogPlayerUrls[] = {
+	"https://dev.kog.tw/players/%s",
+	"https://kog.tw/players/%s",
+};
+static const int s_NumKogUrls = sizeof(s_apKogPlayerUrls) / sizeof(s_apKogPlayerUrls[0]);
 static const int64_t s_StaleSeconds = 10 * 60;
 
 namespace
@@ -163,19 +168,25 @@ void CCKogStats::Request(bool Force)
 	if(!Force && time_timestamp() - m_LastTryAt < 60)
 		return;
 	m_LastTryAt = time_timestamp();
+	str_copy(m_aRequestedName, pName);
+	m_Failed = false;
+	m_NotFound = true;
+	StartAttempt(0);
+}
 
+void CCKogStats::StartAttempt(int Attempt)
+{
+	m_Attempt = Attempt;
 	char aEscaped[256];
-	EscapeUrl(aEscaped, sizeof(aEscaped), pName);
+	EscapeUrl(aEscaped, sizeof(aEscaped), m_aRequestedName);
 	char aUrl[512];
-	str_format(aUrl, sizeof(aUrl), s_pKogPlayerUrl, aEscaped);
+	str_format(aUrl, sizeof(aUrl), s_apKogPlayerUrls[Attempt], aEscaped);
 	std::shared_ptr<IHttpRequest> pRequest = HttpGet(aUrl);
 	pRequest->Timeout(CTimeout{8000, 0, 500, 5});
 	pRequest->LogProgress(HTTPLOG::FAILURE);
 	pRequest->FailOnErrorStatus(false);
 	Http()->Run(pRequest);
 	m_pRequest = std::move(pRequest);
-	str_copy(m_aRequestedName, pName);
-	m_Failed = false;
 }
 
 void CCKogStats::OnUpdate()
@@ -204,8 +215,18 @@ void CCKogStats::OnUpdate()
 				}
 			}
 		}
-		m_Failed = !Ok;
+		// a page that does not know the name is no network problem
+		if(!Ok && !(m_pRequest->State() == EHttpState::DONE && m_pRequest->StatusCode() == 404))
+			m_NotFound = false;
 		m_pRequest = nullptr;
+		if(!Ok && m_Attempt + 1 < s_NumKogUrls)
+			StartAttempt(m_Attempt + 1);
+		else
+		{
+			m_Failed = !Ok;
+			if(Ok)
+				m_NotFound = false;
+		}
 	}
 	// the reply to /points stays for a minute, then it is old news
 	if(m_aReply[0] != '\0' && time_timestamp() - m_AskedAt > 60 && m_AskedAt != 0)

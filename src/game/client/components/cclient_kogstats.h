@@ -29,6 +29,8 @@ public:
 	int Rank() const { return m_Rank; }
 	bool Loading() const { return m_pRequest != nullptr; }
 	bool Failed() const { return m_Failed; }
+	// the site answered but has no player with this name
+	bool NotFound() const { return m_Failed && m_NotFound; }
 	// unix time of the last answer, 0 if there is none
 	int64_t FetchedAt() const { return m_FetchedAt; }
 	const char *Name() const { return m_aName; }
@@ -46,6 +48,8 @@ private:
 	int m_Points = -1;
 	int m_Rank = 0;
 	bool m_Failed = false;
+	bool m_NotFound = false;
+	int m_Attempt = 0;
 	int64_t m_FetchedAt = 0;
 	char m_aName[16 * 4] = "";
 	std::shared_ptr<IHttpRequest> m_pRequest;
@@ -55,6 +59,7 @@ private:
 	int64_t m_LastTryAt = 0;
 	bool m_Dirty = false;
 
+	void StartAttempt(int Attempt);
 	void Load();
 	void Save();
 };
