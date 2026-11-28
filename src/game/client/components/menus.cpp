@@ -401,7 +401,7 @@ int CMenus::DoButton_Favorite(const void *pButtonId, const void *pParentId, bool
 int CMenus::DoButton_CheckBox_Common(const void *pId, const char *pText, const char *pBoxText, const CUIRect *pRect, const unsigned Flags)
 {
 	// Cr1stal Client: round toggle on the right, text on the left
-	if(CCNeon::On() && (*pBoxText == 'X' || *pBoxText == '\0'))
+	if(CCNeon::On() && (*pBoxText == 'X' || *pBoxText == '\0') && pRect->w >= 60.0f)
 	{
 		const bool IsOn = *pBoxText == 'X';
 		const float ToggleHeight = std::clamp(pRect->h - 4.0f, 8.0f, 16.0f);
@@ -1264,7 +1264,8 @@ void CMenus::Render()
 		CMenuMediaBackground &MediaBackground = GameClient()->m_BestClient.MenuMediaBackground();
 		MediaBackground.SyncFromConfig(g_Config.m_BcMenuMediaBackground, g_Config.m_BcMenuMediaBackgroundPath);
 		MediaBackground.Update();
-		if(!MediaBackground.Render(MediaScreenWidth, MediaScreenHeight) && !GameClient()->m_MenuBackground.Render())
+		// Cr1stal Client: the new design has its own dark background instead of the map
+		if(!MediaBackground.Render(MediaScreenWidth, MediaScreenHeight) && (g_Config.m_CcStyle || !GameClient()->m_MenuBackground.Render()))
 		{
 			RenderBackground();
 		}
