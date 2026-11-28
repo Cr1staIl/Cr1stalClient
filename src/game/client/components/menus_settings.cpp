@@ -125,8 +125,8 @@ void CMenus::RenderSettings(CUIRect MainView)
 		MainView.HSplitBottom(10.0f, &MainView, nullptr);
 	}
 
-	if(g_Config.m_UiSettingsPage == SETTINGS_LANGUAGE || g_Config.m_UiSettingsPage == SETTINGS_PLAYER) // bestclient
-		g_Config.m_UiSettingsPage = g_Config.m_UiSettingsPage == SETTINGS_LANGUAGE ? SETTINGS_GENERAL : SETTINGS_TEE; // bestclient
+	if(g_Config.m_UiSettingsPage == SETTINGS_LANGUAGE) // bestclient
+		g_Config.m_UiSettingsPage = SETTINGS_GENERAL; // bestclient
 
 	TabBar.HSplitTop(50.0f, &Button, &TabBar);
 	// bestclient
@@ -169,7 +169,7 @@ void CMenus::RenderSettings(CUIRect MainView)
 
 		for(int i = 0; i < SETTINGS_LENGTH; i++)
 		{
-			if(i == SETTINGS_LANGUAGE || i == SETTINGS_PLAYER) // bestclient
+			if(i == SETTINGS_LANGUAGE) // bestclient
 				continue; // bestclient
 			TabBar.HSplitTop(10.0f, nullptr, &TabBar);
 			TabBar.HSplitTop(26.0f, &Button, &TabBar);

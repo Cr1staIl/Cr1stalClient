@@ -750,6 +750,17 @@ bool CControls::CheckNewInput()
 			}
 		}
 
+		// bestclient: Sheylun input moves the predicted aim only once per tick (calmer hook line)
+		if(SetMousePos && !RefreshHookAim && Dummy == g_Config.m_ClDummy && g_Config.m_BcInputs == BC_INPUTS_SHEYLUN && g_Config.m_BcSheylunAimOnce &&
+			!m_FastInputHookAction && !m_FastInputFireAction)
+		{
+			const int AimTick = Client()->PredGameTick(Dummy);
+			if(AimTick == m_aSheylunAimTick[Dummy])
+				SetMousePos = false;
+			else
+				m_aSheylunAimTick[Dummy] = AimTick;
+		}
+
 		if(SetMousePos)
 		{
 			TestInput.m_TargetX = (int)m_aMousePos[Dummy].x;

@@ -755,6 +755,7 @@ protected:
 	IGraphics::CTextureHandle m_TextureBlob;
 	// bestclient
 	IGraphics::CTextureHandle m_BcLogoTexture;
+	IGraphics::CTextureHandle m_CcGlowTexture; // soft round neon glow, drawn with a tint
 
 public:
 	const IGraphics::CTextureHandle &BcLogoTexture() const { return m_BcLogoTexture; }

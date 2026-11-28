@@ -3190,8 +3190,16 @@ void CMenus::RenderSettingsBestClientGameplay(CUIRect MainView)
 	const int InputsMode = g_Config.m_BcInputs;
 	const bool InputsEnabled = InputsMode != BC_INPUTS_OFF;
 	const bool InputsBestMode = InputsMode == BC_INPUTS_BEST;
-	const float InputsModeFieldsHeight = (InputsBestMode ? 6.0f : 2.0f) * (MarginSmall + LineSize);
-	const float InputsExpandedTargetHeight = (MarginSmall + LineSize) + InputsModeFieldsHeight;
+	float InputsModeFieldLines = 2.0f;
+	if(InputsBestMode)
+		InputsModeFieldLines = 6.0f;
+	else if(InputsMode == BC_INPUTS_SHEYLUN || InputsMode == BC_INPUTS_AUTO)
+		InputsModeFieldLines = 4.0f;
+	else if(InputsMode == BC_INPUTS_MOTION)
+		InputsModeFieldLines = 3.0f;
+	const float InputsModeFieldsHeight = InputsModeFieldLines * (MarginSmall + LineSize);
+	// two rows of mode buttons
+	const float InputsExpandedTargetHeight = 2.0f * (MarginSmall + LineSize) + InputsModeFieldsHeight;
 	const float InputsExpandedHeight = BC_MODULE_REVEAL(InputsEnabled, InputsExpandedTargetHeight, Client()->RenderFrameTime());
 	const float InputsHeaderHeight = LineSize + MarginSmall + LineSize;
 	const bool InputDebounceBlocked = GameClient()->m_Controls.IsInputDebounceBlocked();
@@ -3229,46 +3237,57 @@ void CMenus::RenderSettingsBestClientGameplay(CUIRect MainView)
 		Visible.h = InputsExpandedHeight;
 		Ui()->ClipEnable(&Visible);
 
-		InputsBlock.HSplitTop(MarginSmall, nullptr, &InputsBlock);
-		InputsBlock.HSplitTop(LineSize, &Button, &InputsBlock);
 		{
-			static CButtonContainer s_InputsFast, s_InputsBest, s_InputsSaiko, s_InputsDelta, s_InputsF, s_InputsCloud;
-			CUIRect ButtonsRect = Button;
-			const float Spacing = 2.0f;
-			const float InputButtonWidth = (ButtonsRect.w - Spacing * 5.0f) / 6.0f;
+			struct SInputModeButton
+			{
+				const char *m_pName;
+				int m_Mode;
+			};
+			static const SInputModeButton s_aRowOne[] = {
+				{"Fast", BC_INPUTS_FAST},
+				{"Best", BC_INPUTS_BEST},
+				{"Saiko", BC_INPUTS_SAIKO},
+				{"Delta", BC_INPUTS_DELTA},
+				{"F", BC_INPUTS_F},
+			};
+			static const SInputModeButton s_aRowTwo[] = {
+				{"Cloud", BC_INPUTS_CLOUD},
+				{"Sheylun", BC_INPUTS_SHEYLUN},
+				{"Auto", BC_INPUTS_AUTO},
+				{"Motion", BC_INPUTS_MOTION},
+			};
+			static CButtonContainer s_aInputModeButtons[9];
 
-			CUIRect FastButton, BestButton, SaikoButton, DeltaButton, FButton, CloudButton;
-			ButtonsRect.VSplitLeft(InputButtonWidth, &FastButton, &ButtonsRect);
-			ButtonsRect.VSplitLeft(Spacing, nullptr, &ButtonsRect);
-			ButtonsRect.VSplitLeft(InputButtonWidth, &BestButton, &ButtonsRect);
-			ButtonsRect.VSplitLeft(Spacing, nullptr, &ButtonsRect);
-			ButtonsRect.VSplitLeft(InputButtonWidth, &SaikoButton, &ButtonsRect);
-			ButtonsRect.VSplitLeft(Spacing, nullptr, &ButtonsRect);
-			ButtonsRect.VSplitLeft(InputButtonWidth, &DeltaButton, &ButtonsRect);
-			ButtonsRect.VSplitLeft(Spacing, nullptr, &ButtonsRect);
-			ButtonsRect.VSplitLeft(InputButtonWidth, &FButton, &ButtonsRect);
-			ButtonsRect.VSplitLeft(Spacing, nullptr, &ButtonsRect);
-			CloudButton = ButtonsRect;
+			int ButtonIndex = 0;
+			const auto DoModeRow = [&](const SInputModeButton *pButtons, int Count) {
+				InputsBlock.HSplitTop(MarginSmall, nullptr, &InputsBlock);
+				InputsBlock.HSplitTop(LineSize, &Button, &InputsBlock);
+				CUIRect ButtonsRect = Button;
+				const float Spacing = 2.0f;
+				const float InputButtonWidth = (ButtonsRect.w - Spacing * (Count - 1)) / Count;
+				for(int i = 0; i < Count; ++i)
+				{
+					CUIRect ModeButton;
+					if(i < Count - 1)
+					{
+						ButtonsRect.VSplitLeft(InputButtonWidth, &ModeButton, &ButtonsRect);
+						ButtonsRect.VSplitLeft(Spacing, nullptr, &ButtonsRect);
+					}
+					else
+						ModeButton = ButtonsRect;
+					ModeButton.HMargin(2.0f, &ModeButton);
 
-			FastButton.HMargin(2.0f, &FastButton);
-			BestButton.HMargin(2.0f, &BestButton);
-			SaikoButton.HMargin(2.0f, &SaikoButton);
-			DeltaButton.HMargin(2.0f, &DeltaButton);
-			FButton.HMargin(2.0f, &FButton);
-			CloudButton.HMargin(2.0f, &CloudButton);
-
-			if(DoButton_Menu(&s_InputsFast, BcLocalize("Fast"), InputsMode == BC_INPUTS_FAST, &FastButton, BUTTONFLAG_LEFT, nullptr, IGraphics::CORNER_L))
-				g_Config.m_BcInputs = BC_INPUTS_FAST;
-			if(DoButton_Menu(&s_InputsBest, BcLocalize("Best"), InputsMode == BC_INPUTS_BEST, &BestButton, BUTTONFLAG_LEFT, nullptr, IGraphics::CORNER_NONE))
-				g_Config.m_BcInputs = BC_INPUTS_BEST;
-			if(DoButton_Menu(&s_InputsSaiko, BcLocalize("Saiko"), InputsMode == BC_INPUTS_SAIKO, &SaikoButton, BUTTONFLAG_LEFT, nullptr, IGraphics::CORNER_NONE))
-				g_Config.m_BcInputs = BC_INPUTS_SAIKO;
-			if(DoButton_Menu(&s_InputsDelta, BcLocalize("Delta"), InputsMode == BC_INPUTS_DELTA, &DeltaButton, BUTTONFLAG_LEFT, nullptr, IGraphics::CORNER_NONE))
-				g_Config.m_BcInputs = BC_INPUTS_DELTA;
-			if(DoButton_Menu(&s_InputsF, BcLocalize("F"), InputsMode == BC_INPUTS_F, &FButton, BUTTONFLAG_LEFT, nullptr, IGraphics::CORNER_NONE))
-				g_Config.m_BcInputs = BC_INPUTS_F;
-			if(DoButton_Menu(&s_InputsCloud, BcLocalize("Cloud"), InputsMode == BC_INPUTS_CLOUD, &CloudButton, BUTTONFLAG_LEFT, nullptr, IGraphics::CORNER_R))
-				g_Config.m_BcInputs = BC_INPUTS_CLOUD;
+					int Corners = IGraphics::CORNER_NONE;
+					if(i == 0)
+						Corners = IGraphics::CORNER_L;
+					else if(i == Count - 1)
+						Corners = IGraphics::CORNER_R;
+					if(DoButton_Menu(&s_aInputModeButtons[ButtonIndex++], BcLocalize(pButtons[i].m_pName), InputsMode == pButtons[i].m_Mode, &ModeButton, BUTTONFLAG_LEFT, nullptr, Corners))
+						g_Config.m_BcInputs = pButtons[i].m_Mode;
+				}
+			};
+			DoModeRow(s_aRowOne, (int)std::size(s_aRowOne));
+			DoModeRow(s_aRowTwo, (int)std::size(s_aRowTwo));
 		}
 
 		if(InputsMode == BC_INPUTS_FAST)
@@ -3375,6 +3394,56 @@ void CMenus::RenderSettingsBestClientGameplay(CUIRect MainView)
 			InputsBlock.HSplitTop(MarginSmall, nullptr, &InputsBlock);
 			InputsBlock.HSplitTop(LineSize, &Content, &InputsBlock);
 			DoButton_CheckBoxAutoVMarginAndSet(&g_Config.m_BcCloudInputOthers, BcLocalize("Cloud input others"), &g_Config.m_BcCloudInputOthers, &Content, LineSize);
+		}
+		else if(InputsMode == BC_INPUTS_SHEYLUN)
+		{
+			InputsBlock.HSplitTop(MarginSmall, nullptr, &InputsBlock);
+			InputsBlock.HSplitTop(LineSize, &Button, &InputsBlock);
+			Ui()->DoScrollbarOption(&g_Config.m_BcSheylunStrength, &g_Config.m_BcSheylunStrength, &Button, BcLocalize("Strength"), 25, 200, &CUi::ms_LinearScrollbarScale, 0, "%");
+
+			InputsBlock.HSplitTop(MarginSmall, nullptr, &InputsBlock);
+			InputsBlock.HSplitTop(LineSize, &Button, &InputsBlock);
+			Ui()->DoScrollbarOption(&g_Config.m_BcSheylunMaxTicks, &g_Config.m_BcSheylunMaxTicks, &Button, BcLocalize("Max ticks"), 1, 6);
+
+			InputsBlock.HSplitTop(MarginSmall, nullptr, &InputsBlock);
+			InputsBlock.HSplitTop(LineSize, &Content, &InputsBlock);
+			DoButton_CheckBoxAutoVMarginAndSet(&g_Config.m_BcSheylunAimOnce, BcLocalize("Aim updates once per tick (calmer hook line)"), &g_Config.m_BcSheylunAimOnce, &Content, LineSize);
+
+			InputsBlock.HSplitTop(MarginSmall, nullptr, &InputsBlock);
+			InputsBlock.HSplitTop(LineSize, &Content, &InputsBlock);
+			DoButton_CheckBoxAutoVMarginAndSet(&g_Config.m_BcSheylunOthers, BcLocalize("Sheylun input others"), &g_Config.m_BcSheylunOthers, &Content, LineSize);
+		}
+		else if(InputsMode == BC_INPUTS_AUTO)
+		{
+			InputsBlock.HSplitTop(MarginSmall, nullptr, &InputsBlock);
+			InputsBlock.HSplitTop(LineSize, &Button, &InputsBlock);
+			Ui()->DoScrollbarOption(&g_Config.m_BcAutoInputStrength, &g_Config.m_BcAutoInputStrength, &Button, BcLocalize("Strength"), 10, 200, &CUi::ms_LinearScrollbarScale, 0, "%");
+
+			InputsBlock.HSplitTop(MarginSmall, nullptr, &InputsBlock);
+			InputsBlock.HSplitTop(LineSize, &Button, &InputsBlock);
+			DoTickAmountSlider(&g_Config.m_BcAutoInputMax, &Button, BcLocalize("Max offset"), 10, 500);
+
+			InputsBlock.HSplitTop(MarginSmall, nullptr, &InputsBlock);
+			InputsBlock.HSplitTop(LineSize, &Button, &InputsBlock);
+			Ui()->DoScrollbarOption(&g_Config.m_BcAutoInputSmoothing, &g_Config.m_BcAutoInputSmoothing, &Button, BcLocalize("Smoothing"), 0, 95, &CUi::ms_LinearScrollbarScale, 0, "%");
+
+			InputsBlock.HSplitTop(MarginSmall, nullptr, &InputsBlock);
+			InputsBlock.HSplitTop(LineSize, &Content, &InputsBlock);
+			DoButton_CheckBoxAutoVMarginAndSet(&g_Config.m_BcAutoInputOthers, BcLocalize("Auto input others"), &g_Config.m_BcAutoInputOthers, &Content, LineSize);
+		}
+		else if(InputsMode == BC_INPUTS_MOTION)
+		{
+			InputsBlock.HSplitTop(MarginSmall, nullptr, &InputsBlock);
+			InputsBlock.HSplitTop(LineSize, &Button, &InputsBlock);
+			DoTickAmountSlider(&g_Config.m_BcMotionInputAmount, &Button, BcLocalize("Prediction offset"), 0, 500);
+
+			InputsBlock.HSplitTop(MarginSmall, nullptr, &InputsBlock);
+			InputsBlock.HSplitTop(LineSize, &Button, &InputsBlock);
+			Ui()->DoScrollbarOption(&g_Config.m_BcMotionInputSpeed, &g_Config.m_BcMotionInputSpeed, &Button, BcLocalize("Full speed"), 2, 40, &CUi::ms_LinearScrollbarScale, 0, " tiles/s");
+
+			InputsBlock.HSplitTop(MarginSmall, nullptr, &InputsBlock);
+			InputsBlock.HSplitTop(LineSize, &Content, &InputsBlock);
+			DoButton_CheckBoxAutoVMarginAndSet(&g_Config.m_BcMotionInputOthers, BcLocalize("Motion input others"), &g_Config.m_BcMotionInputOthers, &Content, LineSize);
 		}
 
 		Ui()->ClipDisable();

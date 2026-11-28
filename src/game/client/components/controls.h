@@ -44,6 +44,7 @@ public:
 	CNetObj_PlayerInput m_aFastInput[NUM_DUMMIES];
 	bool m_FastInputHookAction = false;
 	bool m_FastInputFireAction = false;
+	int m_aSheylunAimTick[NUM_DUMMIES] = {-1, -1}; // bestclient: tick the predicted aim was last moved on
 
 	CControls();
 	int Sizeof() const override { return sizeof(*this); }

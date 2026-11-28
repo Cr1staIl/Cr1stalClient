@@ -3064,7 +3064,10 @@ void CClient::Update()
 					(g_Config.m_BcInputs == BC_INPUTS_SAIKO && g_Config.m_BcSaikoInputAmount > 0) ||
 					(g_Config.m_BcInputs == BC_INPUTS_DELTA && g_Config.m_BcDeltaInputAmount > 0) ||
 					(g_Config.m_BcInputs == BC_INPUTS_F && g_Config.m_BcFInputAmount > 0) ||
-					(g_Config.m_BcInputs == BC_INPUTS_CLOUD && g_Config.m_BcCloudInputAmount > 0);
+					(g_Config.m_BcInputs == BC_INPUTS_CLOUD && g_Config.m_BcCloudInputAmount > 0) ||
+					g_Config.m_BcInputs == BC_INPUTS_SHEYLUN ||
+					g_Config.m_BcInputs == BC_INPUTS_AUTO ||
+					(g_Config.m_BcInputs == BC_INPUTS_MOTION && g_Config.m_BcMotionInputAmount > 0);
 				if(HasFastInput && GameClient()->CheckNewInput())
 				{
 					Repredict = true;

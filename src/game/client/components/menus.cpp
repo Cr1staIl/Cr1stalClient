@@ -1086,6 +1086,7 @@ void CMenus::OnInit()
 	m_TextureBlob = Graphics()->LoadTexture("blob.png", IStorage::TYPE_ALL);
 	// bestclient
 	m_BcLogoTexture = Graphics()->LoadTexture("BestClient/gui_logo.png", IStorage::TYPE_ALL);
+	m_CcGlowTexture = Graphics()->LoadTexture("cclient/glow.png", IStorage::TYPE_ALL);
 	// bestclient
 
 	// setup load amount
@@ -2859,13 +2860,30 @@ void CMenus::RenderBackground()
 		Background.w = ScreenWidth;
 		Background.h = ScreenHeight;
 		Background.Draw4(CCNeon::BG_TOP, CCNeon::BG_TOP, CCNeon::BG_BOTTOM, CCNeon::BG_BOTTOM, IGraphics::CORNER_NONE, 0.0f);
-		const float Pulse = 0.85f + 0.15f * std::sin(Client()->GlobalTime() * 0.7f);
-		CUIRect Corner;
-		Corner.w = ScreenWidth * 0.55f;
-		Corner.h = ScreenHeight * 0.55f;
-		Corner.x = -Corner.w * 0.35f;
-		Corner.y = ScreenHeight - Corner.h * 0.65f;
-		CCNeon::Glow(Corner, Corner.h / 2.0f, CCNeon::NEON, 0.9f * Pulse, IGraphics::CORNER_ALL, 8.0f, 5);
+		const float Pulse = 0.92f + 0.08f * std::sin(Client()->GlobalTime() * 0.6f);
+		if(m_CcGlowTexture.IsValid() && !m_CcGlowTexture.IsNullTexture())
+		{
+			// one soft halo from a baked picture: smooth in every direction, no steps and no hard edge
+			const auto DrawHalo = [&](float CenterX, float CenterY, float Size, float Alpha) {
+				Graphics()->TextureSet(m_CcGlowTexture);
+				Graphics()->QuadsBegin();
+				Graphics()->SetColor(CCNeon::NEON.r, CCNeon::NEON.g, CCNeon::NEON.b, Alpha);
+				const IGraphics::CQuadItem HaloQuad(CenterX - Size * 0.5f, CenterY - Size * 0.5f, Size, Size);
+				Graphics()->QuadsDrawTL(&HaloQuad, 1);
+				Graphics()->QuadsEnd();
+			};
+			DrawHalo(ScreenWidth * 0.06f, ScreenHeight * 1.0f, ScreenHeight * 2.3f, 0.5f * Pulse);
+			DrawHalo(ScreenWidth * 0.04f, ScreenHeight * 1.02f, ScreenHeight * 1.1f, 0.3f * Pulse);
+		}
+		else
+		{
+			CUIRect Corner;
+			Corner.w = ScreenWidth * 0.55f;
+			Corner.h = ScreenHeight * 0.55f;
+			Corner.x = -Corner.w * 0.35f;
+			Corner.y = ScreenHeight - Corner.h * 0.65f;
+			CCNeon::Glow(Corner, Corner.h / 2.0f, CCNeon::NEON, 0.9f * Pulse, IGraphics::CORNER_ALL, 8.0f, 5);
+		}
 		Ui()->MapScreen();
 		return;
 	}

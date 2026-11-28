@@ -16,6 +16,7 @@
 #include <game/client/gameclient.h>
 #include <game/client/ui.h>
 #include <game/client/ui_listbox.h>
+#include <game/client/ui_scrollregion.h>
 #include <game/localization.h>
 
 #include <algorithm>
@@ -111,11 +112,27 @@ void CMenus::RenderSettingsPlayer(CUIRect MainView)
 	s_Intro = std::min(1.0f, s_Intro + std::min(Client()->RenderFrameTime(), 0.05f) * 1.4f);
 	const float Intro = 1.0f - (1.0f - s_Intro) * (1.0f - s_Intro) * (1.0f - s_Intro); // ease out
 
+	// the page is taller than the window, so it scrolls
+	constexpr float TopRowHeight = 140.0f;
+	constexpr float PlaytimeHeight = 158.0f;
+	constexpr float CountryHeight = 190.0f;
+	constexpr float PageGap = 10.0f;
+	static CScrollRegion s_ScrollRegion;
+	CScrollRegionParams ScrollParams;
+	ScrollParams.m_ScrollUnit = 40.0f;
+	s_ScrollRegion.Begin(&MainView, &ScrollParams);
+	{
+		CUIRect ContentRect = MainView;
+		ContentRect.h = TopRowHeight + PageGap + PlaytimeHeight + PageGap + CountryHeight;
+		s_ScrollRegion.AddRect(ContentRect);
+	}
+
 	CUIRect TopRow, PlaytimeCard, CountryCard;
-	MainView.HSplitTop(100.0f, &TopRow, &MainView);
-	MainView.HSplitTop(10.0f, nullptr, &MainView);
-	MainView.HSplitTop(158.0f, &PlaytimeCard, &MainView);
-	MainView.HSplitTop(10.0f, nullptr, &CountryCard);
+	MainView.HSplitTop(TopRowHeight, &TopRow, &MainView);
+	MainView.HSplitTop(PageGap, nullptr, &MainView);
+	MainView.HSplitTop(PlaytimeHeight, &PlaytimeCard, &MainView);
+	MainView.HSplitTop(PageGap, nullptr, &MainView);
+	MainView.HSplitTop(CountryHeight, &CountryCard, nullptr);
 
 	// ---- profile card: tee, name, clan ----
 	CUIRect ProfileCard, StatsCard;
@@ -202,6 +219,48 @@ void CMenus::RenderSettingsPlayer(CUIRect MainView)
 			Ui()->DoLabel(&Label, Field == 0 ? Localize("Name") : Localize("Clan"), 11.0f, TEXTALIGN_ML, Props);
 			if(Ui()->DoEditBox(Field == 0 ? &s_NameInput : &s_ClanInput, &Row, 13.0f))
 				SetNeedSendInfo();
+		}
+
+		// skin: arrows go through the skins you have, the name opens the full list on the Tee page
+		{
+			char *pSkinName = m_Dummy ? g_Config.m_ClDummySkin : g_Config.m_ClPlayerSkin;
+			const size_t SkinNameSize = sizeof(g_Config.m_ClPlayerSkin);
+			Content.HSplitTop(5.0f, nullptr, &Content);
+			CUIRect SkinRow, SkinPrev, SkinNext;
+			Content.HSplitTop(22.0f, &SkinRow, &Content);
+			SkinRow.VSplitLeft(48.0f, &Label, &SkinRow);
+			SLabelProperties SkinLabelProps;
+			SkinLabelProps.SetColor(CCStyle::TEXT_DIM);
+			Ui()->DoLabel(&Label, Localize("Skin"), 11.0f, TEXTALIGN_ML, SkinLabelProps);
+			SkinRow.VSplitLeft(22.0f, &SkinPrev, &SkinRow);
+			SkinRow.VSplitRight(22.0f, &SkinRow, &SkinNext);
+			SkinRow.VMargin(3.0f, &SkinRow);
+
+			const auto CycleSkin = [&](int Step) {
+				const std::vector<CSkins::CSkinContainer *> &vSkins = GameClient()->m_Skins.LocalSkinList();
+				if(vSkins.empty())
+					return;
+				int Current = -1;
+				for(size_t i = 0; i < vSkins.size(); ++i)
+				{
+					if(str_comp(vSkins[i]->Name(), pSkinName) == 0)
+					{
+						Current = (int)i;
+						break;
+					}
+				}
+				const int Count = (int)vSkins.size();
+				const int Next = Current < 0 ? 0 : (Current + Step + Count) % Count;
+				str_copy(pSkinName, vSkins[Next]->Name(), SkinNameSize);
+				SetNeedSendInfo();
+			};
+			static CButtonContainer s_SkinPrevButton, s_SkinNextButton, s_SkinOpenButton;
+			if(DoButton_Menu(&s_SkinPrevButton, "<", 0, &SkinPrev))
+				CycleSkin(-1);
+			if(DoButton_Menu(&s_SkinNextButton, ">", 0, &SkinNext))
+				CycleSkin(1);
+			if(DoButton_Menu(&s_SkinOpenButton, pSkinName, 0, &SkinRow))
+				g_Config.m_UiSettingsPage = SETTINGS_TEE;
 		}
 
 		if(Client()->State() == IClient::STATE_ONLINE &&
@@ -490,4 +549,6 @@ void CMenus::RenderSettingsPlayer(CUIRect MainView)
 	}
 
 	Ui()->DoEditBox_Search(&s_FlagFilterInput, &QuickSearch, 14.0f, !Ui()->IsPopupOpen() && !GameClient()->m_GameConsole.IsActive());
+
+	s_ScrollRegion.End();
 }

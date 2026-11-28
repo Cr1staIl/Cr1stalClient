@@ -1491,6 +1491,7 @@ set(EXPECTED_DATA
   BestClient/bc_fake_icon.png
   BestClient/bc_icon.png
   cclient/badge.png
+  cclient/glow.png
   BestClient/bc_light_icon.png
   BestClient/gui_logo.png
   BestClient/languages/russian.txt

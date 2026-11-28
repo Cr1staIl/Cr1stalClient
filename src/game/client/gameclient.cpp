@@ -559,6 +559,18 @@ void CGameClient::OnUpdate()
 {
 	HandleLanguageChanged();
 
+	// bestclient: the input modes that follow ping or speed (Sheylun, Auto, Motion)
+	{
+		float SpeedTilesPerSecond = 0.0f;
+		const int LocalId = m_Snap.m_LocalClientId;
+		if(LocalId >= 0 && LocalId < MAX_CLIENTS && m_Snap.m_aCharacters[LocalId].m_Active)
+		{
+			const CNetObj_Character &Cur = m_Snap.m_aCharacters[LocalId].m_Cur;
+			SpeedTilesPerSecond = length(vec2(Cur.m_VelX / 256.0f, Cur.m_VelY / 256.0f)) * 50.0f / 32.0f;
+		}
+		BcInputs::Update(Client()->GetPredictionTime(), SpeedTilesPerSecond, Client()->RenderFrameTime());
+	}
+
 	CUIElementBase::Init(Ui()); // update static pointer because game and editor use separate UI
 
 	// handle mouse movement

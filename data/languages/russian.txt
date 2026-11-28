@@ -2801,3 +2801,35 @@ Statistics
 
 New menu design (neon)
 == Новый дизайн меню (неон)
+
+Playtime
+== Время в игре
+
+Country
+== Страна
+
+Most time spent on maps
+== Больше всего времени на картах
+
+In game
+== В игре
+
+Favourite map
+== Любимая карта
+
+Play a map and it shows up here
+== Сыграй карту, и она появится здесь
+
+Skin
+== Скин
+
+Profiles
+== Профили
+
+[Playtime category]
+Mods
+== Моды
+
+[Playtime category]
+Other
+== Другие

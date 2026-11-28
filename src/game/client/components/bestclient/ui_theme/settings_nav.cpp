@@ -46,6 +46,7 @@ static const int s_aDdnetLeaves[] = {
 };
 // One merged group. The order is what the player sees in the settings.
 static const int s_aCrystalLeaves[] = {
+	SETTINGS_NAV_LEAF_CC_PROFILE,
 	SETTINGS_NAV_LEAF_TC_SETTINGS,
 	SETTINGS_NAV_LEAF_BC_VISUALS,
 	SETTINGS_NAV_LEAF_BC_GAMEPLAY,
@@ -142,6 +143,9 @@ SSettingsLeafTarget LeafTarget(int Leaf)
 	case SETTINGS_NAV_LEAF_TC_PROFILE:
 		Target.m_SettingsPage = CMenus::SETTINGS_PROFILES;
 		break;
+	case SETTINGS_NAV_LEAF_CC_PROFILE:
+		Target.m_SettingsPage = CMenus::SETTINGS_PLAYER;
+		break;
 	case SETTINGS_NAV_LEAF_TC_CONFIGS:
 		Target.m_SettingsPage = CMenus::SETTINGS_CONFIGS;
 		break;
@@ -174,7 +178,7 @@ SSettingsLeafTarget LeafTarget(int Leaf)
 
 int GroupForLeaf(int Leaf)
 {
-	if(Leaf >= SETTINGS_NAV_LEAF_TC_SETTINGS && Leaf <= SETTINGS_NAV_LEAF_BC_INFO)
+	if((Leaf >= SETTINGS_NAV_LEAF_TC_SETTINGS && Leaf <= SETTINGS_NAV_LEAF_BC_INFO) || Leaf == SETTINGS_NAV_LEAF_CC_PROFILE)
 		return SETTINGS_NAV_GROUP_CRYSTAL;
 	return SETTINGS_NAV_GROUP_DDNET;
 }
@@ -188,6 +192,7 @@ const char *CrystalLeafLabel(int Leaf)
 {
 	switch(Leaf)
 	{
+	case SETTINGS_NAV_LEAF_CC_PROFILE: return Localize("Profile");
 	case SETTINGS_NAV_LEAF_TC_SETTINGS: return Localize("Main");
 	case SETTINGS_NAV_LEAF_TC_BIND_WHEEL: return TCLocalize("Bind Wheel");
 	case SETTINGS_NAV_LEAF_TC_WAR_LIST: return TCLocalize("War List");
@@ -238,6 +243,7 @@ int LeafFromState(int SettingsPage, int TClientTab, int BestClientTab)
 	case CMenus::SETTINGS_DDNET: return SETTINGS_NAV_LEAF_DDNET;
 	case CMenus::SETTINGS_ASSETS: return SETTINGS_NAV_LEAF_ASSETS;
 	case CMenus::SETTINGS_CREDITS: return SETTINGS_NAV_LEAF_CREDITS;
+	case CMenus::SETTINGS_PLAYER: return SETTINGS_NAV_LEAF_CC_PROFILE;
 	case CMenus::SETTINGS_PROFILES: return SETTINGS_NAV_LEAF_TC_PROFILE;
 	case CMenus::SETTINGS_CONFIGS: return SETTINGS_NAV_LEAF_TC_CONFIGS;
 	case CMenus::SETTINGS_TCLIENT:
@@ -562,6 +568,11 @@ void CMenus::RenderSettingsPage(CUIRect MainView)
 			RenderSettingsTee7(MainView);
 		else
 			RenderSettingsTee(MainView);
+	}
+	else if(g_Config.m_UiSettingsPage == SETTINGS_PLAYER)
+	{
+		GameClient()->m_MenuBackground.ChangePosition(CMenuBackground::POS_SETTINGS_PLAYER);
+		RenderSettingsPlayer(MainView);
 	}
 	else if(g_Config.m_UiSettingsPage == SETTINGS_APPEARANCE)
 	{

@@ -18,6 +18,7 @@
 #include <game/client/bc_menu_badges.h>
 #include <game/client/components/bestclient/version.h>
 // bestclient
+#include <game/client/animstate.h>
 #include <game/client/cclient_version.h>
 #include <game/client/components/cclient_neon.h>
 #include <game/client/gameclient.h>
@@ -433,17 +434,64 @@ void CMenusStart::RenderStartMenuNeon(CUIRect MainView)
 
 	const float ButtonH = 22.0f;
 	const float ButtonGap = 4.0f;
-	float Y = Top + 6.0f + LogoH + 12.0f;
-	const float ButtonsTop = Y;
+	const float ButtonsTop = Top + 6.0f + LogoH + 12.0f;
+
+	// the hovered button grows and the others move away from it
+	CUIRect aBaseRows[NumEntries];
+	for(int i = 0; i < NumEntries; ++i)
+	{
+		aBaseRows[i].x = Left;
+		aBaseRows[i].y = ButtonsTop + i * (ButtonH + ButtonGap);
+		aBaseRows[i].w = ColumnW;
+		aBaseRows[i].h = ButtonH;
+	}
+	static float s_aHover[NumEntries] = {};
+	{
+		const bool AnimEnabled = g_Config.m_BcMainMenuAnimation != 0;
+		int HoveredIndex = -1;
+		if(AnimEnabled)
+		{
+			for(int i = 0; i < NumEntries; ++i)
+			{
+				if(Ui()->CheckActiveItem(&s_aButtons[i]) || Ui()->MouseHovered(&aBaseRows[i]))
+				{
+					HoveredIndex = i;
+					break;
+				}
+			}
+		}
+		const float Speed = (float)g_Config.m_BcMainMenuAnimationSpeed;
+		const float Blend = std::clamp(Client()->RenderFrameTime() * Speed, 0.0f, 1.0f);
+		for(int i = 0; i < NumEntries; ++i)
+			s_aHover[i] += ((i == HoveredIndex ? 1.0f : 0.0f) - s_aHover[i]) * Blend;
+	}
+
 	for(int i = 0; i < NumEntries; ++i)
 	{
 		const SEntry &Entry = aEntries[i];
+		const CUIRect &HitRow = aBaseRows[i];
+
+		// how far this button is pushed away by the grown ones, and how much it is shrunk by them
+		float Shift = 0.0f;
+		float Shrink = 0.0f;
+		for(int j = 0; j < NumEntries; ++j)
+		{
+			if(j == i)
+				continue;
+			const int Distance = absolute(i - j);
+			const float Push = 7.0f * std::pow(0.55f, (float)(Distance - 1));
+			Shift += (i > j ? Push : -Push) * s_aHover[j];
+			if(Distance == 1)
+				Shrink = std::max(Shrink, s_aHover[j]);
+		}
+		const float Grow = s_aHover[i];
+
 		CUIRect Row;
-		Row.x = Left;
-		Row.y = Y;
-		Row.w = ColumnW;
-		Row.h = ButtonH;
-		Y += ButtonH + ButtonGap;
+		Row.h = ButtonH + 6.0f * Grow - 1.5f * Shrink;
+		Row.y = HitRow.y + Shift + (ButtonH - Row.h) * 0.5f;
+		Row.x = Left - 3.0f * Grow;
+		Row.w = ColumnW + 16.0f * Grow - 8.0f * Shrink + 3.0f * Grow;
+		const float TextScale = Row.h / ButtonH;
 
 		const bool Hot = Ui()->HotItem() == &s_aButtons[i];
 		const bool Active = Ui()->CheckActiveItem(&s_aButtons[i]);
@@ -458,13 +506,13 @@ void CMenusStart::RenderStartMenuNeon(CUIRect MainView)
 		Row.VSplitLeft(ButtonH + 2.0f, &IconRect, &TextRect);
 		SetIconMode();
 		SetLabelColor(Entry.m_Primary ? CCNeon::TEXT : (Entry.m_Lit || Hot ? CCNeon::ACCENT_TEXT : CCNeon::TEXT_SUB));
-		Ui()->DoLabel(&IconRect, Entry.m_pIcon, ButtonH * 0.46f, TEXTALIGN_MC);
+		Ui()->DoLabel(&IconRect, Entry.m_pIcon, ButtonH * 0.46f * TextScale, TEXTALIGN_MC);
 		ResetIconMode();
 		SetLabelColor(CCNeon::TEXT);
-		Ui()->DoLabel(&TextRect, Entry.m_pLabel, ButtonH * 0.52f, TEXTALIGN_ML);
+		Ui()->DoLabel(&TextRect, Entry.m_pLabel, ButtonH * 0.52f * TextScale, TEXTALIGN_ML);
 		ResetLabelColor();
 
-		bool Pressed = Ui()->DoButtonLogic(&s_aButtons[i], 0, &Row, BUTTONFLAG_LEFT) != 0;
+		bool Pressed = Ui()->DoButtonLogic(&s_aButtons[i], 0, &HitRow, BUTTONFLAG_LEFT) != 0;
 		if(i == 0)
 			Pressed = Pressed || Ui()->ConsumeHotkey(CUi::HOTKEY_ENTER) || CheckHotKey(KEY_P);
 		else if(Entry.m_Key == KEY_R)
@@ -563,6 +611,21 @@ void CMenusStart::RenderStartMenuNeon(CUIRect MainView)
 			Card.Margin(8.0f, &Body);
 			Body.HSplitTop(16.0f, nullptr, &Body);
 
+			// your tee with your skin, it looks at the mouse
+			{
+				CUIRect TeeArea;
+				Body.VSplitLeft(52.0f, &TeeArea, &Body);
+				Body.VSplitLeft(6.0f, nullptr, &Body);
+				const vec2 TeePos(TeeArea.x + TeeArea.w / 2.0f, TeeArea.y + TeeArea.h / 2.0f + 2.0f);
+				CTeeRenderInfo TeeInfo;
+				TeeInfo.Apply(GameClient()->m_Skins.Find(g_Config.m_ClPlayerSkin));
+				TeeInfo.ApplyColors(g_Config.m_ClPlayerUseCustomColor, g_Config.m_ClPlayerColorBody, g_Config.m_ClPlayerColorFeet);
+				TeeInfo.m_Size = std::min(TeeArea.h, 46.0f);
+				vec2 Look = Ui()->MousePos() - TeePos;
+				Look = length(Look) > 0.001f ? normalize(Look) : vec2(1.0f, 0.0f);
+				RenderTools()->RenderTee(CAnimState::GetIdle(), &TeeInfo, Ui()->HotItem() == &s_ProfileCard ? EMOTE_HAPPY : EMOTE_NORMAL, Look, TeePos);
+			}
+
 			const int64_t Seconds = Playtime.Total();
 			char aTime[64];
 			str_format(aTime, sizeof(aTime), Localize("%d h %d min"), (int)(Seconds / 3600), (int)((Seconds / 60) % 60));
@@ -585,7 +648,11 @@ void CMenusStart::RenderStartMenuNeon(CUIRect MainView)
 				ResetLabelColor();
 			}
 			if(Ui()->DoButtonLogic(&s_ProfileCard, 0, &Card, BUTTONFLAG_LEFT))
-				NewPage = CMenus::PAGE_CC_STATS;
+			{
+				// opens the profile page in the settings
+				g_Config.m_UiSettingsPage = CMenus::SETTINGS_PLAYER;
+				NewPage = CMenus::PAGE_SETTINGS;
+			}
 		}
 	}
 

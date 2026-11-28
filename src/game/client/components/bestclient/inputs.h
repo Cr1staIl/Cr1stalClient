@@ -6,6 +6,9 @@
 
 namespace BcInputs
 {
+	// Called once per frame: refreshes the modes that follow your ping or your speed (Sheylun, Auto, Motion).
+	void Update(int PredictionTimeMs, float SpeedTilesPerSecond, float FrameTime);
+
 	float EffectiveOffsetTicks();
 
 	int PredictionTicks(float OffsetTicks);
@@ -23,6 +26,9 @@ namespace BcInputs
 	bool DeltaOthers();
 	bool FOthers();
 	bool CloudOthers();
+	bool SheylunOthers();
+	bool AutoOthers();
+	bool MotionOthers();
 	bool AnyOthers();
 	bool ImmediateOthers();
 } // namespace BcInputs

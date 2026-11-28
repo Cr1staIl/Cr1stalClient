@@ -42,6 +42,7 @@ enum ESettingsNavLeaf
 	SETTINGS_NAV_LEAF_BC_OTHERS,
 	SETTINGS_NAV_LEAF_BC_CONFIGS,
 	SETTINGS_NAV_LEAF_BC_INFO,
+	SETTINGS_NAV_LEAF_CC_PROFILE, // the Cr1stal Client profile page (tee, name, skin, play time)
 	SETTINGS_NAV_LEAF_COUNT,
 };
 

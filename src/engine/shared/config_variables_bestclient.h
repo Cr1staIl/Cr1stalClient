@@ -118,7 +118,7 @@ MACRO_CONFIG_INT(BcToggleSmallSens, bc_toggle_small_sens, 0, 0, 1, CFGFLAG_CLIEN
 
 // Inputs
 MACRO_CONFIG_INT(BcInputDebounce, bc_input_debounce, 0, 0, 1, CFGFLAG_CLIENT | CFGFLAG_SAVE, "Preserve button presses shorter than one simulation tick")
-MACRO_CONFIG_INT(BcInputs, bc_inputs, 0, 0, 6, CFGFLAG_CLIENT | CFGFLAG_SAVE, "Input prediction mode (0 = off, 1 = fast, 2 = best, 3 = saiko, 4 = delta, 5 = f, 6 = cloud)")
+MACRO_CONFIG_INT(BcInputs, bc_inputs, 0, 0, 9, CFGFLAG_CLIENT | CFGFLAG_SAVE, "Input prediction mode (0 = off, 1 = fast, 2 = best, 3 = saiko, 4 = delta, 5 = f, 6 = cloud, 7 = sheylun, 8 = auto, 9 = motion)")
 MACRO_CONFIG_INT(BcBestInputAmount, bc_best_input_amount, 0, 0, 1000, CFGFLAG_CLIENT | CFGFLAG_SAVE, "Best input prediction amount in 0.01 ticks")
 MACRO_CONFIG_INT(BcBestInputSmoothing, bc_best_input_smoothing, 0, 0, 100, CFGFLAG_CLIENT | CFGFLAG_SAVE, "Best input smoothing amount (0-100%)")
 MACRO_CONFIG_INT(BcBestInputLatencyComp, bc_best_input_latency_comp, 0, 0, 50, CFGFLAG_CLIENT | CFGFLAG_SAVE, "Best input latency compensation (0-50%)")
@@ -132,6 +132,17 @@ MACRO_CONFIG_INT(BcFInputAmount, bc_f_input_amount, 0, 0, 5000, CFGFLAG_CLIENT |
 MACRO_CONFIG_INT(BcFInputOthers, bc_f_input_others, 0, 0, 1, CFGFLAG_CLIENT | CFGFLAG_SAVE, "Apply F input to other tees")
 MACRO_CONFIG_INT(BcCloudInputAmount, bc_cloud_input_amount, 0, 0, 500, CFGFLAG_CLIENT | CFGFLAG_SAVE, "Cloud input amount in 0.01 ticks")
 MACRO_CONFIG_INT(BcCloudInputOthers, bc_cloud_input_others, 0, 0, 1, CFGFLAG_CLIENT | CFGFLAG_SAVE, "Apply cloud input to other tees")
+MACRO_CONFIG_INT(BcSheylunStrength, bc_sheylun_strength, 100, 25, 200, CFGFLAG_CLIENT | CFGFLAG_SAVE, "Sheylun input strength: how much of your ping is predicted (%)")
+MACRO_CONFIG_INT(BcSheylunMaxTicks, bc_sheylun_max_ticks, 3, 1, 6, CFGFLAG_CLIENT | CFGFLAG_SAVE, "Sheylun input: the most whole ticks that can be predicted")
+MACRO_CONFIG_INT(BcSheylunAimOnce, bc_sheylun_aim_once, 1, 0, 1, CFGFLAG_CLIENT | CFGFLAG_SAVE, "Sheylun input: the predicted aim only changes once per tick")
+MACRO_CONFIG_INT(BcSheylunOthers, bc_sheylun_others, 0, 0, 1, CFGFLAG_CLIENT | CFGFLAG_SAVE, "Apply Sheylun input to other tees")
+MACRO_CONFIG_INT(BcAutoInputStrength, bc_auto_input_strength, 100, 10, 200, CFGFLAG_CLIENT | CFGFLAG_SAVE, "Auto input strength: how much of your ping is predicted (%)")
+MACRO_CONFIG_INT(BcAutoInputMax, bc_auto_input_max, 200, 10, 500, CFGFLAG_CLIENT | CFGFLAG_SAVE, "Auto input: the most prediction offset in 0.01 ticks")
+MACRO_CONFIG_INT(BcAutoInputSmoothing, bc_auto_input_smoothing, 60, 0, 95, CFGFLAG_CLIENT | CFGFLAG_SAVE, "Auto input: how slowly the offset follows your ping (%)")
+MACRO_CONFIG_INT(BcAutoInputOthers, bc_auto_input_others, 0, 0, 1, CFGFLAG_CLIENT | CFGFLAG_SAVE, "Apply auto input to other tees")
+MACRO_CONFIG_INT(BcMotionInputAmount, bc_motion_input_amount, 100, 0, 500, CFGFLAG_CLIENT | CFGFLAG_SAVE, "Motion input: prediction offset at full speed in 0.01 ticks")
+MACRO_CONFIG_INT(BcMotionInputSpeed, bc_motion_input_speed, 12, 2, 40, CFGFLAG_CLIENT | CFGFLAG_SAVE, "Motion input: speed in tiles per second that gives the full offset")
+MACRO_CONFIG_INT(BcMotionInputOthers, bc_motion_input_others, 0, 0, 1, CFGFLAG_CLIENT | CFGFLAG_SAVE, "Apply motion input to other tees")
 MACRO_CONFIG_INT(BcAutoMargin, bc_auto_margin, 0, 0, 1, CFGFLAG_CLIENT | CFGFLAG_SAVE, "Auto margin")
 
 // MuteOthers

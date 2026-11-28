@@ -2285,3 +2285,43 @@ Couldn't parse releases
 [BestClient]
 GitHub rate limit reached
 == Лимит запросов GitHub
+
+[BestClient]
+Sheylun
+== Шейлун
+
+[BestClient]
+Auto
+== Авто
+
+[BestClient]
+Motion
+== Движение
+
+[BestClient]
+Max ticks
+== Макс. тиков
+
+[BestClient]
+Max offset
+== Макс. оффсет
+
+[BestClient]
+Full speed
+== Полная скорость
+
+[BestClient]
+Aim updates once per tick (calmer hook line)
+== Прицел обновляется раз в тик (спокойнее линия хука)
+
+[BestClient]
+Sheylun input others
+== Шейлун инпут других
+
+[BestClient]
+Auto input others
+== Авто инпут других
+
+[BestClient]
+Motion input others
+== Инпут движения других
