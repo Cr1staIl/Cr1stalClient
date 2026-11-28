@@ -2881,3 +2881,126 @@ Put .png pictures into the backgrounds folder.
 
 The chosen picture is shown behind the menus.
 == Выбранная картинка будет фоном меню.
+
+KoG points
+== Очки KoG
+
+KoG rank
+== Ранг KoG
+
+Loading...
+== Загрузка...
+
+No answer, click to try again
+== Нет ответа, нажми, чтобы повторить
+
+Counted from your finished maps
+== Посчитано по пройденным картам
+
+Death map
+== Карта смертей
+
+This map: %d deaths, %d since you came
+== На этой карте: %d смертей, %d с тех пор как ты зашёл
+
+Join a server to see the deaths of its map
+== Зайди на сервер, чтобы видеть смерти на его карте
+
+Show on the map
+== Показывать на карте
+
+Remember deaths
+== Запоминать смерти
+
+Clear this map
+== Очистить эту карту
+
+Death map strength
+== Яркость карты смертей
+
+Death map: %d here, %d now
+== Карта смертей: %d здесь, %d сейчас
+
+Death map (toggle)
+== Карта смертей (переключить)
+
+Death map (hold)
+== Карта смертей (пока держу)
+
+Team markers
+== Метки для команды
+
+Show and share markers
+== Показывать и отправлять метки
+
+Sound of a marker
+== Звук метки
+
+Set the keys in Controls. Your team sees a marker when someone there uses Cr1stal Client too.
+== Кнопки задаются в «Управлении». Команда видит метку, если в ней кто-то ещё играет с Cr1stal Client.
+
+Marker: here
+== Метка: здесь
+
+Marker: hook here
+== Метка: хук сюда
+
+Marker: danger
+== Метка: опасно
+
+Marker: go
+== Метка: вперёд
+
+Here
+== Здесь
+
+Hook here
+== Хук сюда
+
+Danger
+== Опасно
+
+Go
+== Вперёд
+
+Only you see this marker: your team sees it when you are in a team with another Cr1stal Client player
+== Эту метку видишь только ты: команда увидит её, когда в твоей команде есть ещё игрок с Cr1stal Client
+
+Whisper
+== Шёпот
+
+Copy Skin
+== Скопировать скин
+
+Vote Kick
+== Голосование за кик
+
+Find Hours
+== Узнать часы
+
+Clip Name
+== Копировать ник
+
+Exit
+== Выйти
+
+Invite
+== Пригласить
+
+Kick
+== Выгнать
+
+Lock
+== Закрыть
+
+Voice mute
+== Заглушить голос
+
+Voice unmute
+== Вернуть голос
+
+Remove from teammates
+== Убрать из тиммейтов
+
+Add to teammates
+== Добавить в тиммейты

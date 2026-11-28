@@ -81,7 +81,11 @@ class CScoreboard : public CComponent
 		bool m_IsSpectating;
 
 		static CUi::EPopupMenuFunctionResult Render(void *pContext, CUIRect View, bool Active);
+		// Cr1stal Client: the neon look of the same menu (scoreboard_popup.cpp)
+		static CUi::EPopupMenuFunctionResult RenderNeon(void *pContext, CUIRect View, bool Active);
 	} m_ScoreboardPopupContext;
+	float NeonPlayerPopupHeight() const;
+	void OpenPlayerPopup();
 
 	class CMapTitlePopupContext : public SPopupMenuId
 	{

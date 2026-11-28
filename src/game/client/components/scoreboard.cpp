@@ -454,12 +454,7 @@ void CScoreboard::RenderSpectators(CUIRect Spectators)
 								     (Client()->DummyConnected() && GameClient()->m_aLocalIds[1] == pInfo->m_ClientId);
 				m_ScoreboardPopupContext.m_IsSpectating = true;
 
-				// bestclient
-				m_ScoreboardPopupContext.m_VoiceVolumePreview = -1;
-				m_ScoreboardPopupContext.m_VoiceVolumeDirty = false;
-				Ui()->DoPopupMenu(&m_ScoreboardPopupContext, Ui()->MouseX(), Ui()->MouseY(), 150.0f,
-					BestClientScoreboardPlayerPopupHeight(GameClient(), m_ScoreboardPopupContext.m_IsLocal, true, m_ScoreboardPopupContext.m_ClientId), &m_ScoreboardPopupContext, CScoreboardPopupContext::Render);
-				// bestclient
+				OpenPlayerPopup();
 			}
 
 			if(Ui()->HotItem() == &m_aPlayers[pInfo->m_ClientId].m_PlayerButtonId ||
@@ -740,12 +735,7 @@ void CScoreboard::RenderScoreboard(CUIRect Scoreboard, int Team, int CountStart,
 									     (Client()->DummyConnected() && GameClient()->m_aLocalIds[1] == pInfo->m_ClientId);
 					m_ScoreboardPopupContext.m_IsSpectating = false;
 
-					// bestclient
-					m_ScoreboardPopupContext.m_VoiceVolumePreview = -1;
-					m_ScoreboardPopupContext.m_VoiceVolumeDirty = false;
-					Ui()->DoPopupMenu(&m_ScoreboardPopupContext, Ui()->MouseX(), Ui()->MouseY(), 150.0f,
-						BestClientScoreboardPlayerPopupHeight(GameClient(), m_ScoreboardPopupContext.m_IsLocal, false, m_ScoreboardPopupContext.m_ClientId), &m_ScoreboardPopupContext, CScoreboardPopupContext::Render);
-					// bestclient
+					OpenPlayerPopup();
 				}
 
 				if(Ui()->HotItem() == &Player.m_PlayerButtonId ||

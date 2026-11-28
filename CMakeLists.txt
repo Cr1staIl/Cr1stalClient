@@ -3032,6 +3032,12 @@ if(CLIENT)
     components/bestclient/clientindicator/client_indicator.cpp
     components/bestclient/clientindicator/client_indicator.h
     components/bestclient/clientindicator/client_indicator_sync.h
+    components/cclient_deathmap.cpp
+    components/cclient_deathmap.h
+    components/cclient_markers.cpp
+    components/cclient_markers.h
+    components/cclient_kogstats.cpp
+    components/cclient_kogstats.h
     components/cclient_playtime.cpp
     components/cclient_playtime.h
     components/cclient_presence.cpp
@@ -3207,6 +3213,7 @@ if(CLIENT)
     components/race_demo.cpp
     components/race_demo.h
     components/scoreboard.cpp
+    components/scoreboard_popup.cpp
     components/scoreboard.h
     components/skins.cpp
     components/skins.h

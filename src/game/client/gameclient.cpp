@@ -148,6 +148,7 @@ void CGameClient::OnConsoleInit()
 					      &m_BgDraw, // TClient
 					      &m_Particles.m_RenderTrail,
 					      &m_Particles.m_RenderTrailExtra,
+					      &m_CDeathMap, // Cr1stal Client
 					      &m_Items,
 					      &m_Trails, // TClient
 					      &m_3DParticles, // bestclient
@@ -184,6 +185,7 @@ void CGameClient::OnConsoleInit()
 					      &m_WeaponVfx,
 					      // bestclient
 					      &m_Particles.m_RenderExplosions,
+					      &m_CMarkers, // Cr1stal Client
 					      &m_NamePlates,
 					      &m_GifBubbles, // bestclient
 					      &m_ChatBubbles, // bestclient
@@ -207,6 +209,7 @@ void CGameClient::OnConsoleInit()
 					      &m_ClientIndicator, // bestclient
 					      &m_CPresence, // Cr1stal Client
 					      &m_CPlaytime, // Cr1stal Client
+					      &m_CKogStats, // Cr1stal Client
 					      &m_CUpdate, // Cr1stal Client
 					      &m_VoiceChat, // bestclient
 					      &m_Hud,
@@ -4196,6 +4199,7 @@ void CGameClient::SendDummyInfo(bool Start)
 
 void CGameClient::SendKill()
 {
+	m_LastKillRequest = time_get(); // Cr1stal Client
 	// bestclient
 	if(m_FastPractice.ConsumeKillCommand())
 		return;

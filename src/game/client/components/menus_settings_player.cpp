@@ -115,6 +115,8 @@ void CMenus::RenderSettingsPlayer(CUIRect MainView)
 	// the page is taller than the window, so it scrolls
 	constexpr float TopRowHeight = 140.0f;
 	constexpr float PlaytimeHeight = 158.0f;
+	constexpr float DeathMapHeight = 92.0f;
+	constexpr float MarkersHeight = 72.0f;
 	constexpr float CountryHeight = 190.0f;
 	constexpr float PageGap = 10.0f;
 	static CScrollRegion s_ScrollRegion;
@@ -123,14 +125,18 @@ void CMenus::RenderSettingsPlayer(CUIRect MainView)
 	s_ScrollRegion.Begin(&MainView, &ScrollParams);
 	{
 		CUIRect ContentRect = MainView;
-		ContentRect.h = TopRowHeight + PageGap + PlaytimeHeight + PageGap + CountryHeight;
+		ContentRect.h = TopRowHeight + PageGap + PlaytimeHeight + PageGap + DeathMapHeight + PageGap + MarkersHeight + PageGap + CountryHeight;
 		s_ScrollRegion.AddRect(ContentRect);
 	}
 
-	CUIRect TopRow, PlaytimeCard, CountryCard;
+	CUIRect TopRow, PlaytimeCard, DeathMapCard, MarkersCard, CountryCard;
 	MainView.HSplitTop(TopRowHeight, &TopRow, &MainView);
 	MainView.HSplitTop(PageGap, nullptr, &MainView);
 	MainView.HSplitTop(PlaytimeHeight, &PlaytimeCard, &MainView);
+	MainView.HSplitTop(PageGap, nullptr, &MainView);
+	MainView.HSplitTop(DeathMapHeight, &DeathMapCard, &MainView);
+	MainView.HSplitTop(PageGap, nullptr, &MainView);
+	MainView.HSplitTop(MarkersHeight, &MarkersCard, &MainView);
 	MainView.HSplitTop(PageGap, nullptr, &MainView);
 	MainView.HSplitTop(CountryHeight, &CountryCard, nullptr);
 
@@ -278,22 +284,39 @@ void CMenus::RenderSettingsPlayer(CUIRect MainView)
 
 	// ---- quick stats ----
 	{
+		CCKogStats &Kog = GameClient()->m_CKogStats;
+		Kog.Request(false);
+		const bool KogKnown = Kog.KnownForName(g_Config.m_PlayerName);
 		const std::vector<const CCPlaytime::SMap *> vpTop = Playtime.TopMaps(5);
-		char aTotal[32], aMaps[16], aPoints[16];
+		char aTotal[32], aMaps[16], aPoints[16], aRank[16];
 		CCPlaytime::FormatTime(Total, aTotal, sizeof(aTotal));
 		str_format(aMaps, sizeof(aMaps), "%d", Playtime.NumFinished());
-		str_format(aPoints, sizeof(aPoints), "%d", Playtime.Points());
-		const char *apValues[4] = {aTotal, aMaps, aPoints, vpTop.empty() ? "-" : vpTop[0]->m_Name.c_str()};
-		const char *apNames[4] = {Localize("In game"), Localize("Maps finished"), Localize("Points"), Localize("Favourite map")};
-		static char s_aStatKeys[4];
-		for(int i = 0; i < 4; i++)
+		// the points of the KoG site, or the ones counted from your finished maps while there is no answer
+		if(KogKnown)
+			str_format(aPoints, sizeof(aPoints), "%d", Kog.Points());
+		else
+			str_format(aPoints, sizeof(aPoints), "~%d", Playtime.Points());
+		if(KogKnown && Kog.Rank() > 0)
+			str_format(aRank, sizeof(aRank), "#%d", Kog.Rank());
+		else
+			str_copy(aRank, "-");
+		const char *apValues[5] = {aTotal, aMaps, aPoints, aRank, vpTop.empty() ? "-" : vpTop[0]->m_Name.c_str()};
+		const char *apNames[5] = {Localize("In game"), Localize("Maps finished"), Localize("KoG points"), Localize("KoG rank"), Localize("Favourite map")};
+		static char s_aStatKeys[5];
+		for(int i = 0; i < 5; i++)
 		{
 			CUIRect Tile;
-			const float TileW = (StatsCard.w - 8.0f * (3 - i)) / (4 - i);
+			const float TileW = (StatsCard.w - 8.0f * (4 - i)) / (5 - i);
 			StatsCard.VSplitLeft(TileW, &Tile, &StatsCard);
-			if(i < 3)
+			if(i < 4)
 				StatsCard.VSplitLeft(8.0f, nullptr, &StatsCard);
 			const float HoverA = Ui()->StateAnim(&s_aStatKeys[i], Ui()->MouseHovered(&Tile), 10.0f);
+			// a click on the KoG tiles asks the site (and the server, when you are on KoG) again
+			if((i == 2 || i == 3) && Ui()->DoButtonLogic(&s_aStatKeys[i], 0, &Tile, BUTTONFLAG_LEFT))
+			{
+				Kog.Request(true);
+				Kog.AskServer();
+			}
 			CCStyle::DrawCard(Tile, CCStyle::CARD_ROUNDING, CCStyle::CARD, 0.5f * HoverA);
 			CUIRect Inner;
 			Tile.Margin(12.0f, &Inner);
@@ -304,7 +327,32 @@ void CMenus::RenderSettingsPlayer(CUIRect MainView)
 			Props.m_EllipsisAtEnd = true;
 			Props.SetColor(CCStyle::TEXT);
 			Inner.y -= 3.0f * HoverA; // lifts a little on hover
-			Ui()->DoLabel(&Inner, apValues[i], i == 3 ? 15.0f : 22.0f, TEXTALIGN_ML, Props);
+			Ui()->DoLabel(&Inner, apValues[i], i == 4 ? 15.0f : 22.0f, TEXTALIGN_ML, Props);
+
+			// what the site said about the numbers
+			if(i == 2 || i == 3)
+			{
+				CUIRect Hint = Tile;
+				Hint.Margin(12.0f, &Hint);
+				Hint.HSplitBottom(10.0f, nullptr, &Hint);
+				const char *pHint = nullptr;
+				if(Kog.Loading())
+					pHint = Localize("Loading...");
+				else if(Kog.Failed() && !KogKnown)
+					pHint = Localize("No answer, click to try again");
+				else if(i == 2 && !KogKnown)
+					pHint = Localize("Counted from your finished maps");
+				else if(i == 2 && Kog.LastReply()[0] != '\0')
+					pHint = Kog.LastReply();
+				if(pHint)
+				{
+					SLabelProperties HintProps;
+					HintProps.m_MaxWidth = Hint.w;
+					HintProps.m_EllipsisAtEnd = true;
+					HintProps.SetColor(CCStyle::TEXT_DIM);
+					Ui()->DoLabel(&Hint, pHint, 8.0f, TEXTALIGN_ML, HintProps);
+				}
+			}
 		}
 	}
 
@@ -447,6 +495,68 @@ void CMenus::RenderSettingsPlayer(CUIRect MainView)
 				Ui()->DoLabel(&Time, aTime, 9.5f, TEXTALIGN_MR, TimeProps);
 			}
 		}
+	}
+
+	// ---- death map ----
+	{
+		CCDeathMap &DeathMap = GameClient()->m_CDeathMap;
+		CCStyle::DrawCard(DeathMapCard);
+		CUIRect Content, Line, Left, Right;
+		DeathMapCard.Margin(12.0f, &Content);
+		Content.HSplitTop(16.0f, &Label, &Content);
+		DrawSmallTitle(Ui(), &Label, Localize("Death map"), 11.0f);
+		Content.HSplitTop(6.0f, nullptr, &Content);
+
+		// the numbers of this map
+		{
+			Content.HSplitTop(14.0f, &Line, &Content);
+			char aText[160];
+			if(Client()->State() == IClient::STATE_ONLINE)
+				str_format(aText, sizeof(aText), Localize("This map: %d deaths, %d since you came"), DeathMap.Total(), DeathMap.Session());
+			else
+				str_copy(aText, Localize("Join a server to see the deaths of its map"));
+			SLabelProperties Props;
+			Props.SetColor(CCStyle::TEXT_DIM);
+			Ui()->DoLabel(&Line, aText, 10.0f, TEXTALIGN_ML, Props);
+		}
+		Content.HSplitTop(4.0f, nullptr, &Content);
+		Content.HSplitTop(20.0f, &Line, &Content);
+		Line.VSplitLeft(Line.w * 0.34f, &Left, &Line);
+		if(DoButton_CheckBox(&g_Config.m_CcDeathMap, Localize("Show on the map"), g_Config.m_CcDeathMap, &Left))
+			g_Config.m_CcDeathMap ^= 1;
+		Line.VSplitLeft(Line.w * 0.45f, &Left, &Line);
+		if(DoButton_CheckBox(&g_Config.m_CcDeathMapRecord, Localize("Remember deaths"), g_Config.m_CcDeathMapRecord, &Left))
+			g_Config.m_CcDeathMapRecord ^= 1;
+		Line.VSplitLeft(6.0f, nullptr, &Line);
+		static CButtonContainer s_ClearDeaths;
+		if(DoButton_Menu(&s_ClearDeaths, Localize("Clear this map"), 0, &Line))
+			DeathMap.Clear();
+		Content.HSplitTop(4.0f, nullptr, &Content);
+		Content.HSplitTop(20.0f, &Line, &Content);
+		Ui()->DoScrollbarOption(&g_Config.m_CcDeathMapAlpha, &g_Config.m_CcDeathMapAlpha, &Line, Localize("Death map strength"), 10, 100, &CUi::ms_LinearScrollbarScale, 0u, "%");
+	}
+
+	// ---- team markers ----
+	{
+		CCStyle::DrawCard(MarkersCard);
+		CUIRect Content, Line, Left;
+		MarkersCard.Margin(12.0f, &Content);
+		Content.HSplitTop(16.0f, &Label, &Content);
+		DrawSmallTitle(Ui(), &Label, Localize("Team markers"), 11.0f);
+		Content.HSplitTop(6.0f, nullptr, &Content);
+		Content.HSplitTop(20.0f, &Line, &Content);
+		Line.VSplitLeft(Line.w * 0.5f, &Left, &Line);
+		if(DoButton_CheckBox(&g_Config.m_CcMarkers, Localize("Show and share markers"), g_Config.m_CcMarkers, &Left))
+			g_Config.m_CcMarkers ^= 1;
+		if(DoButton_CheckBox(&g_Config.m_CcMarkerSound, Localize("Sound of a marker"), g_Config.m_CcMarkerSound, &Line))
+			g_Config.m_CcMarkerSound ^= 1;
+		Content.HSplitTop(4.0f, nullptr, &Content);
+		Content.HSplitTop(14.0f, &Line, &Content);
+		SLabelProperties Props;
+		Props.SetColor(CCStyle::TEXT_DIM);
+		Props.m_MaxWidth = Line.w;
+		Props.m_EllipsisAtEnd = true;
+		Ui()->DoLabel(&Line, Localize("Set the keys in Controls. Your team sees a marker when someone there uses Cr1stal Client too."), 9.0f, TEXTALIGN_ML, Props);
 	}
 
 	// ---- country ----

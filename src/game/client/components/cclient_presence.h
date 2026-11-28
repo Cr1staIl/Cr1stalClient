@@ -34,6 +34,11 @@ public:
 	void OnShutdown() override;
 	static const char *DatabaseUrl();
 
+	// hash of the server you are on, empty when you are on none
+	const char *ServerHash() const { return m_aServer; }
+	// writes to the database (fire and forget), pPath without the ".json"
+	void Send(const char *pPath, const char *pMethod, const char *pBody);
+
 	// this player uses Cr1stal Client (you always do)
 	bool IsCrystal(int ClientId) const;
 	// hash of the other player's game pack when it is downloaded, else nullptr
@@ -77,7 +82,6 @@ private:
 	std::shared_ptr<IHttpRequest> m_pPackDownload;
 	std::vector<std::shared_ptr<IHttpRequest>> m_vpSent; // fire and forget
 
-	void Send(const char *pPath, const char *pMethod, const char *pBody);
 	IGraphics::CTextureHandle m_Badge;
 	void UploadStats();
 	int64_t m_NextStats = 0;

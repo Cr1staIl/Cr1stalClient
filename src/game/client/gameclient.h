@@ -29,6 +29,9 @@
 
 // components
 #include "components/background.h"
+#include "components/cclient_deathmap.h" // Cr1stal Client
+#include "components/cclient_kogstats.h" // Cr1stal Client
+#include "components/cclient_markers.h" // Cr1stal Client
 #include "components/cclient_playtime.h" // Cr1stal Client
 #include "components/cclient_presence.h" // Cr1stal Client
 #include "components/cclient_update.h" // Cr1stal Client
@@ -246,6 +249,9 @@ public:
 	CClientIndicator m_ClientIndicator; // bestclient
 	CCPresence m_CPresence; // Cr1stal Client
 	CCPlaytime m_CPlaytime; // Cr1stal Client
+	CCKogStats m_CKogStats; // Cr1stal Client
+	CCDeathMap m_CDeathMap; // Cr1stal Client
+	CCMarkers m_CMarkers; // Cr1stal Client
 	CCUpdate m_CUpdate; // Cr1stal Client
 	CVoiceChat m_VoiceChat; // bestclient
 	CAdminPanel m_AdminPanel; // bestclient
@@ -260,6 +266,8 @@ public:
 	CSnapTap m_SnapTap; // bestclient
 	CCloudInput m_CloudInput; // bestclient
 	CFastPractice m_FastPractice; // bestclient
+	// Cr1stal Client: when you last asked to kill yourself (a death you made is not a place to learn)
+	int64_t m_LastKillRequest = 0;
 	CDemoTeeEditor m_DemoTeeEditor; // bestclient
 	CBcAutoMargin m_BcAutoMargin; // bestclient
 	COptimizer m_Optimizer; // bestclient
