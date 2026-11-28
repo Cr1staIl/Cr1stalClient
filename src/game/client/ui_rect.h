@@ -11,9 +11,13 @@ class IGraphics;
 class CUIRect
 {
 	static IGraphics *ms_pGraphics;
+	static float ms_RoundingScale;
 
 public:
 	static void Init(IGraphics *pGraphics) { ms_pGraphics = pGraphics; }
+	// Cr1stal Client: makes all rounded rectangles rounder while the menu is drawn (1 = DDNet default)
+	static void SetRoundingScale(float Scale) { ms_RoundingScale = Scale; }
+	static float RoundingScale() { return ms_RoundingScale; }
 
 	float x, y, w, h;
 

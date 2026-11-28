@@ -12,6 +12,7 @@
 #include <game/client/components/menus.h>
 #include <game/client/gameclient.h>
 #include <game/client/ui.h>
+#include <game/client/ui_scrollregion.h>
 #include <game/localization.h>
 
 #include <algorithm>
@@ -385,11 +386,27 @@ void CMenus::RenderSettingsNavNewStyle(CUIRect &TabBar)
 
 	const bool ExploreLock = m_AssetsEditorState.m_Open && m_AssetsEditorState.m_ExploreSide >= 0;
 	const float Dt = Client()->RenderFrameTime();
-	const float GroupH = 26.0f;
-	const float LeafH = 22.0f;
-	const float GroupGap = 8.0f;
-	const float LeafGap = 4.0f;
-	const float LeafRightInset = 14.0f;
+	// Cr1stal Client: in the new design the list is compact and scrolls, so all leaves are reachable
+	const bool Compact = CCNeon::On();
+	const float GroupH = Compact ? 22.0f : 26.0f;
+	const float LeafH = Compact ? 18.0f : 22.0f;
+	const float GroupGap = Compact ? 4.0f : 8.0f;
+	const float LeafGap = Compact ? 2.0f : 4.0f;
+	const float LeafRightInset = Compact ? 8.0f : 14.0f;
+	static CScrollRegion s_NavScroll;
+	if(Compact)
+	{
+		CScrollRegionParams NavScrollParams;
+		NavScrollParams.m_ScrollbarThickness = 4.0f;
+		NavScrollParams.m_ScrollbarMargin = 1.0f;
+		NavScrollParams.m_ScrollUnit = 20.0f;
+		NavScrollParams.m_SliderMinSize = 12.0f;
+		NavScrollParams.m_SliderColor = ColorRGBA(CCNeon::ACCENT.r, CCNeon::ACCENT.g, CCNeon::ACCENT.b, 0.6f);
+		NavScrollParams.m_SliderColorHover = CCNeon::ACCENT_HI;
+		NavScrollParams.m_SliderColorGrabbed = CCNeon::ACCENT;
+		NavScrollParams.m_RailBgColor = ColorRGBA(1.0f, 1.0f, 1.0f, 0.06f);
+		s_NavScroll.Begin(&TabBar, &NavScrollParams);
+	}
 	const bool NavOnLeft = IsSettingsNavOnLeft();
 	const int NavCorners = NavOnLeft ? IGraphics::CORNER_L : IGraphics::CORNER_R;
 
@@ -436,6 +453,8 @@ void CMenus::RenderSettingsNavNewStyle(CUIRect &TabBar)
 		TabBar.HSplitTop(Group == 0 ? 4.0f : GroupGap, nullptr, &TabBar);
 		CUIRect GroupButton;
 		TabBar.HSplitTop(GroupH, &GroupButton, &TabBar);
+		if(Compact)
+			s_NavScroll.AddRect(GroupButton);
 		const bool Expanded = s_aExpandedGroup[Group];
 		const ColorRGBA GroupInactive = SettingsNavGroupInactiveColor();
 		const ColorRGBA GroupActive = SettingsNavGroupActiveColor();
@@ -478,6 +497,8 @@ void CMenus::RenderSettingsNavNewStyle(CUIRect &TabBar)
 
 		CUIRect LeavesArea;
 		TabBar.HSplitTop(RevealH, &LeavesArea, &TabBar);
+		if(Compact)
+			s_NavScroll.AddRect(LeavesArea);
 		Ui()->ClipEnable(&LeavesArea);
 
 		CUIRect LeafCursor = LeavesArea;
@@ -508,6 +529,9 @@ void CMenus::RenderSettingsNavNewStyle(CUIRect &TabBar)
 
 		Ui()->ClipDisable();
 	}
+
+	if(Compact)
+		s_NavScroll.End();
 }
 
 void CMenus::RenderSettingsPageAt(CUIRect MainView, int SettingsPage, int TClientTab, int BestClientTab)

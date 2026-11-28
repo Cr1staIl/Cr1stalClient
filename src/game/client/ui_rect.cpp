@@ -4,7 +4,10 @@
 
 #include <engine/graphics.h>
 
+#include <algorithm>
+
 IGraphics *CUIRect::ms_pGraphics = nullptr;
+float CUIRect::ms_RoundingScale = 1.0f;
 
 void CUIRect::HSplitMid(CUIRect *pTop, CUIRect *pBottom, float Spacing) const
 {
@@ -168,11 +171,25 @@ bool CUIRect::Inside(vec2 Point) const
 
 void CUIRect::Draw(ColorRGBA Color, int Corners, float Rounding) const
 {
+	if(ms_RoundingScale != 1.0f && Rounding > 0.0f)
+	{
+		// the big page panel under the menu bar floats on its own in the new design
+		if(Corners == IGraphics::CORNER_B && Rounding == 10.0f)
+			Corners = IGraphics::CORNER_ALL;
+		Rounding = std::min(Rounding * ms_RoundingScale, std::min(w, h) / 2.0f);
+	}
 	ms_pGraphics->DrawRect(x, y, w, h, Color, Corners, Rounding);
 }
 
 void CUIRect::Draw4(ColorRGBA ColorTopLeft, ColorRGBA ColorTopRight, ColorRGBA ColorBottomLeft, ColorRGBA ColorBottomRight, int Corners, float Rounding) const
 {
+	if(ms_RoundingScale != 1.0f && Rounding > 0.0f)
+	{
+		// the big page panel under the menu bar floats on its own in the new design
+		if(Corners == IGraphics::CORNER_B && Rounding == 10.0f)
+			Corners = IGraphics::CORNER_ALL;
+		Rounding = std::min(Rounding * ms_RoundingScale, std::min(w, h) / 2.0f);
+	}
 	ms_pGraphics->DrawRect4(x, y, w, h, ColorTopLeft, ColorTopRight, ColorBottomLeft, ColorBottomRight, Corners, Rounding);
 }
 

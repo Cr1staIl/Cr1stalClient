@@ -11,6 +11,7 @@
 #include <engine/shared/config.h>
 #include <engine/textrender.h>
 
+#include <game/client/components/cclient_neon.h>
 #include <game/client/ui_rect.h>
 
 #include <cmath>
@@ -49,14 +50,19 @@ inline bool IsMenuThemeScope()
 struct CMenuThemeScope
 {
 	bool m_Prev;
+	float m_PrevRounding;
 	explicit CMenuThemeScope(bool Enable = true)
 	{
 		m_Prev = MenuThemeScopeRef();
 		MenuThemeScopeRef() = Enable;
+		// Cr1stal Client: rounder shapes in the menu
+		m_PrevRounding = CUIRect::RoundingScale();
+		CUIRect::SetRoundingScale(Enable && g_Config.m_CcStyle != 0 ? 1.8f : 1.0f);
 	}
 	~CMenuThemeScope()
 	{
 		MenuThemeScopeRef() = m_Prev;
+		CUIRect::SetRoundingScale(m_PrevRounding);
 	}
 	CMenuThemeScope(const CMenuThemeScope &) = delete;
 	CMenuThemeScope &operator=(const CMenuThemeScope &) = delete;
@@ -275,10 +281,16 @@ inline ColorRGBA TintAchromatic(ColorRGBA Color, unsigned ConfigColor, bool Enab
 	return ColorRGBA(C.r * Lum, C.g * Lum, C.b * Lum, Color.a * C.a);
 }
 
-inline void DrawChromeRect(const CUIRect *pRect, ColorRGBA BaseTint, unsigned CfgBase, unsigned CfgGrad, bool UseGrad, unsigned CfgAccent, bool AccentState, bool UseAccent, bool Enabled, int Corners, float Rounding, int AnimateSpeed, bool VerticalGrad = false)
+inline void DrawChromeRect(const CUIRect *pRect, ColorRGBA BaseTint, unsigned CfgBase, unsigned CfgGrad, bool UseGrad, unsigned CfgAccent, bool AccentState, bool UseAccent, bool Enabled, int Corners, float Rounding, int AnimateSpeed, bool VerticalGrad = false, int NeonKind = CCNeon::KIND_BUTTON)
 {
 	if(!Enabled)
 	{
+		// Cr1stal Client: new design
+		if(CCNeon::On())
+		{
+			CCNeon::DrawChrome(pRect, BaseTint, AccentState, Corners, Rounding, NeonKind);
+			return;
+		}
 		pRect->Draw(BaseTint, Corners, Rounding);
 		return;
 	}
@@ -338,7 +350,7 @@ inline std::vector<STextColorSplit> BuildUiTextGradientSplits(const char *pText)
 
 inline void DrawUiCheckbox(const CUIRect *pRect, ColorRGBA Color, bool AccentState, int Corners, float Rounding)
 {
-	DrawChromeRect(pRect, Color, CheckboxColor(), CheckboxGradColor(), CheckboxGrad(), CheckboxAccentColor(), AccentState, CheckboxAccent(), IsCustomUiCheckbox(), Corners, Rounding, CheckboxAnimateSpeed());
+	DrawChromeRect(pRect, Color, CheckboxColor(), CheckboxGradColor(), CheckboxGrad(), CheckboxAccentColor(), AccentState, CheckboxAccent(), IsCustomUiCheckbox(), Corners, Rounding, CheckboxAnimateSpeed(), false, CCNeon::KIND_CHECKBOX);
 }
 
 inline ColorRGBA UiScrollbar(ColorRGBA Color, bool AccentState = false)
@@ -348,7 +360,7 @@ inline ColorRGBA UiScrollbar(ColorRGBA Color, bool AccentState = false)
 
 inline void DrawUiScrollbar(const CUIRect *pRect, ColorRGBA Color, bool AccentState, int Corners, float Rounding, bool VerticalGrad = false)
 {
-	DrawChromeRect(pRect, Color, ScrollbarColor(), ScrollbarGradColor(), ScrollbarGrad(), ScrollbarAccentColor(), AccentState, ScrollbarAccent(), IsCustomUiScrollbar(), Corners, Rounding, ScrollbarAnimateSpeed(), VerticalGrad);
+	DrawChromeRect(pRect, Color, ScrollbarColor(), ScrollbarGradColor(), ScrollbarGrad(), ScrollbarAccentColor(), AccentState, ScrollbarAccent(), IsCustomUiScrollbar(), Corners, Rounding, ScrollbarAnimateSpeed(), VerticalGrad, CCNeon::KIND_SCROLLBAR);
 }
 
 inline ColorRGBA UiButton(float Alpha = 1.0f, bool AccentState = false)
@@ -378,12 +390,12 @@ inline ColorRGBA UiDropdown(ColorRGBA Color, bool AccentState = false)
 
 inline void DrawUiDropdown(const CUIRect *pRect, ColorRGBA Color, bool AccentState, int Corners, float Rounding)
 {
-	DrawChromeRect(pRect, Color, DropdownColor(), DropdownGradColor(), DropdownGrad(), DropdownAccentColor(), AccentState, DropdownAccent(), IsCustomUiDropdown(), Corners, Rounding, DropdownAnimateSpeed());
+	DrawChromeRect(pRect, Color, DropdownColor(), DropdownGradColor(), DropdownGrad(), DropdownAccentColor(), AccentState, DropdownAccent(), IsCustomUiDropdown(), Corners, Rounding, DropdownAnimateSpeed(), false, CCNeon::KIND_DROPDOWN);
 }
 
 inline void DrawUiEditBox(const CUIRect *pRect, ColorRGBA Color, bool AccentState, int Corners, float Rounding)
 {
-	DrawChromeRect(pRect, Color, EditBoxColor(), EditBoxGradColor(), EditBoxGrad(), EditBoxAccentColor(), AccentState, EditBoxAccent(), IsCustomUiEditBox(), Corners, Rounding, EditBoxAnimateSpeed());
+	DrawChromeRect(pRect, Color, EditBoxColor(), EditBoxGradColor(), EditBoxGrad(), EditBoxAccentColor(), AccentState, EditBoxAccent(), IsCustomUiEditBox(), Corners, Rounding, EditBoxAnimateSpeed(), false, CCNeon::KIND_EDIT);
 }
 
 inline ColorRGBA UiBlockColor()
@@ -402,6 +414,12 @@ inline ColorRGBA UiBlockColor()
 
 inline void DrawUiBlock(const CUIRect *pRect, int Corners = IGraphics::CORNER_ALL, float Rounding = 10.0f)
 {
+	// Cr1stal Client: new design, a card with a thin edge
+	if(CCNeon::On() && !IsCustomUiBlock())
+	{
+		CCNeon::DrawFramed(*pRect, CCNeon::CARD, CCNeon::LINE, CCNeon::Scaled(Rounding, *pRect), Corners);
+		return;
+	}
 	const float Alpha = ThemeBlockOpacity() / 100.0f;
 	if(IsCustomUiBlock() && BlockGrad() && !BlockAccent())
 	{
@@ -512,7 +530,7 @@ inline void DrawUiBadge(const CUIRect *pRect, float LeftAlpha, float RightAlpha,
 
 inline void DrawUiBind(const CUIRect *pRect, ColorRGBA Color, bool AccentState, int Corners, float Rounding)
 {
-	DrawChromeRect(pRect, Color, BindColor(), BindGradColor(), BindGrad(), BindAccentColor(), AccentState, BindAccent(), IsCustomUiBind(), Corners, Rounding, BindAnimateSpeed());
+	DrawChromeRect(pRect, Color, BindColor(), BindGradColor(), BindGrad(), BindAccentColor(), AccentState, BindAccent(), IsCustomUiBind(), Corners, Rounding, BindAnimateSpeed(), false, CCNeon::KIND_BIND);
 }
 
 inline unsigned DarkenConfigColor(unsigned ConfigColor, float Factor = 0.65f)

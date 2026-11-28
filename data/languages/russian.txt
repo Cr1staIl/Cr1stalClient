@@ -2762,3 +2762,42 @@ You have the newest version
 
 Update is ready: see the main menu
 == Обновление готово: смотри главное меню
+
+Quick join
+== Быстрый вход
+
+Connect
+== Подключиться
+
+Profile
+== Профиль
+
+Play time
+== Время в игре
+
+Points
+== Очки
+
+Maps finished
+== Карт пройдено
+
+%d h %d min
+== %d ч %d мин
+
+Update
+== Обновить
+
+Update #%d is available
+== Доступно обновление #%d
+
+Press Esc and choose Update
+== Нажми Esc и выбери «Обновить»
+
+The game restarts by itself
+== Игра перезапустится сама
+
+Statistics
+== Статистика
+
+New menu design (neon)
+== Новый дизайн меню (неон)

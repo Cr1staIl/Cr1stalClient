@@ -8,6 +8,7 @@
 #include <game/client/components/bestclient/settings_search.h>
 #include <game/client/components/bestclient/ui_theme/style.h>
 #include <game/client/components/bestclient/ui_theme/widgets.h>
+#include <game/client/components/cclient_neon.h>
 // bestclient
 
 #include <base/color.h>
@@ -48,6 +49,7 @@
 #include <algorithm>
 #include <chrono>
 #include <cmath>
+#include <unordered_map>
 #include <vector>
 
 using namespace std::chrono_literals;
@@ -142,7 +144,10 @@ int CMenus::DoButton_Menu(CButtonContainer *pButtonContainer, const char *pText,
 
 	// bestclient
 	const bool ButtonAccent = Checked || Ui()->CheckActiveItem(pButtonContainer) || Ui()->HotItem() == pButtonContainer;
-	BestClientUiTheme::DrawUiButton(pRect, Color, ButtonAccent, Corners, Rounding);
+	if(CCNeon::On() && Checked)
+		CCNeon::DrawSelected(*pRect, Rounding, Corners);
+	else
+		BestClientUiTheme::DrawUiButton(pRect, Color, ButtonAccent, Corners, Rounding);
 	// bestclient
 
 	if(pImageName)
@@ -185,7 +190,10 @@ int CMenus::DoButton_MenuEx(CButtonContainer *pButtonContainer, const char *pTex
 
 	// bestclient
 	const bool ButtonAccent = Checked || Ui()->CheckActiveItem(pButtonContainer) || Ui()->HotItem() == pButtonContainer;
-	BestClientUiTheme::DrawUiButton(pRect, Color, ButtonAccent, Corners, Rounding);
+	if(CCNeon::On() && Checked)
+		CCNeon::DrawSelected(*pRect, Rounding, Corners);
+	else
+		BestClientUiTheme::DrawUiButton(pRect, Color, ButtonAccent, Corners, Rounding);
 	// bestclient
 
 	if(pImageName)
@@ -254,7 +262,28 @@ int CMenus::DoButton_MenuTab(CButtonContainer *pButtonContainer, const char *pTe
 		Color.a *= ShownAlpha;
 		return Color;
 	};
-	if(Checked)
+	if(CCNeon::On())
+	{
+		// Cr1stal Client: pill tabs, the selected one with a soft neon glow
+		CUIRect Pill = Rect;
+		if(Pill.h <= 28.0f)
+			Pill.HMargin(1.5f, &Pill);
+		if(Checked)
+		{
+			CCNeon::DrawSelected(Pill, Pill.h / 2.0f, IGraphics::CORNER_ALL, ShownAlpha);
+		}
+		else if(MouseInside)
+		{
+			ColorRGBA HoverFill = (pHoverColor && !CCNeon::IsGrey(*pHoverColor)) ? *pHoverColor : ColorRGBA(CCNeon::HOVER.r, CCNeon::HOVER.g, CCNeon::HOVER.b, 0.85f);
+			HoverFill.a *= ShownAlpha;
+			CCNeon::DrawFramed(Pill, HoverFill, ColorRGBA(1.0f, 1.0f, 1.0f, 0.0f), CCNeon::Scaled(10.0f, Pill), IGraphics::CORNER_ALL);
+		}
+		else if(pDefaultColor && !CCNeon::IsGrey(*pDefaultColor))
+		{
+			CCNeon::DrawFramed(Pill, FadeTab(*pDefaultColor), ColorRGBA(1.0f, 1.0f, 1.0f, 0.0f), CCNeon::Scaled(10.0f, Pill), IGraphics::CORNER_ALL);
+		}
+	}
+	else if(Checked)
 	{
 		ColorRGBA ColorMenuTab = ms_ColorTabbarActive;
 		if(pActiveColor)
@@ -315,10 +344,17 @@ int CMenus::DoButton_MenuTab(CButtonContainer *pButtonContainer, const char *pTe
 		CUIRect Label;
 		Rect.HMargin(2.0f, &Label);
 		// bestclient
-		if(ShownAlpha < 1.0f)
-			TextRender()->TextColor(ColorRGBA(1.0f, 1.0f, 1.0f, ShownAlpha));
+		ColorRGBA LabelColor(1.0f, 1.0f, 1.0f, ShownAlpha);
+		if(CCNeon::On())
+		{
+			LabelColor = (Checked || MouseInside) ? CCNeon::TEXT : CCNeon::TEXT_SUB;
+			LabelColor.a = ShownAlpha;
+		}
+		const bool ColorLabel = ShownAlpha < 1.0f || CCNeon::On();
+		if(ColorLabel)
+			TextRender()->TextColor(LabelColor);
 		Ui()->DoLabel(&Label, pText, Label.h * CUi::ms_FontmodHeight, TEXTALIGN_MC);
-		if(ShownAlpha < 1.0f)
+		if(ColorLabel)
 			TextRender()->TextColor(TextRender()->DefaultTextColor());
 		// bestclient
 	}
@@ -364,6 +400,34 @@ int CMenus::DoButton_Favorite(const void *pButtonId, const void *pParentId, bool
 
 int CMenus::DoButton_CheckBox_Common(const void *pId, const char *pText, const char *pBoxText, const CUIRect *pRect, const unsigned Flags)
 {
+	// Cr1stal Client: round toggle on the right, text on the left
+	if(CCNeon::On() && (*pBoxText == 'X' || *pBoxText == '\0'))
+	{
+		const bool IsOn = *pBoxText == 'X';
+		const float ToggleHeight = std::clamp(pRect->h - 4.0f, 8.0f, 16.0f);
+		const float ToggleWidth = ToggleHeight * 1.75f;
+		CUIRect Label, ToggleArea, Toggle;
+		pRect->VSplitRight(ToggleWidth + 4.0f, &Label, &ToggleArea);
+		ToggleArea.VMargin(2.0f, &Toggle);
+		Toggle.HMargin((Toggle.h - ToggleHeight) / 2.0f, &Toggle);
+		Label.VSplitRight(4.0f, &Label, nullptr);
+
+		static std::unordered_map<const void *, float> s_ToggleAnimation;
+		float &Animation = s_ToggleAnimation.try_emplace(pId, IsOn ? 1.0f : 0.0f).first->second;
+		const float Step = Client()->RenderFrameTime() / 0.12f;
+		Animation += std::clamp((IsOn ? 1.0f : 0.0f) - Animation, -Step, Step);
+
+		CCNeon::DrawToggle(Toggle, Animation, Ui()->HotItem() == pId);
+		TextRender()->SetRenderFlags(0);
+		Ui()->DoLabel(&Label, pText, (pRect->h - 4.0f) * CUi::ms_FontmodHeight, TEXTALIGN_ML);
+
+		// bestclient
+		BestClientSettingsSearch::DrawItemHighlight(pId, pRect);
+		// bestclient
+
+		return Ui()->DoButtonLogic(pId, 0, pRect, Flags);
+	}
+
 	CUIRect Box, Label;
 	pRect->VSplitLeft(pRect->h, &Box, &Label);
 	Label.VSplitLeft(5.0f, nullptr, &Label);
@@ -1244,6 +1308,12 @@ void CMenus::Render()
 		{
 			CUIRect TabBar, MainView;
 			Screen.HSplitTop(24.0f, &TabBar, &MainView);
+			if(CCNeon::On())
+			{
+				// Cr1stal Client: the menu bar is a rounded strip with a small gap below it
+				CCNeon::DrawFramed(TabBar, CCNeon::PANEL, CCNeon::LINE, CCNeon::Scaled(10.0f, TabBar), IGraphics::CORNER_ALL);
+				MainView.HSplitTop(4.0f, nullptr, &MainView);
+			}
 
 			if(m_MenuPage == PAGE_NEWS)
 			{
@@ -1295,6 +1365,12 @@ void CMenus::Render()
 		{
 			CUIRect TabBar, MainView;
 			Screen.HSplitTop(24.0f, &TabBar, &MainView);
+			if(CCNeon::On())
+			{
+				// Cr1stal Client: the menu bar is a rounded strip with a small gap below it
+				CCNeon::DrawFramed(TabBar, CCNeon::PANEL, CCNeon::LINE, CCNeon::Scaled(10.0f, TabBar), IGraphics::CORNER_ALL);
+				MainView.HSplitTop(4.0f, nullptr, &MainView);
+			}
 
 			if(m_GamePage == PAGE_GAME)
 			{
@@ -2749,6 +2825,14 @@ void CMenus::UpdateColors()
 		ms_GuiColor.a);
 
 	ms_ColorTabbarHoverIngame = ColorRGBA(1.0f, 1.0f, 1.0f, 0.75f);
+
+	// Cr1stal Client: dark panels of the new design
+	if(g_Config.m_CcStyle)
+	{
+		ms_ColorTabbarInactiveOutgame = ms_ColorTabbarInactiveIngame = ColorRGBA(1.0f, 1.0f, 1.0f, 0.04f);
+		ms_ColorTabbarActiveOutgame = ms_ColorTabbarActiveIngame = CCNeon::PANEL;
+		ms_ColorTabbarHoverOutgame = ms_ColorTabbarHoverIngame = ColorRGBA(1.0f, 1.0f, 1.0f, 0.10f);
+	}
 }
 
 void CMenus::RenderBackground()
@@ -2764,6 +2848,26 @@ void CMenus::RenderBackground()
 	const IGraphics::CQuadItem BackgroundQuadItem = IGraphics::CQuadItem(0, 0, ScreenWidth, ScreenHeight);
 	Graphics()->QuadsDrawTL(&BackgroundQuadItem, 1);
 	Graphics()->QuadsEnd();
+
+	// Cr1stal Client: dark gradient with a faint neon glow in the corners, no moving tiles
+	if(g_Config.m_CcStyle)
+	{
+		CUIRect Background;
+		Background.x = 0.0f;
+		Background.y = 0.0f;
+		Background.w = ScreenWidth;
+		Background.h = ScreenHeight;
+		Background.Draw4(CCNeon::BG_TOP, CCNeon::BG_TOP, CCNeon::BG_BOTTOM, CCNeon::BG_BOTTOM, IGraphics::CORNER_NONE, 0.0f);
+		const float Pulse = 0.85f + 0.15f * std::sin(Client()->GlobalTime() * 0.7f);
+		CUIRect Corner;
+		Corner.w = ScreenWidth * 0.55f;
+		Corner.h = ScreenHeight * 0.55f;
+		Corner.x = -Corner.w * 0.35f;
+		Corner.y = ScreenHeight - Corner.h * 0.65f;
+		CCNeon::Glow(Corner, Corner.h / 2.0f, CCNeon::NEON, 0.9f * Pulse, IGraphics::CORNER_ALL, 8.0f, 5);
+		Ui()->MapScreen();
+		return;
+	}
 
 	// render the tiles
 	Graphics()->TextureClear();

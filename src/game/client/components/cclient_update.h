@@ -28,6 +28,7 @@ public:
 	int Sizeof() const override { return sizeof(*this); }
 	void OnInit() override;
 	void OnUpdate() override;
+	void OnRender() override;
 	void OnShutdown() override;
 
 	EState State() const { return m_State; }
@@ -45,6 +46,13 @@ private:
 	std::shared_ptr<IHttpRequest> m_pVersionRequest;
 	std::shared_ptr<IHttpRequest> m_pSetupRequest;
 	void Finish();
+
+	// in the game: a short hint that an update exists (the buttons are in the Esc menu)
+	// and the progress while it downloads
+	int m_ToastBuild = 0;
+	int64_t m_ToastUntil = 0;
+	EState m_PrevState = EState::NONE;
+	int64_t m_FailedUntil = 0;
 };
 
 #endif

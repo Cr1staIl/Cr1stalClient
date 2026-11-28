@@ -29,6 +29,8 @@
 #include <generated/protocol.h>
 
 #include <game/client/animstate.h>
+#include <game/client/components/cclient_neon.h>
+#include <game/client/components/cclient_update.h>
 #include <game/client/components/countryflags.h>
 #include <game/client/components/touch_controls.h>
 #include <game/client/gameclient.h>
@@ -84,6 +86,48 @@ void CMenus::RenderGame(CUIRect MainView)
 		{
 			Client()->Disconnect();
 			RefreshBrowserTab(true);
+		}
+	}
+
+	// Cr1stal Client: update the game without leaving it (the installer restarts the game by itself)
+	{
+		CCUpdate &Update = GameClient()->m_CUpdate;
+		const CCUpdate::EState UpdateState = Update.State();
+		if(UpdateState == CCUpdate::EState::AVAILABLE || UpdateState == CCUpdate::EState::FAILED ||
+			UpdateState == CCUpdate::EState::DOWNLOADING || UpdateState == CCUpdate::EState::INSTALLING)
+		{
+			ButtonBar.VSplitRight(5.0f, &ButtonBar, nullptr);
+			ButtonBar.VSplitRight(130.0f, &ButtonBar, &Button);
+			static CButtonContainer s_UpdateButton;
+			char aUpdateLabel[128];
+			if(UpdateState == CCUpdate::EState::DOWNLOADING || UpdateState == CCUpdate::EState::INSTALLING)
+			{
+				Ui()->RenderProgressBar(Button, Update.Progress());
+				str_format(aUpdateLabel, sizeof(aUpdateLabel), "%s %d%%", Localize("Downloading update"), round_to_int(Update.Progress() * 100.0f));
+				Ui()->DoLabel(&Button, aUpdateLabel, 10.0f, TEXTALIGN_MC);
+			}
+			else
+			{
+				if(UpdateState == CCUpdate::EState::FAILED)
+					str_copy(aUpdateLabel, Localize("Update failed, try again"));
+				else
+					str_format(aUpdateLabel, sizeof(aUpdateLabel), "%s #%d", Localize("Update"), Update.LatestBuild());
+				bool Pressed = false;
+				if(CCNeon::On())
+				{
+					CCNeon::DrawPrimary(Button, Ui()->HotItem() == &s_UpdateButton, Ui()->CheckActiveItem(&s_UpdateButton), IGraphics::CORNER_ALL, 5.0f);
+					TextRender()->TextColor(CCNeon::TEXT);
+					Ui()->DoLabel(&Button, aUpdateLabel, Button.h * CUi::ms_FontmodHeight * 0.85f, TEXTALIGN_MC);
+					TextRender()->TextColor(TextRender()->DefaultTextColor());
+					Pressed = Ui()->DoButtonLogic(&s_UpdateButton, 0, &Button, BUTTONFLAG_LEFT) != 0;
+				}
+				else
+				{
+					Pressed = DoButton_Menu(&s_UpdateButton, aUpdateLabel, 0, &Button, BUTTONFLAG_LEFT, nullptr, IGraphics::CORNER_ALL, 5.0f, 0.0f, ColorRGBA(0.2f, 0.6f, 0.3f, 0.35f)) != 0;
+				}
+				if(Pressed)
+					Update.Start();
+			}
 		}
 	}
 

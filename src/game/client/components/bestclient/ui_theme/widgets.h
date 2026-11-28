@@ -21,6 +21,8 @@ inline ColorRGBA SliderValueColor()
 
 inline float SliderRounding(float Height)
 {
+	if(CCNeon::On())
+		return Height / 2.0f;
 	return std::min(3.0f, Height * 0.35f);
 }
 

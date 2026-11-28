@@ -20,6 +20,7 @@
 // bestclient
 #include <game/client/components/bestclient/ui_theme/settings_nav.h>
 #include <game/client/components/bestclient/ui_theme/style.h>
+#include <game/client/components/cclient_neon.h>
 #include <game/client/components/bestclient/settings_search.h>
 // bestclient
 #include <game/localization.h>
@@ -104,6 +105,15 @@ void CMenus::RenderSettings(CUIRect MainView)
 		MainView.VSplitLeft(TabBarWidth, &TabBar, &MainView);
 	else
 		MainView.VSplitRight(TabBarWidth, &MainView, &TabBar);
+	// Cr1stal Client: the list of pages is its own rounded panel, with a gap to the page
+	if(CCNeon::On())
+	{
+		if(NavOnLeft)
+			MainView.VSplitLeft(4.0f, nullptr, &MainView);
+		else
+			MainView.VSplitRight(4.0f, &MainView, nullptr);
+		CCNeon::DrawFramed(TabBar, CCNeon::PANEL, CCNeon::LINE, CCNeon::Scaled(10.0f, TabBar), IGraphics::CORNER_ALL);
+	}
 	BestClientUiTheme::DrawUiMainPanel(&MainView, ms_ColorTabbarActive, false, IGraphics::CORNER_B, 10.0f);
 	// bestclient
 	MainView.Margin(20.0f, &MainView);
@@ -120,7 +130,8 @@ void CMenus::RenderSettings(CUIRect MainView)
 
 	TabBar.HSplitTop(50.0f, &Button, &TabBar);
 	// bestclient
-	BestClientUiTheme::DrawUiMainPanel(&Button, ms_ColorTabbarActive, false, NavOnLeft ? IGraphics::CORNER_BL : IGraphics::CORNER_BR, 10.0f);
+	if(!CCNeon::On())
+		BestClientUiTheme::DrawUiMainPanel(&Button, ms_ColorTabbarActive, false, NavOnLeft ? IGraphics::CORNER_BL : IGraphics::CORNER_BR, 10.0f);
 	const bool ExploreLockCorner = m_AssetsEditorState.m_Open && m_AssetsEditorState.m_ExploreSide >= 0;
 	if(!ExploreLockCorner)
 	{

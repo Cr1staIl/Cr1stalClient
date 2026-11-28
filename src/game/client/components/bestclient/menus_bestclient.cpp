@@ -4146,7 +4146,7 @@ void CMenus::RenderSettingsBestClientOthers(CUIRect MainView)
 
 	// Cr1stal Client
 	{
-		const float CrystalBlockHeight = LineSize + MarginSmall + 5.0f * LineSize;
+		const float CrystalBlockHeight = LineSize + MarginSmall + 6.0f * LineSize;
 		CUIRect CrystalBlock;
 		Column.HSplitTop(CrystalBlockHeight, &CrystalBlock, &Column);
 		CUIRect CrystalBlockBg = CrystalBlock;
@@ -4160,6 +4160,7 @@ void CMenus::RenderSettingsBestClientOthers(CUIRect MainView)
 		CrystalBlock.HSplitTop(LineSize, &Label, &CrystalBlock);
 		Ui()->DoLabel(&Label, Localize("Cr\xe2\x99\xb1stal Client"), HeadlineFontSize, TEXTALIGN_ML);
 		CrystalBlock.HSplitTop(MarginSmall, nullptr, &CrystalBlock);
+		DoButton_CheckBoxAutoVMarginAndSet(&g_Config.m_CcStyle, Localize("New menu design (neon)"), &g_Config.m_CcStyle, &CrystalBlock, LineSize);
 		DoButton_CheckBoxAutoVMarginAndSet(&g_Config.m_CcClientBadge, Localize("Show the client avatar next to Cr1stal Client players"), &g_Config.m_CcClientBadge, &CrystalBlock, LineSize);
 		DoButton_CheckBoxAutoVMarginAndSet(&g_Config.m_CcOthersPacks, Localize("Show their game texture packs"), &g_Config.m_CcOthersPacks, &CrystalBlock, LineSize);
 		DoButton_CheckBoxAutoVMarginAndSet(&g_Config.m_CcSharePresence, Localize("Let others see that I use Cr1stal Client"), &g_Config.m_CcSharePresence, &CrystalBlock, LineSize);

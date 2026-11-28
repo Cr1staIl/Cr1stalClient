@@ -3037,6 +3037,7 @@ if(CLIENT)
     components/cclient_presence.h
     components/cclient_update.cpp
     components/cclient_update.h
+    components/cclient_neon.h
     components/cclient_style.cpp
     components/cclient_style.h
     components/menus_cc_stats.cpp

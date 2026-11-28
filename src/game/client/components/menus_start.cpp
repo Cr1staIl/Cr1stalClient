@@ -19,6 +19,7 @@
 #include <game/client/components/bestclient/version.h>
 // bestclient
 #include <game/client/cclient_version.h>
+#include <game/client/components/cclient_neon.h>
 #include <game/client/gameclient.h>
 #include <game/client/ui.h>
 #include <game/localization.h>
@@ -29,6 +30,14 @@
 #endif
 
 void CMenusStart::RenderStartMenu(CUIRect MainView)
+{
+	if(CCNeon::On())
+		RenderStartMenuNeon(MainView);
+	else
+		RenderStartMenuClassic(MainView);
+}
+
+void CMenusStart::RenderStartMenuClassic(CUIRect MainView)
 {
 	GameClient()->m_MenuBackground.ChangePosition(CMenuBackground::POS_START);
 
@@ -357,6 +366,333 @@ void CMenusStart::RenderStartMenu(CUIRect MainView)
 	{
 		GameClient()->m_Menus.SetShowStart(false);
 		GameClient()->m_Menus.SetMenuPage(NewPage);
+	}
+}
+
+// Cr1stal Client: the main menu of the new design
+void CMenusStart::RenderStartMenuNeon(CUIRect MainView)
+{
+	GameClient()->m_MenuBackground.ChangePosition(CMenuBackground::POS_START);
+	CMenus &Menus = GameClient()->m_Menus;
+
+	const auto SetIconMode = [&]() {
+		TextRender()->SetFontPreset(EFontPreset::ICON_FONT);
+		TextRender()->SetRenderFlags(ETextRenderFlags::TEXT_RENDER_FLAG_ONLY_ADVANCE_WIDTH | ETextRenderFlags::TEXT_RENDER_FLAG_NO_X_BEARING | ETextRenderFlags::TEXT_RENDER_FLAG_NO_Y_BEARING | ETextRenderFlags::TEXT_RENDER_FLAG_NO_PIXEL_ALIGNMENT | ETextRenderFlags::TEXT_RENDER_FLAG_NO_OVERSIZE);
+	};
+	const auto ResetIconMode = [&]() {
+		TextRender()->SetRenderFlags(0);
+		TextRender()->SetFontPreset(EFontPreset::DEFAULT_FONT);
+	};
+	const auto SetLabelColor = [&](ColorRGBA Color) {
+		TextRender()->TextColor(Color);
+	};
+	const auto ResetLabelColor = [&]() {
+		TextRender()->TextColor(TextRender()->DefaultTextColor());
+	};
+
+	int NewPage = -1;
+
+	const float Left = MainView.x + 14.0f;
+	const float Right = MainView.x + MainView.w - 14.0f;
+	const float Top = MainView.y + 8.0f;
+	const float ColumnW = 190.0f;
+
+	// logo with its own neon glow (the glow is part of the picture)
+	constexpr float LogoW = 214.0f;
+	constexpr float LogoH = LogoW * 879.0f / 3072.0f;
+	{
+		const IGraphics::CTextureHandle &LogoTexture = Menus.BcLogoTexture();
+		Graphics()->TextureSet(LogoTexture.IsValid() && !LogoTexture.IsNullTexture() ? LogoTexture : g_pData->m_aImages[IMAGE_BANNER].m_Id);
+		Graphics()->QuadsBegin();
+		Graphics()->SetColor(1, 1, 1, 1);
+		IGraphics::CQuadItem LogoQuad(Left - 6.0f, Top + 6.0f, LogoW, LogoH);
+		Graphics()->QuadsDrawTL(&LogoQuad, 1);
+		Graphics()->QuadsEnd();
+	}
+
+	// the main buttons
+	struct SEntry
+	{
+		const char *m_pLabel;
+		const char *m_pIcon;
+		int m_Key;
+		bool m_Primary;
+		bool m_Lit;
+	};
+	const bool LocalServerRunning = GameClient()->m_LocalServer.IsServerRunning();
+	const SEntry aEntries[] = {
+		{Localize("Play", "Start menu"), FontIcon::PLAY, KEY_P, true, false},
+		{Localize("Demos"), FontIcon::CLAPPERBOARD, KEY_D, false, false},
+		{Localize("Editor"), FontIcon::PEN_TO_SQUARE, KEY_E, false, GameClient()->Editor()->HasUnsavedData()},
+		{Localize("Statistics"), FontIcon::FLAG_CHECKERED, KEY_UNKNOWN, false, false},
+		{LocalServerRunning ? Localize("Stop server") : Localize("Run server"), FontIcon::NETWORK_WIRED, KEY_R, false, LocalServerRunning},
+		{Localize("Settings"), FontIcon::GEAR, KEY_S, false, false},
+	};
+	constexpr int NumEntries = sizeof(aEntries) / sizeof(aEntries[0]);
+	static CButtonContainer s_aButtons[NumEntries];
+
+	const float ButtonH = 22.0f;
+	const float ButtonGap = 4.0f;
+	float Y = Top + 6.0f + LogoH + 12.0f;
+	const float ButtonsTop = Y;
+	for(int i = 0; i < NumEntries; ++i)
+	{
+		const SEntry &Entry = aEntries[i];
+		CUIRect Row;
+		Row.x = Left;
+		Row.y = Y;
+		Row.w = ColumnW;
+		Row.h = ButtonH;
+		Y += ButtonH + ButtonGap;
+
+		const bool Hot = Ui()->HotItem() == &s_aButtons[i];
+		const bool Active = Ui()->CheckActiveItem(&s_aButtons[i]);
+		if(Entry.m_Primary)
+			CCNeon::DrawPrimary(Row, Hot, Active, IGraphics::CORNER_ALL, 5.0f);
+		else if(Entry.m_Lit)
+			CCNeon::DrawSelected(Row, 5.0f);
+		else
+			CCNeon::DrawSecondary(Row, Hot, Active, IGraphics::CORNER_ALL, 5.0f);
+
+		CUIRect IconRect, TextRect;
+		Row.VSplitLeft(ButtonH + 2.0f, &IconRect, &TextRect);
+		SetIconMode();
+		SetLabelColor(Entry.m_Primary ? CCNeon::TEXT : (Entry.m_Lit || Hot ? CCNeon::ACCENT_TEXT : CCNeon::TEXT_SUB));
+		Ui()->DoLabel(&IconRect, Entry.m_pIcon, ButtonH * 0.46f, TEXTALIGN_MC);
+		ResetIconMode();
+		SetLabelColor(CCNeon::TEXT);
+		Ui()->DoLabel(&TextRect, Entry.m_pLabel, ButtonH * 0.52f, TEXTALIGN_ML);
+		ResetLabelColor();
+
+		bool Pressed = Ui()->DoButtonLogic(&s_aButtons[i], 0, &Row, BUTTONFLAG_LEFT) != 0;
+		if(i == 0)
+			Pressed = Pressed || Ui()->ConsumeHotkey(CUi::HOTKEY_ENTER) || CheckHotKey(KEY_P);
+		else if(Entry.m_Key == KEY_R)
+			Pressed = Pressed || (CheckHotKey(KEY_R) && Input()->KeyPress(KEY_R));
+		else if(Entry.m_Key != KEY_UNKNOWN)
+			Pressed = Pressed || CheckHotKey(Entry.m_Key);
+		if(!Pressed)
+			continue;
+
+		switch(i)
+		{
+		case 0:
+			NewPage = g_Config.m_UiPage >= CMenus::PAGE_INTERNET && g_Config.m_UiPage <= CMenus::PAGE_FAVORITE_COMMUNITY_5 ? g_Config.m_UiPage : CMenus::PAGE_INTERNET;
+			break;
+		case 1:
+			NewPage = CMenus::PAGE_DEMOS;
+			break;
+		case 2:
+			g_Config.m_ClEditor = 1;
+			Input()->MouseModeRelative();
+			break;
+		case 3:
+			NewPage = CMenus::PAGE_CC_STATS;
+			break;
+		case 4:
+			if(LocalServerRunning)
+				GameClient()->m_LocalServer.KillServer();
+			else
+				GameClient()->m_LocalServer.RunServer({});
+			break;
+		default:
+			NewPage = CMenus::PAGE_SETTINGS;
+			break;
+		}
+	}
+
+	// cards on the right: last server and your profile
+	const float CardX = Left + ColumnW + 30.0f;
+	const float CardW = Right - CardX;
+	float CardY = ButtonsTop;
+	const float BottomLimit = MainView.y + MainView.h - 34.0f;
+
+	const auto DrawCardTitle = [&](const CUIRect &Card, const char *pTitle) {
+		CUIRect Title;
+		Card.Margin(8.0f, &Title);
+		Title.h = 12.0f;
+		SetLabelColor(CCNeon::ACCENT_TEXT);
+		Ui()->DoLabel(&Title, pTitle, 10.0f, TEXTALIGN_ML);
+		ResetLabelColor();
+	};
+
+	const bool HasLastServer = g_Config.m_UiServerAddress[0] != '\0' && str_comp(g_Config.m_UiServerAddress, "localhost:8303") != 0;
+	if(HasLastServer)
+	{
+		CUIRect Card;
+		Card.x = CardX;
+		Card.y = CardY;
+		Card.w = CardW;
+		Card.h = 62.0f;
+		CCNeon::DrawFramed(Card, CCNeon::CARD, CCNeon::LINE, CCNeon::Scaled(8.0f, Card));
+		DrawCardTitle(Card, Localize("Quick join"));
+
+		CUIRect Body, AddressRect, ButtonRect;
+		Card.Margin(8.0f, &Body);
+		Body.HSplitTop(14.0f, nullptr, &Body);
+		Body.HSplitTop(14.0f, &AddressRect, &Body);
+		Ui()->DoLabel(&AddressRect, g_Config.m_UiServerAddress, 13.0f, TEXTALIGN_ML);
+		Body.HSplitBottom(18.0f, nullptr, &ButtonRect);
+		static CButtonContainer s_JoinButton;
+		const bool Hot = Ui()->HotItem() == &s_JoinButton;
+		const bool Active = Ui()->CheckActiveItem(&s_JoinButton);
+		CCNeon::DrawPrimary(ButtonRect, Hot, Active, IGraphics::CORNER_ALL, 5.0f);
+		SetLabelColor(CCNeon::TEXT);
+		Ui()->DoLabel(&ButtonRect, Localize("Connect"), 12.0f, TEXTALIGN_MC);
+		ResetLabelColor();
+		if(Ui()->DoButtonLogic(&s_JoinButton, 0, &ButtonRect, BUTTONFLAG_LEFT))
+			Client()->Connect(g_Config.m_UiServerAddress);
+		CardY += Card.h + 8.0f;
+	}
+
+	{
+		CCPlaytime &Playtime = GameClient()->m_CPlaytime;
+		CUIRect Card;
+		Card.x = CardX;
+		Card.y = CardY;
+		Card.w = CardW;
+		Card.h = std::min(78.0f, std::max(0.0f, BottomLimit - CardY));
+		if(Card.h >= 60.0f)
+		{
+			static CButtonContainer s_ProfileCard;
+			const bool Hot = Ui()->HotItem() == &s_ProfileCard;
+			CCNeon::DrawFramed(Card, Hot ? CCNeon::ELEVATED : CCNeon::CARD, Hot ? ColorRGBA(1.0f, 1.0f, 1.0f, 0.14f) : CCNeon::LINE, CCNeon::Scaled(8.0f, Card));
+			DrawCardTitle(Card, Localize("Profile"));
+
+			CUIRect Body;
+			Card.Margin(8.0f, &Body);
+			Body.HSplitTop(16.0f, nullptr, &Body);
+
+			const int64_t Seconds = Playtime.Total();
+			char aTime[64];
+			str_format(aTime, sizeof(aTime), Localize("%d h %d min"), (int)(Seconds / 3600), (int)((Seconds / 60) % 60));
+			char aPoints[32];
+			str_format(aPoints, sizeof(aPoints), "%d", Playtime.Points());
+			char aMaps[32];
+			str_format(aMaps, sizeof(aMaps), "%d", Playtime.NumFinished());
+
+			const char *apLabels[3] = {Localize("Play time"), Localize("Points"), Localize("Maps finished")};
+			const char *apValues[3] = {aTime, aPoints, aMaps};
+			for(int i = 0; i < 3; ++i)
+			{
+				CUIRect Line, Label, Value;
+				Body.HSplitTop(14.0f, &Line, &Body);
+				Line.VSplitRight(Line.w * 0.45f, &Label, &Value);
+				SetLabelColor(CCNeon::TEXT_SUB);
+				Ui()->DoLabel(&Label, apLabels[i], 11.0f, TEXTALIGN_ML);
+				SetLabelColor(CCNeon::TEXT);
+				Ui()->DoLabel(&Value, apValues[i], 11.0f, TEXTALIGN_MR);
+				ResetLabelColor();
+			}
+			if(Ui()->DoButtonLogic(&s_ProfileCard, 0, &Card, BUTTONFLAG_LEFT))
+				NewPage = CMenus::PAGE_CC_STATS;
+		}
+	}
+
+	// update: one pill in the top right corner
+	{
+		CCUpdate &Update = GameClient()->m_CUpdate;
+		const CCUpdate::EState State = Update.State();
+		if(State == CCUpdate::EState::AVAILABLE || State == CCUpdate::EState::FAILED ||
+			State == CCUpdate::EState::DOWNLOADING || State == CCUpdate::EState::INSTALLING)
+		{
+			CUIRect Pill;
+			Pill.w = 128.0f;
+			Pill.h = 20.0f;
+			Pill.x = Right - Pill.w;
+			Pill.y = Top + 4.0f;
+			char aLabel[128];
+			static CButtonContainer s_UpdatePill;
+			if(State == CCUpdate::EState::DOWNLOADING || State == CCUpdate::EState::INSTALLING)
+			{
+				CCNeon::DrawFramed(Pill, CCNeon::TRACK, CCNeon::LINE, Pill.h / 2.0f);
+				CUIRect Fill = Pill;
+				Fill.w = std::max(Pill.h, Pill.w * Update.Progress());
+				CCNeon::Glow(Fill, Fill.h / 2.0f, CCNeon::NEON, 0.8f, IGraphics::CORNER_ALL, 1.0f, 3);
+				CCNeon::DrawFramed(Fill, CCNeon::ACCENT, CCNeon::PRIMARY_EDGE, Fill.h / 2.0f);
+				str_format(aLabel, sizeof(aLabel), "%s %d%%", Localize("Downloading update"), round_to_int(Update.Progress() * 100.0f));
+				SetLabelColor(CCNeon::TEXT);
+				Ui()->DoLabel(&Pill, aLabel, 10.0f, TEXTALIGN_MC);
+				ResetLabelColor();
+			}
+			else
+			{
+				const bool Hot = Ui()->HotItem() == &s_UpdatePill;
+				CCNeon::DrawPrimary(Pill, Hot, Ui()->CheckActiveItem(&s_UpdatePill), IGraphics::CORNER_ALL, 10.0f);
+				if(State == CCUpdate::EState::FAILED)
+					str_copy(aLabel, Localize("Update failed, try again"));
+				else
+					str_format(aLabel, sizeof(aLabel), "%s #%d", Localize("Update"), Update.LatestBuild());
+				SetLabelColor(CCNeon::TEXT);
+				Ui()->DoLabel(&Pill, aLabel, 11.0f, TEXTALIGN_MC);
+				ResetLabelColor();
+				if(Ui()->DoButtonLogic(&s_UpdatePill, 0, &Pill, BUTTONFLAG_LEFT))
+					Update.Start();
+			}
+		}
+	}
+
+	// bottom row: quit and console on the left, versions on the right
+	{
+		const float Size = 22.0f;
+		CUIRect QuitButton, ConsoleButton;
+		QuitButton.x = Left;
+		QuitButton.y = MainView.y + MainView.h - Size - 8.0f;
+		QuitButton.w = Size;
+		QuitButton.h = Size;
+		ConsoleButton = QuitButton;
+		ConsoleButton.x += Size + 6.0f;
+
+		static CButtonContainer s_QuitButton;
+		static CButtonContainer s_ConsoleButton;
+		bool UsedEscape = false;
+		const bool QuitHot = Ui()->HotItem() == &s_QuitButton;
+		if(QuitHot)
+			CCNeon::DrawFramed(QuitButton, ColorRGBA(0.75f, 0.1f, 0.2f, 0.55f), CCNeon::LINE, Size / 2.0f);
+		else
+			CCNeon::DrawSecondary(QuitButton, false, Ui()->CheckActiveItem(&s_QuitButton), IGraphics::CORNER_ALL, Size / 2.0f);
+		SetIconMode();
+		SetLabelColor(QuitHot ? CCNeon::TEXT : CCNeon::TEXT_SUB);
+		Ui()->DoLabel(&QuitButton, FontIcon::POWER_OFF, Size * 0.46f, TEXTALIGN_MC);
+		ResetLabelColor();
+		ResetIconMode();
+		if(Ui()->DoButtonLogic(&s_QuitButton, 0, &QuitButton, BUTTONFLAG_LEFT) || (UsedEscape = Ui()->ConsumeHotkey(CUi::HOTKEY_ESCAPE)) || CheckHotKey(KEY_Q))
+		{
+			if(g_Config.m_BcConfirmQuit || UsedEscape || GameClient()->Editor()->HasUnsavedData() || (GameClient()->CurrentRaceTime() / 60 >= g_Config.m_ClConfirmQuitTime && g_Config.m_ClConfirmQuitTime >= 0))
+				Menus.ShowQuitPopup();
+			else
+				Client()->Quit();
+		}
+
+		CCNeon::DrawSecondary(ConsoleButton, Ui()->HotItem() == &s_ConsoleButton, Ui()->CheckActiveItem(&s_ConsoleButton), IGraphics::CORNER_ALL, Size / 2.0f);
+		SetIconMode();
+		SetLabelColor(Ui()->HotItem() == &s_ConsoleButton ? CCNeon::TEXT : CCNeon::TEXT_SUB);
+		Ui()->DoLabel(&ConsoleButton, FontIcon::TERMINAL, Size * 0.46f, TEXTALIGN_MC);
+		ResetLabelColor();
+		ResetIconMode();
+		if(Ui()->DoButtonLogic(&s_ConsoleButton, 0, &ConsoleButton, BUTTONFLAG_LEFT))
+			GameClient()->m_GameConsole.Toggle(CGameConsole::CONSOLETYPE_LOCAL);
+
+		CUIRect Versions, Line1, Line2;
+		Versions.w = 150.0f;
+		Versions.h = 24.0f;
+		Versions.x = Right - Versions.w;
+		Versions.y = MainView.y + MainView.h - Versions.h - 8.0f;
+		Versions.HSplitTop(12.0f, &Line1, &Line2);
+		char aDDNetBuf[64];
+		char aCrystalBuf[64];
+		str_format(aDDNetBuf, sizeof(aDDNetBuf), "DDNet %s", GAME_RELEASE_VERSION);
+		str_format(aCrystalBuf, sizeof(aCrystalBuf), "Cr\xe2\x99\xb1stal Client %d", (int)CCLIENT_BUILD);
+		SetLabelColor(CCNeon::TEXT_DIM);
+		Ui()->DoLabel(&Line1, aDDNetBuf, 10.0f, TEXTALIGN_MR);
+		Ui()->DoLabel(&Line2, aCrystalBuf, 10.0f, TEXTALIGN_MR);
+		ResetLabelColor();
+	}
+
+	if(NewPage != -1)
+	{
+		Menus.SetShowStart(false);
+		Menus.SetMenuPage(NewPage);
 	}
 }
 

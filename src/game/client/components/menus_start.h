@@ -12,6 +12,9 @@ public:
 	void RenderStartMenu(CUIRect MainView);
 
 private:
+	// the classic layout (used when the new design is off) and the neon layout
+	void RenderStartMenuClassic(CUIRect MainView);
+	void RenderStartMenuNeon(CUIRect MainView);
 	bool CheckHotKey(int Key) const;
 };
 

@@ -77,6 +77,20 @@ float DoScrollbarH(CUi *pUi, const void *pId, const CUIRect *pRect, float Curren
 		Fill.w = 0.0f;
 	}
 
+	// Cr1stal Client: neon glow on the filled part and a white knob at its end
+	if(CCNeon::On())
+	{
+		if(Fill.w > 0.0f)
+			CCNeon::Glow(Fill, Rounding, CCNeon::NEON, Active || Hovered ? 1.2f : 0.8f, IGraphics::CORNER_ALL, 1.0f, 3);
+		const float KnobSize = Rail.h + 2.0f;
+		CUIRect Knob;
+		Knob.w = KnobSize;
+		Knob.h = KnobSize;
+		Knob.y = Rail.y - 1.0f;
+		Knob.x = std::clamp(Rail.x + Fill.w - KnobSize * 0.5f, Rail.x - 1.0f, Rail.x + Rail.w - KnobSize + 1.0f);
+		CCNeon::DrawFramed(Knob, ColorRGBA(1.0f, 1.0f, 1.0f, 1.0f), ColorRGBA(0.0f, 0.0f, 0.0f, 0.25f), KnobSize / 2.0f, IGraphics::CORNER_ALL, 0.5f);
+	}
+
 	if(pValueText && pValueText[0])
 	{
 		const float FontSize = pRect->h * CUi::ms_FontmodHeight * 0.8f;

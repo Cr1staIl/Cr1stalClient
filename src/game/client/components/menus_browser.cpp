@@ -1,6 +1,7 @@
 /* (c) Magnus Auvinen. See licence.txt in the root of the distribution for more information. */
 /* If you are missing that file, acquire a complete release at teeworlds.com.                */
 #include "menus.h"
+#include <game/client/components/cclient_neon.h>
 
 #include <base/dbg.h>
 #include <base/log.h>
@@ -778,7 +779,8 @@ void CMenus::RenderServerbrowserStatusBox(CUIRect StatusBox, bool WasListboxItem
 
 			SMenuButtonProperties Props;
 			Props.m_UseIconFont = true;
-			Props.m_Color = ColorRGBA(0.5f, 1.0f, 0.5f, 0.5f);
+			// Cr1stal Client: the main action wears the accent color in the new design
+			Props.m_Color = CCNeon::On() ? ColorRGBA(CCNeon::ACCENT.r, CCNeon::ACCENT.g, CCNeon::ACCENT.b, 0.95f) : ColorRGBA(0.5f, 1.0f, 0.5f, 0.5f);
 
 			static CButtonContainer s_ConnectButton;
 			if(Ui()->DoButton_Menu(m_ConnectButton, &s_ConnectButton, ConnectLabelFunc, &ButtonConnect, Props) || WasListboxItemActivated || (!Ui()->IsPopupOpen() && Ui()->ConsumeHotkey(CUi::HOTKEY_ENTER)))
